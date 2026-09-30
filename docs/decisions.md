@@ -13,3 +13,9 @@
 What was built: The foundational project structure, `pyproject.toml`, and configuration for testing and linting.
 Why it was designed this way: A standard modern Python structure with Pydantic for models and pytest/ruff for QA ensures strictness from day one.
 What it is deliberately not doing: No application code or logic is written yet.
+
+## Step 1: Money and time primitives
+What was built: Core utilities for handling money as integer paise and time as UTC ISO strings with IST bounds.
+Why it was designed this way: Prevents floating-point errors by using exact integers/Decimals for money, and enforces a standard timezone (Asia/Kolkata) to avoid naive datetime bugs.
+What it is deliberately not doing: No general-purpose timezone conversion or currency conversion is implemented; it strictly handles INR and IST.
+

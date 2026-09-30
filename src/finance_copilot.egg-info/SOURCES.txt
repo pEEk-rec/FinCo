@@ -1,6 +1,9 @@
 README.md
 pyproject.toml
 src/copilot/__init__.py
+src/copilot/core/__init__.py
+src/copilot/core/money.py
+src/copilot/core/timeutil.py
 src/finance_copilot.egg-info/PKG-INFO
 src/finance_copilot.egg-info/SOURCES.txt
 src/finance_copilot.egg-info/dependency_links.txt
