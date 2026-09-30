@@ -26,36 +26,36 @@ def ctx():
     conn.execute("INSERT INTO users (id, created_at) VALUES ('u1', '2023-01-01T00:00:00Z')")
     conn.execute(
         "INSERT INTO accounts (id, user_id, name, created_at) "
-        "VALUES ('a1', 'u1', 'C', '2023-01-01')"
+        "VALUES ('a1', 'u1', 'C', '2023-01-01T00:00:00Z')"
     )
     conn.execute(
         "INSERT INTO categories (id, user_id, name, created_at) "
-        "VALUES ('c1', 'u1', 'F', '2023-01-01')"
+        "VALUES ('c1', 'u1', 'F', '2023-01-01T00:00:00Z')"
     )
     conn.execute(
         "INSERT INTO categories (id, user_id, name, created_at) "
-        "VALUES ('c2', 'u1', 'E', '2023-01-01')"
+        "VALUES ('c2', 'u1', 'E', '2023-01-01T00:00:00Z')"
     )
     
     tx1 = Transaction(
         id="t1", user_id="u1", account_id="a1", occurred_at="2023-01-10T10:00:00Z",
         amount_paise=1000, direction="debit", merchant_raw="M1", description="D1",
-        created_at="now", category_id="c1"
+        created_at="2023-01-01T00:00:00Z", category_id="c1"
     )
     tx2 = Transaction(
         id="t2", user_id="u1", account_id="a1", occurred_at="2023-01-20T10:00:00Z",
         amount_paise=500, direction="debit", merchant_raw="M2", description="D2",
-        created_at="now", category_id="c1"
+        created_at="2023-01-01T00:00:00Z", category_id="c1"
     )
     tx3_uncat = Transaction(
         id="t3", user_id="u1", account_id="a1", occurred_at="2023-01-25T10:00:00Z",
         amount_paise=2000, direction="debit", merchant_raw="M3", description="D3",
-        created_at="now", category_id=None
+        created_at="2023-01-01T00:00:00Z", category_id=None
     )
     tx4_credit = Transaction(
         id="t4", user_id="u1", account_id="a1", occurred_at="2023-01-26T10:00:00Z",
-        amount_paise=5000, direction="credit", merchant_raw="M4", description="D4",
-        created_at="now", category_id=None
+        amount_paise=-5000, direction="credit", merchant_raw="M4", description="D4",
+        created_at="2023-01-01T00:00:00Z", category_id=None
     )
     
     insert_transaction(conn, tx1)
@@ -101,7 +101,7 @@ def test_check_budgets(ctx):
     tx_exceed = Transaction(
         id="t_ex", user_id="u1", account_id="a1", occurred_at="2023-01-28T10:00:00Z",
         amount_paise=1001, direction="debit", merchant_raw="M5", description="D5",
-        created_at="now", category_id="c2"
+        created_at="2023-01-01T00:00:00Z", category_id="c2"
     )
     insert_transaction(ctx.conn, tx_exceed)
     
@@ -132,7 +132,9 @@ def test_recategorize_transaction(ctx):
 
 def test_get_balance(ctx):
     out = get_balance_handler(ctx)
-    assert out["balance_paise"] == 1500
+    # Debits: 1000 + 500 + 2000 = 3500
+    # Credits: -5000
+    assert out["balance_paise"] == -8500
 
 def test_registration():
     clear_registry()

@@ -44,6 +44,12 @@ What was built: Tool handlers for reading transactions, getting balances, aggreg
 Why it was designed this way: All mathematical and business logic is handled in deterministic Python code so the LLM is only responsible for intent routing, preventing hallucinations in numbers.
 What it is deliberately not doing: No LLM calls are made inside the tools. Tools don't decide their own governance—they rely entirely on the executor.
 
+## Step 7: Local chat loop and LLM stub
+What was built: `cli.py` as a local entrypoint and `agent/loop.py` that stubs the LLM. 
+Why it was designed this way: A mock LLM isolates the agent architecture logic from network unreliability, API costs, or prompt hacking during Phase 0 hardening. The stub routes simple regex strings to tool calls.
+What it is deliberately not doing: No actual API calls to an LLM provider are made yet. No conversational memory exists beyond passing the current input string to the stub.
+
+
 
 ## Review fixes (Steps 0-3 hardening)
 
