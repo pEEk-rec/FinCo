@@ -11,7 +11,7 @@ import json
 import sqlite3
 import uuid
 from datetime import datetime
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -28,20 +28,20 @@ class AuditEvent(BaseModel):
 
     id: str
     user_id: str
-    run_id: Optional[str]
+    run_id: str | None
     occurred_at: str
     actor: Actor
     event_type: str
-    entity_type: Optional[str]
-    entity_id: Optional[str]
-    before: Optional[Any]
-    after: Optional[Any]
+    entity_type: str | None
+    entity_id: str | None
+    before: Any | None
+    after: Any | None
     reason: str
-    policy_decision: Optional[PolicyDecision]
-    metadata: Optional[Any]
+    policy_decision: PolicyDecision | None
+    metadata: Any | None
 
 
-def _to_json(value: Optional[Any], field: str) -> Optional[str]:
+def _to_json(value: Any | None, field: str) -> str | None:
     """Serialise a JSON-compatible value (stable key order); raise TypeError otherwise."""
     if value is None:
         return None
@@ -57,14 +57,14 @@ def record_event(
     actor: Actor,
     event_type: str,
     reason: str,
-    run_id: Optional[str] = None,
-    entity_type: Optional[str] = None,
-    entity_id: Optional[str] = None,
-    before_data: Optional[Any] = None,
-    after_data: Optional[Any] = None,
-    policy_decision: Optional[PolicyDecision] = None,
-    metadata: Optional[Any] = None,
-    clock: Optional[datetime] = None,
+    run_id: str | None = None,
+    entity_type: str | None = None,
+    entity_id: str | None = None,
+    before_data: Any | None = None,
+    after_data: Any | None = None,
+    policy_decision: PolicyDecision | None = None,
+    metadata: Any | None = None,
+    clock: datetime | None = None,
 ) -> str:
     """
     Append an audit event and return its id. Does not commit.
@@ -129,9 +129,9 @@ def _row_to_event(row: sqlite3.Row) -> AuditEvent:
 def list_events(
     conn: sqlite3.Connection,
     user_id: str,
-    run_id: Optional[str] = None,
-    entity_id: Optional[str] = None,
-    event_type: Optional[str] = None,
+    run_id: str | None = None,
+    entity_id: str | None = None,
+    event_type: str | None = None,
 ) -> list[AuditEvent]:
     """
     List a user's audit events, optionally filtered by run, entity or type.

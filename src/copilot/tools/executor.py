@@ -18,7 +18,7 @@ import json
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
@@ -40,7 +40,7 @@ class ExecutionContext:
     user_id: str
     run_id: str
     policy: PolicySettings
-    clock: Optional[datetime] = None
+    clock: datetime | None = None
     actor: Actor = "agent"
 
 
@@ -53,11 +53,11 @@ def _audit(
     ctx: ExecutionContext,
     tool_name: str,
     raw_input: Any,
-    decision: Optional[Decision],
+    decision: Decision | None,
     reason: str,
     approved: bool,
-    output: Optional[BaseModel] = None,
-    error: Optional[ToolError] = None,
+    output: BaseModel | None = None,
+    error: ToolError | None = None,
 ) -> None:
     """Write the audit event for one tool call. Does not commit."""
     record_event(
@@ -84,7 +84,7 @@ def _fail(
     ctx: ExecutionContext,
     tool_name: str,
     raw_input: Any,
-    decision: Optional[Decision],
+    decision: Decision | None,
     approved: bool,
     error: ToolError,
 ) -> ToolResult:

@@ -1,7 +1,5 @@
 """In-process tool registry. Registration never makes a tool callable except via the executor."""
 
-from typing import Optional
-
 from copilot.tools.contracts import ToolSpec
 
 _registry: dict[str, ToolSpec] = {}
@@ -16,7 +14,7 @@ def register(spec: ToolSpec) -> None:
     _registry[spec.name] = spec
 
 
-def get(name: str) -> Optional[ToolSpec]:
+def get(name: str) -> ToolSpec | None:
     """Get a tool specification by name, or None."""
     return _registry.get(name)
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -14,7 +14,7 @@ from copilot.core.timeutil import (
 
 
 def test_to_utc_iso():
-    dt = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+    dt = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
     assert to_utc_iso(dt) == "2023-01-01T12:00:00Z"
 
     dt_ist = datetime(2023, 1, 1, 17, 30, 0, tzinfo=IST)
@@ -26,14 +26,12 @@ def test_to_utc_iso():
 
 def test_from_utc_iso():
     dt = from_utc_iso("2023-01-01T12:00:00Z")
-    assert dt.tzinfo == timezone.utc
+    assert dt.tzinfo == UTC
     assert dt.year == 2023
     assert dt.hour == 12
 
     # Offsets other than UTC are converted
-    assert from_utc_iso("2024-01-31T23:30:00+05:30") == datetime(
-        2024, 1, 31, 18, 0, tzinfo=timezone.utc
-    )
+    assert from_utc_iso("2024-01-31T23:30:00+05:30") == datetime(2024, 1, 31, 18, 0, tzinfo=UTC)
 
 
 def test_from_utc_iso_rejects_naive_and_garbage():
@@ -54,7 +52,7 @@ def test_normalize_utc_iso():
 def test_now_utc_injection():
     fake_now = datetime(2024, 5, 5, 10, 0, 0, tzinfo=IST)
     dt = now_utc(clock=fake_now)
-    assert dt == fake_now.astimezone(timezone.utc)
+    assert dt == fake_now.astimezone(UTC)
 
     with pytest.raises(ValueError):
         now_utc(clock=datetime(2024, 5, 5))  # Naive

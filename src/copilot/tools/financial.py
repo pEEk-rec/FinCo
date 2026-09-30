@@ -15,7 +15,7 @@ are excluded. Uncategorised debits form their own `None` bucket.
 import calendar
 from collections.abc import Callable, Iterable
 from datetime import datetime
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import Field, model_validator
 
@@ -48,13 +48,13 @@ BudgetState = Literal["ok", "warning", "exceeded"]
 # ---------------------------------------------------------------------------------------------
 
 
-def net_spend_by_category(txs: Iterable[Transaction]) -> dict[Optional[str], int]:
+def net_spend_by_category(txs: Iterable[Transaction]) -> dict[str | None, int]:
     """
     Net spend per category in paise, following the module's refund policy.
 
     Returns only buckets with spend > 0, keyed by category id (None = uncategorised).
     """
-    net: dict[Optional[str], int] = {}
+    net: dict[str | None, int] = {}
     for tx in txs:
         if tx.category_id is None and tx.direction == "credit":
             continue  # uncategorised income is not spend
@@ -64,7 +64,7 @@ def net_spend_by_category(txs: Iterable[Transaction]) -> dict[Optional[str], int
 
 def budget_status(
     spent_paise: int, limit_paise: int, warn_threshold_pct: int
-) -> tuple[Optional[int], BudgetState]:
+) -> tuple[int | None, BudgetState]:
     """
     Status of one budget, using integer comparisons only.
 
@@ -139,8 +139,8 @@ class GetTransactionsInput(ToolInput):
 
     start_utc: UtcTimestamp
     end_utc: UtcTimestamp
-    category_id: Optional[Id] = None
-    limit: Optional[int] = Field(default=None, ge=1, le=1000)
+    category_id: Id | None = None
+    limit: int | None = Field(default=None, ge=1, le=1000)
 
     @model_validator(mode="after")
     def _start_before_end(self) -> "GetTransactionsInput":
@@ -159,7 +159,7 @@ class TransactionOutput(ToolOutput):
     direction: Literal["debit", "credit"]
     merchant_raw: str
     description: str
-    category_id: Optional[str]
+    category_id: str | None
     category_source: str
 
 
@@ -173,8 +173,8 @@ def get_transactions_handler(
     ctx: "ExecutionContext",
     start_utc: str,
     end_utc: str,
-    category_id: Optional[str],
-    limit: Optional[int],
+    category_id: str | None,
+    limit: int | None,
 ) -> GetTransactionsOutput:
     """Fetch the user's transactions in range."""
     txs = list_transactions(ctx.conn, ctx.user_id, start_utc, end_utc, category_id, limit=limit)
@@ -194,7 +194,7 @@ def get_transactions_handler(
 class GetBalanceInput(ToolInput):
     """One account, or all of the user's accounts when omitted."""
 
-    account_id: Optional[Id] = None
+    account_id: Id | None = None
 
 
 class GetBalanceOutput(ToolOutput):
@@ -205,7 +205,7 @@ class GetBalanceOutput(ToolOutput):
     account_ids: list[str]
 
 
-def get_balance_handler(ctx: "ExecutionContext", account_id: Optional[str]) -> GetBalanceOutput:
+def get_balance_handler(ctx: "ExecutionContext", account_id: str | None) -> GetBalanceOutput:
     """Opening balance(s) plus all transactions up to now."""
     if account_id is not None:
         account = get_account(ctx.conn, ctx.user_id, account_id)
@@ -233,7 +233,7 @@ def get_balance_handler(ctx: "ExecutionContext", account_id: Optional[str]) -> G
 class CategoryTotal(ToolOutput):
     """Net spend in one category (None = uncategorised)."""
 
-    category_id: Optional[str]
+    category_id: str | None
     total_spend_paise: int
 
 
@@ -270,7 +270,7 @@ class BudgetStatusOutput(ToolOutput):
     spent_paise: int
     limit_paise: int
     warn_threshold_pct: int
-    pct_used: Optional[int]
+    pct_used: int | None
     status: BudgetState
 
 
@@ -350,20 +350,20 @@ class RecategorizeInput(ToolInput):
     """Move one transaction to another category (None = uncategorised)."""
 
     transaction_id: Id
-    new_category_id: Optional[Id]
+    new_category_id: Id | None
 
 
 class RecategorizeOutput(ToolOutput):
     """What changed, and the audit event that holds the undo information."""
 
     transaction_id: str
-    previous_category_id: Optional[str]
-    new_category_id: Optional[str]
+    previous_category_id: str | None
+    new_category_id: str | None
     audit_event_id: str
 
 
 def recategorize_transaction_handler(
-    ctx: "ExecutionContext", transaction_id: str, new_category_id: Optional[str]
+    ctx: "ExecutionContext", transaction_id: str, new_category_id: str | None
 ) -> RecategorizeOutput:
     """
     Set a transaction's category (source 'user', confidence 1.0) and audit before/after.

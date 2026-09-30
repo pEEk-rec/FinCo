@@ -5,9 +5,10 @@ There is deliberately no side-effect class for moving money, and none may be add
 """
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
-from enum import Enum
-from typing import Any, Callable, Optional
+from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -16,7 +17,7 @@ from copilot.core.errors import ToolError
 _TOOL_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 
 
-class SideEffect(str, Enum):
+class SideEffect(StrEnum):
     """What a tool may touch. Values match the keys used in config/policy.yaml."""
 
     READ = "read"
@@ -40,8 +41,8 @@ class ToolResult(BaseModel):
     """Outcome of one tool call: `data` when ok, `error` otherwise (never both)."""
 
     ok: bool
-    data: Optional[Any] = None
-    error: Optional[ToolError] = None
+    data: Any | None = None
+    error: ToolError | None = None
 
     @model_validator(mode="after")
     def _ok_matches_error(self) -> "ToolResult":

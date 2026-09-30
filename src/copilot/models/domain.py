@@ -5,7 +5,7 @@ Models are the validation gate in front of the database: they reject unknown fie
 non-integer money (no silent 1000.0 -> 1000 coercion) and normalise timestamps to canonical UTC.
 """
 
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StrictInt, model_validator
 
@@ -65,8 +65,8 @@ class Transaction(DomainModel):
     merchant_raw: str
     description: str
 
-    category_id: Optional[Id] = None
-    category_confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    category_id: Id | None = None
+    category_confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     category_source: Literal["rule", "llm", "user", "none"] = "none"
 
     created_at: UtcTimestamp

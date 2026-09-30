@@ -6,7 +6,6 @@ unit of work in `copilot.db.connection.savepoint`.
 """
 
 import sqlite3
-from typing import Optional
 
 from copilot.models.domain import Account, Budget, Category, Transaction, User
 
@@ -33,7 +32,7 @@ def insert_account(conn: sqlite3.Connection, account: Account) -> None:
     )
 
 
-def get_account(conn: sqlite3.Connection, user_id: str, account_id: str) -> Optional[Account]:
+def get_account(conn: sqlite3.Connection, user_id: str, account_id: str) -> Account | None:
     """Get an account by ID, or None if it does not exist for this user."""
     row = conn.execute(
         "SELECT * FROM accounts WHERE id = ? AND user_id = ?", (account_id, user_id)
@@ -57,7 +56,7 @@ def insert_category(conn: sqlite3.Connection, category: Category) -> None:
     )
 
 
-def get_category(conn: sqlite3.Connection, user_id: str, category_id: str) -> Optional[Category]:
+def get_category(conn: sqlite3.Connection, user_id: str, category_id: str) -> Category | None:
     """Get a category by ID, or None if it does not exist for this user."""
     row = conn.execute(
         "SELECT * FROM categories WHERE id = ? AND user_id = ?", (category_id, user_id)
@@ -92,7 +91,7 @@ def insert_transaction(conn: sqlite3.Connection, tx: Transaction) -> None:
     )
 
 
-def get_transaction(conn: sqlite3.Connection, user_id: str, tx_id: str) -> Optional[Transaction]:
+def get_transaction(conn: sqlite3.Connection, user_id: str, tx_id: str) -> Transaction | None:
     """Get a transaction by ID, or None if it does not exist for this user."""
     row = conn.execute(
         "SELECT * FROM transactions WHERE id = ? AND user_id = ?", (tx_id, user_id)
@@ -105,9 +104,9 @@ def list_transactions(
     user_id: str,
     start: str,
     end: str,
-    category_id: Optional[str] = None,
-    account_id: Optional[str] = None,
-    limit: Optional[int] = None,
+    category_id: str | None = None,
+    account_id: str | None = None,
+    limit: int | None = None,
 ) -> list[Transaction]:
     """
     List a user's transactions with start <= occurred_at < end, oldest first.
@@ -164,9 +163,9 @@ def update_transaction_category(
     conn: sqlite3.Connection,
     user_id: str,
     tx_id: str,
-    category_id: Optional[str],
+    category_id: str | None,
     category_source: str,
-    category_confidence: Optional[float] = None,
+    category_confidence: float | None = None,
 ) -> bool:
     """Update a transaction's category. Returns False if no such transaction for this user."""
     cursor = conn.execute(

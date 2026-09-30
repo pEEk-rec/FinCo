@@ -1,11 +1,11 @@
 """Standard error codes, the ToolError payload, and the exception handlers raise."""
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel
 
 
-class ErrorCode(str, Enum):
+class ErrorCode(StrEnum):
     """Machine-readable failure categories returned in a ToolResult."""
 
     INVALID_INPUT = "INVALID_INPUT"

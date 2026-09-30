@@ -5,7 +5,7 @@ Canonical storage format is second-precision UTC with a 'Z' suffix, e.g. "2024-0
 Because every stored timestamp has this exact shape, SQL string comparison orders them correctly.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 IST = ZoneInfo("Asia/Kolkata")
@@ -20,15 +20,15 @@ def now_utc(clock: datetime | None = None) -> datetime:
     if clock is not None:
         if clock.tzinfo is None:
             raise ValueError("Injected clock must be timezone-aware.")
-        return clock.astimezone(timezone.utc)
-    return datetime.now(timezone.utc)
+        return clock.astimezone(UTC)
+    return datetime.now(UTC)
 
 
 def to_utc_iso(dt: datetime) -> str:
     """Convert a timezone-aware datetime to the canonical UTC ISO-8601 string (seconds, 'Z')."""
     if dt.tzinfo is None:
         raise ValueError("Datetime must be timezone-aware.")
-    utc_dt = dt.astimezone(timezone.utc)
+    utc_dt = dt.astimezone(UTC)
     return utc_dt.isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
@@ -44,7 +44,7 @@ def from_utc_iso(s: str) -> datetime:
     dt = datetime.fromisoformat(text)
     if dt.tzinfo is None:
         raise ValueError(f"Timestamp {s!r} has no timezone offset.")
-    return dt.astimezone(timezone.utc)
+    return dt.astimezone(UTC)
 
 
 def normalize_utc_iso(s: str) -> str:
