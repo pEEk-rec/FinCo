@@ -39,6 +39,12 @@ What was built: A central `execute_tool` function that enforces policy rules (lo
 Why it was designed this way: A single choke point guarantees that no tool can bypass governance or auditing. Pydantic validation on inputs and outputs prevents malformed data from causing silent corruption.
 What it is deliberately not doing: No dynamic rule evaluation or complex permissions matrix; policy is a simple default-deny YAML lookup based on side-effects or specific tool overrides.
 
+## Step 6: Deterministic financial tools
+What was built: Tool handlers for reading transactions, getting balances, aggregating spend, checking budgets, forecasting, and recategorizing.
+Why it was designed this way: All mathematical and business logic is handled in deterministic Python code so the LLM is only responsible for intent routing, preventing hallucinations in numbers.
+What it is deliberately not doing: No LLM calls are made inside the tools. Tools don't decide their own governance—they rely entirely on the executor.
+
+
 ## Review fixes (Steps 0-3 hardening)
 
 ### Money and time helpers
