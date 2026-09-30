@@ -70,3 +70,11 @@ Known limit: a process with raw write access can still `DROP TRIGGER`. Triggers 
 What changed: the policy file is validated strictly (`extra=forbid`, `decision` must be allow/deny/needs_approval, side-effect keys must be real `SideEffect` values, `default` can only be `deny`). `decide()` denies EXTERNAL tools in code before reading any rule. `ToolSpec` is a frozen, validated dataclass whose input model must subclass `ToolInput` (unknown fields rejected). `execute_tool` never raises, audits every outcome including NOT_FOUND and invalid input, stores raw input safely even when it is not JSON, and maps `ToolFailure` exceptions to their own error code. If writing the success audit event fails, the handler's writes are rolled back and the result is INTERNAL.
 Why: a typo like `decision: "deny "` used to fall through to the more permissive side-effect rule; an unknown-tool probe such as `transfer_money` left no audit trace; non-JSON input made `execute_tool` raise.
 Not doing: approval is still a boolean flag passed by the caller; binding approval to a specific pending action is Phase 7.
+
+### Financial tools rewrite
+What changed: the math lives in pure functions (`net_spend_by_category`, `budget_status`, `days_elapsed_in_month`, `run_rate_forecast`, `compute_balance`) that use integer paise only; handlers just fetch rows and call them. Inputs are validated (canonical timestamps, `start < end`, month 1..12, `limit` 1..1000) and missing transactions, accounts or categories return NOT_FOUND via `ToolFailure`.
+Bugs fixed: `get_balance` subtracted income (credits are negative, so adding them lowered the balance) and ignored opening balances; `check_budgets` used float division, so 29/100 became 28% and missed a 29% warning.
+Refund policy: credits net against spend in their own category, floored at 0; uncategorised credits (salary) are not spend. A refunded order therefore no longer counts toward a budget.
+Budget rules: `exceeded` only when spent > limit; `warning` when spent > 0 and spent*100 >= warn%*limit; `pct_used` is floored and None for a zero limit.
+Balance: opening balance minus the sum of amounts, counting only transactions up to "now" (the context clock).
+Not doing: forecasting beyond a straight run rate; `run_rate_forecast` is the single place to swap in a better method.

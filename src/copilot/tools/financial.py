@@ -1,273 +1,467 @@
 """
-Deterministic financial tools.
-All money math happens here, never in the LLM.
-"""
-import calendar
-from typing import Dict, List, Literal, Optional
+Deterministic financial tools. All money math happens here, never in the LLM.
 
-from pydantic import Field
+Layout: pure functions first (data in, data out, integer paise only, no DB, no clock), then
+thin handlers that fetch data and call them, then the ToolSpecs.
+
+Sign convention (see models/domain.py): debit amount_paise > 0, credit amount_paise < 0.
+
+Refund policy (decided 2026-09-30): credits are netted against spend *within their own
+category*, and a category's net spend is floored at 0 (a refund larger than this month's spend
+does not create negative spend). Uncategorised credits (salary, transfers in) are not spend and
+are excluded. Uncategorised debits form their own `None` bucket.
+"""
+
+import calendar
+from collections.abc import Callable, Iterable
+from datetime import datetime
+from typing import TYPE_CHECKING, Literal, Optional
+
+from pydantic import Field, model_validator
 
 from copilot.audit.events import record_event
-from copilot.core.timeutil import IST, month_bounds, now_utc
+from copilot.core.errors import ErrorCode, ToolFailure
+from copilot.core.timeutil import IST, month_bounds, now_utc, to_utc_iso
 from copilot.db.repo import (
+    get_account,
+    get_category,
     get_transaction,
+    list_accounts,
     list_budgets,
     list_transactions,
     update_transaction_category,
 )
+from copilot.models.domain import Id, Transaction, UtcTimestamp
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
+from copilot.tools.registry import register
+
+if TYPE_CHECKING:
+    from copilot.tools.executor import ExecutionContext
+
+# Earliest timestamp we treat as "all time" for balance queries.
+_EPOCH = "1970-01-01T00:00:00Z"
+
+BudgetState = Literal["ok", "warning", "exceeded"]
+
+# ---------------------------------------------------------------------------------------------
+# Pure functions
+# ---------------------------------------------------------------------------------------------
 
 
-# --- 1. get_transactions ---
+def net_spend_by_category(txs: Iterable[Transaction]) -> dict[Optional[str], int]:
+    """
+    Net spend per category in paise, following the module's refund policy.
+
+    Returns only buckets with spend > 0, keyed by category id (None = uncategorised).
+    """
+    net: dict[Optional[str], int] = {}
+    for tx in txs:
+        if tx.category_id is None and tx.direction == "credit":
+            continue  # uncategorised income is not spend
+        net[tx.category_id] = net.get(tx.category_id, 0) + tx.amount_paise
+    return {cat: total for cat, total in net.items() if total > 0}
+
+
+def budget_status(
+    spent_paise: int, limit_paise: int, warn_threshold_pct: int
+) -> tuple[Optional[int], BudgetState]:
+    """
+    Status of one budget, using integer comparisons only.
+
+    - exceeded: spent > limit (exactly at the limit is not exceeded)
+    - warning:  spent > 0 and spent * 100 >= warn_threshold_pct * limit
+    - ok:       otherwise
+    pct_used is floor(spent * 100 / limit), or None when the limit is 0.
+    """
+    pct_used = None if limit_paise == 0 else spent_paise * 100 // limit_paise
+    if spent_paise > limit_paise:
+        return pct_used, "exceeded"
+    if spent_paise > 0 and spent_paise * 100 >= warn_threshold_pct * limit_paise:
+        return pct_used, "warning"
+    return pct_used, "ok"
+
+
+def days_elapsed_in_month(year: int, month: int, now: datetime) -> int:
+    """
+    Days of (year, month) elapsed at `now`, counted in IST and including today.
+
+    0 for a future month, the full month length for a past month.
+    """
+    today = now.astimezone(IST).date()
+    days_in_month = calendar.monthrange(year, month)[1]
+    if (today.year, today.month) < (year, month):
+        return 0
+    if (today.year, today.month) > (year, month):
+        return days_in_month
+    return today.day
+
+
+def run_rate_forecast(spent_paise: int, days_elapsed: int, days_in_month: int) -> int:
+    """
+    Forecast month-end spend as spent / days_elapsed * days_in_month, rounded half up.
+
+    Limits: assumes spend is spread evenly over the month, so one large early purchase
+    (rent, fees) is extrapolated as if it repeats. Returns `spent_paise` when no day has
+    elapsed. Replace this function to plug in a better forecaster.
+    """
+    if spent_paise < 0:
+        raise ValueError("spent_paise must be >= 0")
+    if days_elapsed <= 0:
+        return spent_paise
+    numerator = spent_paise * days_in_month
+    return (2 * numerator + days_elapsed) // (2 * days_elapsed)
+
+
+def compute_balance(opening_balance_paise: int, txs: Iterable[Transaction]) -> int:
+    """Balance = opening balance - sum(amount_paise): debits (+) reduce it, credits (-) raise it."""
+    return opening_balance_paise - sum(tx.amount_paise for tx in txs)
+
+
+# ---------------------------------------------------------------------------------------------
+# Shared input shapes
+# ---------------------------------------------------------------------------------------------
+
+
+class MonthInput(ToolInput):
+    """A calendar month in IST."""
+
+    year: int = Field(ge=2000, le=2100)
+    month: int = Field(ge=1, le=12)
+
+
+# ---------------------------------------------------------------------------------------------
+# 1. get_transactions (READ)
+# ---------------------------------------------------------------------------------------------
+
+
 class GetTransactionsInput(ToolInput):
-    start_utc: str
-    end_utc: str
-    category_id: Optional[str] = None
-    limit: Optional[int] = Field(default=None, gt=0)
+    """Half-open UTC range [start_utc, end_utc) with optional filters."""
+
+    start_utc: UtcTimestamp
+    end_utc: UtcTimestamp
+    category_id: Optional[Id] = None
+    limit: Optional[int] = Field(default=None, ge=1, le=1000)
+
+    @model_validator(mode="after")
+    def _start_before_end(self) -> "GetTransactionsInput":
+        """Reject empty or inverted ranges."""
+        if self.start_utc >= self.end_utc:
+            raise ValueError("start_utc must be before end_utc")
+        return self
+
 
 class TransactionOutput(ToolOutput):
+    """The fields of a transaction an agent needs to see."""
+
     id: str
-    amount_paise: int
-    direction: str
-    merchant_raw: str
-    category_id: Optional[str]
     occurred_at: str
+    amount_paise: int
+    direction: Literal["debit", "credit"]
+    merchant_raw: str
+    description: str
+    category_id: Optional[str]
+    category_source: str
+
 
 class GetTransactionsOutput(ToolOutput):
-    transactions: List[TransactionOutput]
+    """Transactions, oldest first."""
+
+    transactions: list[TransactionOutput]
+
 
 def get_transactions_handler(
-    ctx, start_utc: str, end_utc: str, 
-    category_id: Optional[str] = None, limit: Optional[int] = None
-) -> dict:
-    txs = list_transactions(ctx.conn, ctx.user_id, start_utc, end_utc, category_id)
-    if limit is not None:
-        txs = txs[:limit]
-    
-    out_txs = [
-        {
-            "id": t.id, "amount_paise": t.amount_paise, "direction": t.direction, 
-            "merchant_raw": t.merchant_raw, "category_id": t.category_id, 
-            "occurred_at": t.occurred_at
-        }
-        for t in txs
-    ]
-    return {"transactions": out_txs}
+    ctx: "ExecutionContext",
+    start_utc: str,
+    end_utc: str,
+    category_id: Optional[str],
+    limit: Optional[int],
+) -> GetTransactionsOutput:
+    """Fetch the user's transactions in range."""
+    txs = list_transactions(ctx.conn, ctx.user_id, start_utc, end_utc, category_id, limit=limit)
+    return GetTransactionsOutput(
+        transactions=[
+            TransactionOutput(**tx.model_dump(include=set(TransactionOutput.model_fields)))
+            for tx in txs
+        ]
+    )
 
-# --- 2. get_balance ---
+
+# ---------------------------------------------------------------------------------------------
+# 2. get_balance (READ)
+# ---------------------------------------------------------------------------------------------
+
+
 class GetBalanceInput(ToolInput):
-    pass
+    """One account, or all of the user's accounts when omitted."""
+
+    account_id: Optional[Id] = None
+
 
 class GetBalanceOutput(ToolOutput):
+    """Balance as of `as_of_utc` (future-dated transactions are ignored)."""
+
     balance_paise: int
+    as_of_utc: str
+    account_ids: list[str]
 
-def get_balance_handler(ctx) -> dict:
-    """Calculate balance as sum of credits minus sum of debits."""
-    txs = list_transactions(ctx.conn, ctx.user_id, "1970-01-01T00:00:00Z", "9999-12-31T23:59:59Z")
-    
+
+def get_balance_handler(ctx: "ExecutionContext", account_id: Optional[str]) -> GetBalanceOutput:
+    """Opening balance(s) plus all transactions up to now."""
+    if account_id is not None:
+        account = get_account(ctx.conn, ctx.user_id, account_id)
+        if account is None:
+            raise ToolFailure(ErrorCode.NOT_FOUND, f"Account '{account_id}' not found.")
+        accounts = [account]
+    else:
+        accounts = list_accounts(ctx.conn, ctx.user_id)
+
+    as_of = to_utc_iso(now_utc(ctx.clock))
     balance = 0
-    for t in txs:
-        if t.direction == "credit":
-            balance += t.amount_paise
-        else:
-            balance -= t.amount_paise
-            
-    return {"balance_paise": balance}
+    for account in accounts:
+        txs = list_transactions(ctx.conn, ctx.user_id, _EPOCH, as_of, account_id=account.id)
+        balance += compute_balance(account.opening_balance_paise, txs)
+    return GetBalanceOutput(
+        balance_paise=balance, as_of_utc=as_of, account_ids=[a.id for a in accounts]
+    )
 
-# --- 3. aggregate_spend_by_category ---
-class AggregateSpendInput(ToolInput):
-    year: int
-    month: int
+
+# ---------------------------------------------------------------------------------------------
+# 3. aggregate_spend_by_category (READ)
+# ---------------------------------------------------------------------------------------------
+
 
 class CategoryTotal(ToolOutput):
-    category_id: Optional[str]  # None means uncategorized
+    """Net spend in one category (None = uncategorised)."""
+
+    category_id: Optional[str]
     total_spend_paise: int
 
+
 class AggregateSpendOutput(ToolOutput):
-    totals: List[CategoryTotal]
+    """Per-category net spend; the totals always sum to grand_total_spend_paise."""
+
+    totals: list[CategoryTotal]
     grand_total_spend_paise: int
 
-def aggregate_spend_by_category_handler(ctx, year: int, month: int) -> dict:
-    """Aggregate total spend per category. Excludes credits/refunds (only debits)."""
-    start_utc, end_utc = month_bounds(year, month)
-    txs = list_transactions(ctx.conn, ctx.user_id, start_utc, end_utc)
-    
-    totals: Dict[Optional[str], int] = {}
-    grand_total = 0
-    
-    for t in txs:
-        if t.direction == "debit":
-            totals[t.category_id] = totals.get(t.category_id, 0) + t.amount_paise
-            grand_total += t.amount_paise
-            
-    out = [{"category_id": cat, "total_spend_paise": amount} for cat, amount in totals.items()]
-    return {"totals": out, "grand_total_spend_paise": grand_total}
 
-# --- 4. check_budgets ---
-class CheckBudgetsInput(ToolInput):
-    year: int
-    month: int
+def aggregate_spend_by_category_handler(
+    ctx: "ExecutionContext", year: int, month: int
+) -> AggregateSpendOutput:
+    """Net spend per category for an IST calendar month."""
+    txs = list_transactions(ctx.conn, ctx.user_id, *month_bounds(year, month))
+    by_category = net_spend_by_category(txs)
+    # Stable order: named categories by id, uncategorised last.
+    ordered = sorted(by_category.items(), key=lambda item: (item[0] is None, item[0] or ""))
+    return AggregateSpendOutput(
+        totals=[CategoryTotal(category_id=c, total_spend_paise=t) for c, t in ordered],
+        grand_total_spend_paise=sum(by_category.values()),
+    )
 
-class BudgetStatus(ToolOutput):
+
+# ---------------------------------------------------------------------------------------------
+# 4. check_budgets (READ)
+# ---------------------------------------------------------------------------------------------
+
+
+class BudgetStatusOutput(ToolOutput):
+    """One budget's status for the month."""
+
     category_id: str
     spent_paise: int
     limit_paise: int
-    pct_used: int
-    status: Literal["ok", "warning", "exceeded"]
+    warn_threshold_pct: int
+    pct_used: Optional[int]
+    status: BudgetState
+
 
 class CheckBudgetsOutput(ToolOutput):
-    statuses: List[BudgetStatus]
+    """Every budget of the user, ordered by category."""
 
-def check_budgets_handler(ctx, year: int, month: int) -> dict:
-    start_utc, end_utc = month_bounds(year, month)
-    txs = list_transactions(ctx.conn, ctx.user_id, start_utc, end_utc)
-    budgets = list_budgets(ctx.conn, ctx.user_id)
-    
-    spend_by_cat: Dict[str, int] = {}
-    for t in txs:
-        if t.direction == "debit" and t.category_id:
-            spend_by_cat[t.category_id] = spend_by_cat.get(t.category_id, 0) + t.amount_paise
-            
-    out = []
-    for b in budgets:
-        spent = spend_by_cat.get(b.category_id, 0)
-        pct_used = (
-            int((spent / b.limit_paise) * 100) if b.limit_paise > 0 
-            else (100 if spent > 0 else 0)
+    statuses: list[BudgetStatusOutput]
+
+
+def check_budgets_handler(ctx: "ExecutionContext", year: int, month: int) -> CheckBudgetsOutput:
+    """Compare each budget with the month's net spend in its category."""
+    txs = list_transactions(ctx.conn, ctx.user_id, *month_bounds(year, month))
+    spend = net_spend_by_category(txs)
+    statuses = []
+    for budget in list_budgets(ctx.conn, ctx.user_id):
+        spent = spend.get(budget.category_id, 0)
+        pct_used, status = budget_status(spent, budget.limit_paise, budget.warn_threshold_pct)
+        statuses.append(
+            BudgetStatusOutput(
+                category_id=budget.category_id,
+                spent_paise=spent,
+                limit_paise=budget.limit_paise,
+                warn_threshold_pct=budget.warn_threshold_pct,
+                pct_used=pct_used,
+                status=status,
+            )
         )
-        
-        status = "ok"
-        if spent > b.limit_paise:
-            status = "exceeded"
-        elif pct_used >= b.warn_threshold_pct:
-            status = "warning"
-            
-        out.append({
-            "category_id": b.category_id,
-            "spent_paise": spent,
-            "limit_paise": b.limit_paise,
-            "pct_used": pct_used,
-            "status": status
-        })
-        
-    return {"statuses": out}
+    return CheckBudgetsOutput(statuses=statuses)
 
-# --- 5. forecast_category_spend ---
-class ForecastInput(ToolInput):
-    year: int
-    month: int
-    category_id: str
+
+# ---------------------------------------------------------------------------------------------
+# 5. forecast_category_spend (READ)
+# ---------------------------------------------------------------------------------------------
+
+
+class ForecastInput(MonthInput):
+    """Month plus the category to forecast."""
+
+    category_id: Id
+
 
 class ForecastOutput(ToolOutput):
+    """Run-rate projection and the numbers it was computed from."""
+
+    method: Literal["run_rate"]
     projected_spend_paise: int
     spent_so_far_paise: int
     days_elapsed: int
     days_in_month: int
 
-def forecast_category_spend_handler(ctx, year: int, month: int, category_id: str) -> dict:
-    """
-    Simple deterministic run-rate forecast.
-    """
-    start_utc, end_utc = month_bounds(year, month)
-    txs = list_transactions(ctx.conn, ctx.user_id, start_utc, end_utc, category_id)
-    
-    spent = sum(t.amount_paise for t in txs if t.direction == "debit")
-    
-    days_in_month = calendar.monthrange(year, month)[1]
-    
-    current_utc = now_utc(ctx.clock)
-    current_ist = current_utc.astimezone(IST)
-    
-    if current_ist.year > year or (current_ist.year == year and current_ist.month > month):
-        days_elapsed = days_in_month
-    elif current_ist.year < year or (current_ist.year == year and current_ist.month < month):
-        days_elapsed = 0
-    else:
-        days_elapsed = current_ist.day
-        
-    if days_elapsed == 0:
-        projected = 0
-    else:
-        projected = int((spent / days_elapsed) * days_in_month)
-        
-    return {
-        "projected_spend_paise": projected,
-        "spent_so_far_paise": spent,
-        "days_elapsed": days_elapsed,
-        "days_in_month": days_in_month
-    }
 
-# --- 6. recategorize_transaction ---
+def forecast_category_spend_handler(
+    ctx: "ExecutionContext", year: int, month: int, category_id: str
+) -> ForecastOutput:
+    """Project month-end net spend for one category (see `run_rate_forecast` for limits)."""
+    if get_category(ctx.conn, ctx.user_id, category_id) is None:
+        raise ToolFailure(ErrorCode.NOT_FOUND, f"Category '{category_id}' not found.")
+    txs = list_transactions(ctx.conn, ctx.user_id, *month_bounds(year, month), category_id)
+    spent = net_spend_by_category(txs).get(category_id, 0)
+    days_in_month = calendar.monthrange(year, month)[1]
+    elapsed = days_elapsed_in_month(year, month, now_utc(ctx.clock))
+    return ForecastOutput(
+        method="run_rate",
+        projected_spend_paise=run_rate_forecast(spent, elapsed, days_in_month),
+        spent_so_far_paise=spent,
+        days_elapsed=elapsed,
+        days_in_month=days_in_month,
+    )
+
+
+# ---------------------------------------------------------------------------------------------
+# 6. recategorize_transaction (WRITE_LOGICAL, needs approval per policy)
+# ---------------------------------------------------------------------------------------------
+
+
 class RecategorizeInput(ToolInput):
-    transaction_id: str
-    new_category_id: Optional[str]
+    """Move one transaction to another category (None = uncategorised)."""
+
+    transaction_id: Id
+    new_category_id: Optional[Id]
+
 
 class RecategorizeOutput(ToolOutput):
-    success: bool
+    """What changed, and the audit event that holds the undo information."""
+
+    transaction_id: str
+    previous_category_id: Optional[str]
+    new_category_id: Optional[str]
+    audit_event_id: str
+
 
 def recategorize_transaction_handler(
-    ctx, transaction_id: str, new_category_id: Optional[str]
-) -> dict:
+    ctx: "ExecutionContext", transaction_id: str, new_category_id: Optional[str]
+) -> RecategorizeOutput:
+    """
+    Set a transaction's category (source 'user', confidence 1.0) and audit before/after.
+
+    The before state holds every field changed, so the event alone is enough to undo it.
+    Runs inside the executor's savepoint: the update and the audit event commit together.
+    """
     tx = get_transaction(ctx.conn, ctx.user_id, transaction_id)
-    if not tx:
-        raise ValueError(f"Transaction {transaction_id} not found")
-        
+    if tx is None:
+        raise ToolFailure(ErrorCode.NOT_FOUND, f"Transaction '{transaction_id}' not found.")
+    if new_category_id is not None and get_category(ctx.conn, ctx.user_id, new_category_id) is None:
+        raise ToolFailure(ErrorCode.NOT_FOUND, f"Category '{new_category_id}' not found.")
+
     before = {
-        "category_id": tx.category_id, 
-        "category_source": tx.category_source, 
-        "category_confidence": tx.category_confidence
+        "category_id": tx.category_id,
+        "category_source": tx.category_source,
+        "category_confidence": tx.category_confidence,
     }
-    
-    update_transaction_category(
-        ctx.conn, ctx.user_id, transaction_id, new_category_id, "user", 1.0
-    )
-    
     after = {"category_id": new_category_id, "category_source": "user", "category_confidence": 1.0}
-    
-    record_event(
+    update_transaction_category(ctx.conn, ctx.user_id, transaction_id, new_category_id, "user", 1.0)
+    event_id = record_event(
         ctx.conn,
         user_id=ctx.user_id,
-        actor="agent",
-        event_type="recategorize_transaction",
-        reason="User requested recategorization via tool",
+        actor=ctx.actor,
+        event_type="transaction_recategorized",
+        reason="Transaction category changed via recategorize_transaction.",
         run_id=ctx.run_id,
         entity_type="transaction",
         entity_id=transaction_id,
         before_data=before,
-        after_data=after
+        after_data=after,
+        clock=ctx.clock,
     )
-    
-    return {"success": True}
+    return RecategorizeOutput(
+        transaction_id=transaction_id,
+        previous_category_id=tx.category_id,
+        new_category_id=new_category_id,
+        audit_event_id=event_id,
+    )
 
-# --- Registration Helper ---
-def register_financial_tools(registry_register):
-    registry_register(ToolSpec(
-        name="get_transactions", description="Get transactions",
-        input_model=GetTransactionsInput, output_model=GetTransactionsOutput,
-        side_effect=SideEffect.READ, handler=get_transactions_handler
-    ))
-    registry_register(ToolSpec(
-        name="get_balance", description="Get balance",
-        input_model=GetBalanceInput, output_model=GetBalanceOutput,
-        side_effect=SideEffect.READ, handler=get_balance_handler
-    ))
-    registry_register(ToolSpec(
-        name="aggregate_spend_by_category", description="Aggregate spend",
-        input_model=AggregateSpendInput, output_model=AggregateSpendOutput,
-        side_effect=SideEffect.READ, handler=aggregate_spend_by_category_handler
-    ))
-    registry_register(ToolSpec(
-        name="check_budgets", description="Check budgets",
-        input_model=CheckBudgetsInput, output_model=CheckBudgetsOutput,
-        side_effect=SideEffect.READ, handler=check_budgets_handler
-    ))
-    registry_register(ToolSpec(
-        name="forecast_category_spend", description="Forecast spend",
-        input_model=ForecastInput, output_model=ForecastOutput,
-        side_effect=SideEffect.READ, handler=forecast_category_spend_handler
-    ))
-    registry_register(ToolSpec(
-        name="recategorize_transaction", description="Recategorize a transaction",
-        input_model=RecategorizeInput, output_model=RecategorizeOutput,
-        side_effect=SideEffect.WRITE_LOGICAL, handler=recategorize_transaction_handler
-    ))
+
+# ---------------------------------------------------------------------------------------------
+# Registration
+# ---------------------------------------------------------------------------------------------
+
+FINANCIAL_TOOLS: tuple[ToolSpec, ...] = (
+    ToolSpec(
+        name="get_transactions",
+        description="List the user's transactions in a UTC time range, optionally by category.",
+        input_model=GetTransactionsInput,
+        output_model=GetTransactionsOutput,
+        side_effect=SideEffect.READ,
+        handler=get_transactions_handler,
+    ),
+    ToolSpec(
+        name="get_balance",
+        description="Current balance of one account or all accounts, in paise.",
+        input_model=GetBalanceInput,
+        output_model=GetBalanceOutput,
+        side_effect=SideEffect.READ,
+        handler=get_balance_handler,
+    ),
+    ToolSpec(
+        name="aggregate_spend_by_category",
+        description="Net spend per category for an IST calendar month, in paise.",
+        input_model=MonthInput,
+        output_model=AggregateSpendOutput,
+        side_effect=SideEffect.READ,
+        handler=aggregate_spend_by_category_handler,
+    ),
+    ToolSpec(
+        name="check_budgets",
+        description="Status (ok / warning / exceeded) of every monthly budget.",
+        input_model=MonthInput,
+        output_model=CheckBudgetsOutput,
+        side_effect=SideEffect.READ,
+        handler=check_budgets_handler,
+    ),
+    ToolSpec(
+        name="forecast_category_spend",
+        description="Run-rate forecast of month-end spend for one category.",
+        input_model=ForecastInput,
+        output_model=ForecastOutput,
+        side_effect=SideEffect.READ,
+        handler=forecast_category_spend_handler,
+    ),
+    ToolSpec(
+        name="recategorize_transaction",
+        description="Change a transaction's category; audited and reversible.",
+        input_model=RecategorizeInput,
+        output_model=RecategorizeOutput,
+        side_effect=SideEffect.WRITE_LOGICAL,
+        handler=recategorize_transaction_handler,
+    ),
+)
+
+
+def register_financial_tools(register_fn: Callable[[ToolSpec], None] = register) -> None:
+    """Register every financial tool (into the global registry by default)."""
+    for spec in FINANCIAL_TOOLS:
+        register_fn(spec)

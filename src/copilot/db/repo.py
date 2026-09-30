@@ -8,7 +8,61 @@ unit of work in `copilot.db.connection.savepoint`.
 import sqlite3
 from typing import Optional
 
-from copilot.models.domain import Budget, Transaction
+from copilot.models.domain import Account, Budget, Category, Transaction, User
+
+
+def insert_user(conn: sqlite3.Connection, user: User) -> None:
+    """Insert a new user."""
+    conn.execute("INSERT INTO users (id, created_at) VALUES (?, ?)", (user.id, user.created_at))
+
+
+def insert_account(conn: sqlite3.Connection, account: Account) -> None:
+    """Insert a new account."""
+    conn.execute(
+        """
+        INSERT INTO accounts (id, user_id, name, opening_balance_paise, created_at)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (
+            account.id,
+            account.user_id,
+            account.name,
+            account.opening_balance_paise,
+            account.created_at,
+        ),
+    )
+
+
+def get_account(conn: sqlite3.Connection, user_id: str, account_id: str) -> Optional[Account]:
+    """Get an account by ID, or None if it does not exist for this user."""
+    row = conn.execute(
+        "SELECT * FROM accounts WHERE id = ? AND user_id = ?", (account_id, user_id)
+    ).fetchone()
+    return Account(**dict(row)) if row else None
+
+
+def list_accounts(conn: sqlite3.Connection, user_id: str) -> list[Account]:
+    """List all accounts for a user, ordered by id."""
+    rows = conn.execute(
+        "SELECT * FROM accounts WHERE user_id = ? ORDER BY id", (user_id,)
+    ).fetchall()
+    return [Account(**dict(row)) for row in rows]
+
+
+def insert_category(conn: sqlite3.Connection, category: Category) -> None:
+    """Insert a new category."""
+    conn.execute(
+        "INSERT INTO categories (id, user_id, name, created_at) VALUES (?, ?, ?, ?)",
+        (category.id, category.user_id, category.name, category.created_at),
+    )
+
+
+def get_category(conn: sqlite3.Connection, user_id: str, category_id: str) -> Optional[Category]:
+    """Get a category by ID, or None if it does not exist for this user."""
+    row = conn.execute(
+        "SELECT * FROM categories WHERE id = ? AND user_id = ?", (category_id, user_id)
+    ).fetchone()
+    return Category(**dict(row)) if row else None
 
 
 def insert_transaction(conn: sqlite3.Connection, tx: Transaction) -> None:
@@ -52,17 +106,29 @@ def list_transactions(
     start: str,
     end: str,
     category_id: Optional[str] = None,
+    account_id: Optional[str] = None,
+    limit: Optional[int] = None,
 ) -> list[Transaction]:
-    """List a user's transactions with start <= occurred_at < end, oldest first."""
+    """
+    List a user's transactions with start <= occurred_at < end, oldest first.
+
+    Optional filters: category, account, and a maximum row count.
+    """
     query = """
         SELECT * FROM transactions
         WHERE user_id = ? AND occurred_at >= ? AND occurred_at < ?
     """
-    params: list[str] = [user_id, start, end]
+    params: list[str | int] = [user_id, start, end]
     if category_id is not None:
         query += " AND category_id = ?"
         params.append(category_id)
+    if account_id is not None:
+        query += " AND account_id = ?"
+        params.append(account_id)
     query += " ORDER BY occurred_at ASC, id ASC"
+    if limit is not None:
+        query += " LIMIT ?"
+        params.append(limit)
     rows = conn.execute(query, params).fetchall()
     return [Transaction(**dict(row)) for row in rows]
 
