@@ -117,19 +117,19 @@ BEGIN
     SELECT RAISE(ABORT, 'audit_events is append-only, an existing id cannot be re-inserted');
 END;
 
--- memory_entries schema (Step 8)
+-- Long-term memory (Step 8): schema plus insert/list only; no retrieval or decay yet.
 CREATE TABLE memory_entries (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id),
     kind TEXT NOT NULL CHECK (kind IN ('preference', 'pattern', 'feedback')),
-    content TEXT NOT NULL,
+    content TEXT NOT NULL CHECK (length(trim(content)) > 0),
     source TEXT NOT NULL CHECK (source IN ('user_stated', 'observed', 'inferred')),
     confidence REAL NOT NULL CHECK (confidence >= 0.0 AND confidence <= 1.0),
     created_at TEXT NOT NULL CHECK (created_at GLOB
         '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z'),
     last_confirmed_at TEXT NOT NULL CHECK (last_confirmed_at GLOB
         '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z'),
-    provenance TEXT NOT NULL
+    provenance TEXT NOT NULL CHECK (length(trim(provenance)) > 0)
 ) STRICT;
 
 -- Reserved for later phase, no logic yet

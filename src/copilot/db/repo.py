@@ -8,6 +8,7 @@ unit of work in `copilot.db.connection.savepoint`.
 import sqlite3
 
 from copilot.models.domain import Account, Budget, Category, Transaction, User
+from copilot.models.memory import MemoryEntry
 
 
 def insert_user(conn: sqlite3.Connection, user: User) -> None:
@@ -177,3 +178,39 @@ def update_transaction_category(
         (category_id, category_source, category_confidence, tx_id, user_id),
     )
     return cursor.rowcount == 1
+
+
+def insert_memory_entry(conn: sqlite3.Connection, entry: MemoryEntry) -> None:
+    """Insert a memory entry."""
+    conn.execute(
+        """
+        INSERT INTO memory_entries (
+            id, user_id, kind, content, source, confidence,
+            created_at, last_confirmed_at, provenance
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            entry.id,
+            entry.user_id,
+            entry.kind,
+            entry.content,
+            entry.source,
+            entry.confidence,
+            entry.created_at,
+            entry.last_confirmed_at,
+            entry.provenance,
+        ),
+    )
+
+
+def list_memory_entries(
+    conn: sqlite3.Connection, user_id: str, kind: str | None = None
+) -> list[MemoryEntry]:
+    """List a user's memory entries (optionally one kind), oldest first. No ranking."""
+    query = "SELECT * FROM memory_entries WHERE user_id = ?"
+    params: list[str] = [user_id]
+    if kind is not None:
+        query += " AND kind = ?"
+        params.append(kind)
+    query += " ORDER BY created_at ASC, id ASC"
+    return [MemoryEntry(**dict(row)) for row in conn.execute(query, params).fetchall()]

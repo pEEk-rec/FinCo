@@ -84,3 +84,16 @@ What was built: `bank/synth.py` generates months of hostel-student UPI activity 
 Why: messy narrations are the input Phase 1 categorisation must handle, and known anomalies give later anomaly detection a ground truth to be scored against. Parsing a separate record format exercises the boundary where a real connector's data enters the system.
 Loader rules: one savepoint per sync (the batch and its audit event are all-or-nothing), a malformed record fails the whole batch with INVALID_INPUT, and records already stored (same id) are skipped so a re-sync never duplicates. The planted duplicate charge has its own id, so it is loaded, as a real double charge would be.
 Not doing: no categorisation, no anomaly detection, no network, and generated data is never written to the repo.
+
+## Step 8: RunState, memory schema, planner interface
+What was built: `RunState` (per-run, in memory, `schema_version` pinned to 1 so an unknown version fails to load), `summarize_tool_result` to store JSON-safe tool summaries, and `to_llm_projection(state, fields)` which returns only the requested fields and rejects unknown names. `MemoryEntry` requires kind, source, confidence and non-blank provenance (also CHECKed in SQL), with `insert_memory_entry` / `list_memory_entries` only. `planner/router.py` defines the `Planner` protocol and `TrivialRouter`, a Phase 2 placeholder that matches whole words and only plans READ tools.
+Why: per-run state and persistent financial state stay separate (PLAN section 2), and projections keep LLM context small and deliberate.
+Not doing: memory retrieval, ranking, decay or confidence updates (Phase 3); real planning (Phase 2); the router never plans write tools.
+
+### Confidence convention
+Confidence is a threshold signal for "act / ask / ignore", not a calibrated probability.
+- User-stated or user-corrected: 1.0.
+- Deterministic rule match (e.g. a merchant rule in Phase 1): 0.9.
+- LLM-only judgement: capped at 0.7, whatever the model claims, so it can never reach the "act without asking" band on its own.
+- Observed pattern (memory): starts at 0.5 and is only raised by user confirmation (Phase 3).
+- No signal: null, never 0.0 (0.0 would mean "confidently wrong").
