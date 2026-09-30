@@ -62,3 +62,8 @@ What it is deliberately not doing: Phase 0 is complete. No external APIs or ORMs
 What changed: money helpers reject `bool` (a subclass of `int`), floats for the paise argument of `safe_percent`, NaN/Infinity, exponent and underscore strings; all bad input now raises a clear `TypeError`/`ValueError`. `from_utc_iso` rejects strings with no offset, and `normalize_utc_iso` produces the one canonical storage form (`YYYY-MM-DDTHH:MM:SSZ`).
 Why: `rupees_to_paise(True)` returned 100 and `safe_percent(100.7, 10)` accepted a float amount. A naive timestamp silently read as UTC would shift IST month boundaries by 5.5 hours.
 Rounding: `ROUND_HALF_UP` in `decimal` is half away from zero, so refunds round symmetrically (-12.5 -> -13).
+
+### Caller-owned transactions
+What changed: repo and audit functions no longer call `commit()`. `db.connection.savepoint(conn)` marks a unit of work: at top level it commits on exit, inside a caller's transaction it nests, and on any exception it undoes everything since entry. `execute_tool` runs the handler, output validation and the success audit event inside one savepoint. `update_transaction_category` returns False when no row matched.
+Why: each function committed on its own, so a category change could be saved while its audit event failed, leaving a change with no audit trail. It also meant a failed handler left half-written state behind.
+Not doing: no connection pool or retry on `database is locked`; Phase 0 is single-process.
