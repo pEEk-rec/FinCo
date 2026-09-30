@@ -78,3 +78,9 @@ Refund policy: credits net against spend in their own category, floored at 0; un
 Budget rules: `exceeded` only when spent > limit; `warning` when spent > 0 and spent*100 >= warn%*limit; `pct_used` is floored and None for a zero limit.
 Balance: opening balance minus the sum of amounts, counting only transactions up to "now" (the context clock).
 Not doing: forecasting beyond a straight run rate; `run_rate_forecast` is the single place to swap in a better method.
+
+## Step 7: Mock bank connector and synthetic data
+What was built: `bank/synth.py` generates months of hostel-student UPI activity (mess, food delivery, canteen, travel, recharge, printouts, monthly pocket money) from one `random.Random(seed)`, with ids drawn from the same generator and a fixed start month, so the same seed gives identical output. Three anomalies are planted in the last month and returned as `ground_truth`: a large electronics purchase, a duplicate charge 2 minutes apart, and a first purchase at a new merchant. `bank/mock_bank.py` serves these as raw records in an invented external format (rupee strings, DR/CR, narration) and can simulate an outage. `bank/loader.py` parses records with `rupees_to_paise` and stores them with `category_source = none`.
+Why: messy narrations are the input Phase 1 categorisation must handle, and known anomalies give later anomaly detection a ground truth to be scored against. Parsing a separate record format exercises the boundary where a real connector's data enters the system.
+Loader rules: one savepoint per sync (the batch and its audit event are all-or-nothing), a malformed record fails the whole batch with INVALID_INPUT, and records already stored (same id) are skipped so a re-sync never duplicates. The planted duplicate charge has its own id, so it is loaded, as a real double charge would be.
+Not doing: no categorisation, no anomaly detection, no network, and generated data is never written to the repo.
