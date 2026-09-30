@@ -44,17 +44,10 @@ What was built: Tool handlers for reading transactions, getting balances, aggreg
 Why it was designed this way: All mathematical and business logic is handled in deterministic Python code so the LLM is only responsible for intent routing, preventing hallucinations in numbers.
 What it is deliberately not doing: No LLM calls are made inside the tools. Tools don't decide their own governance—they rely entirely on the executor.
 
-## Step 7: Local chat loop and LLM stub
-What was built: `cli.py` as a local entrypoint and `agent/loop.py` that stubs the LLM. 
-Why it was designed this way: A mock LLM isolates the agent architecture logic from network unreliability, API costs, or prompt hacking during Phase 0 hardening. The stub routes simple regex strings to tool calls.
-What it is deliberately not doing: No actual API calls to an LLM provider are made yet. No conversational memory exists beyond passing the current input string to the stub.
-
-## Step 8: Final Phase 0 testing and lockdown
-What was built: End-to-end integration tests that spin up the whole stack in-memory and execute a simulated user session.
-Why it was designed this way: A single test verifies all layers (domain, db, tools, execution, policy, and audit) work together synchronously before any AI variability is introduced.
-What it is deliberately not doing: Phase 0 is complete. No external APIs or ORMs will be introduced. Phase 1 will be built on top of this impenetrable core.
-
-
+## Removed: chat loop and CLI (built out of plan order)
+What happened: `cli.py`, `agent/loop.py` and an end-to-end test were built in place of PLAN Steps 7 and 8, and this log briefly claimed "Phase 0 is complete".
+Why it was removed: PLAN section 5 forbids a chat interface in Phase 0. The loop also routed "recategorize transaction ..." to `get_transactions`, formatted money with float division, and its CLI approval re-ran whatever the previous message was. `test_no_orms_present` could never pass (`pytest.raises` around `pass`).
+What replaces it: the keyword-routing idea becomes Step 8's `TrivialRouter`; end-to-end coverage becomes Step 10's golden scenarios. Steps 7 to 10 are still to be built as specified.
 
 ## Review fixes (Steps 0-3 hardening)
 
