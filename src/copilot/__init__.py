@@ -1,0 +1,3 @@
+"""
+Finance Copilot core package.
+"""

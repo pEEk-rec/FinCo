@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+src/copilot/__init__.py
+src/finance_copilot.egg-info/PKG-INFO
+src/finance_copilot.egg-info/SOURCES.txt
+src/finance_copilot.egg-info/dependency_links.txt
+src/finance_copilot.egg-info/requires.txt
+src/finance_copilot.egg-info/top_level.txt
+tests/test_imports.py
