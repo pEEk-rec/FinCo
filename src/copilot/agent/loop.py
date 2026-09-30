@@ -59,7 +59,7 @@ def run_turn(ctx: ExecutionContext, user_msg: str, approved: bool = False) -> st
             return f"You have {count} transactions in the current period."
         elif tool_name == "check_budgets":
             statuses = result.data.statuses # type: ignore
-            exceeded = [s for s in statuses if s["status"] == "exceeded"] # type: ignore
+            exceeded = [s for s in statuses if s.status == "exceeded"] # type: ignore
             if exceeded:
                 return f"Warning: {len(exceeded)} budgets exceeded."
             return "All budgets are looking good."

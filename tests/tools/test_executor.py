@@ -20,7 +20,9 @@ def read_handler(ctx, val: int) -> dict:
     return {"result": val * 2}
 
 def write_handler(ctx, val: int) -> dict:
-    ctx.conn.execute("INSERT INTO users (id, created_at) VALUES ('new_user', 'now')")
+    ctx.conn.execute(
+        "INSERT INTO users (id, created_at) VALUES ('new_user', '2023-01-01T00:00:00Z')"
+    )
     return {"result": val}
 
 def error_handler(ctx, val: int) -> dict:

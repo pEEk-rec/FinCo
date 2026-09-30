@@ -49,6 +49,11 @@ What was built: `cli.py` as a local entrypoint and `agent/loop.py` that stubs th
 Why it was designed this way: A mock LLM isolates the agent architecture logic from network unreliability, API costs, or prompt hacking during Phase 0 hardening. The stub routes simple regex strings to tool calls.
 What it is deliberately not doing: No actual API calls to an LLM provider are made yet. No conversational memory exists beyond passing the current input string to the stub.
 
+## Step 8: Final Phase 0 testing and lockdown
+What was built: End-to-end integration tests that spin up the whole stack in-memory and execute a simulated user session.
+Why it was designed this way: A single test verifies all layers (domain, db, tools, execution, policy, and audit) work together synchronously before any AI variability is introduced.
+What it is deliberately not doing: Phase 0 is complete. No external APIs or ORMs will be introduced. Phase 1 will be built on top of this impenetrable core.
+
 
 
 ## Review fixes (Steps 0-3 hardening)
