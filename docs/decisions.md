@@ -29,5 +29,11 @@ What was built: An append-only audit log in SQLite with functions to record and 
 Why it was designed this way: A reliable audit trail is critical for safety. SQLite `BEFORE UPDATE` and `BEFORE DELETE` triggers enforce the append-only constraint at the database level so bugs cannot mutate history.
 What it is deliberately not doing: No hash-chaining or event-sourced architecture is implemented; a simple table with triggers is sufficient for Phase 0.
 
+## Step 4: Tool contracts and registry
+What was built: Pydantic-based definitions for tools (`ToolSpec`) and error types (`ErrorCode`, `ToolError`), plus a basic in-memory registry.
+Why it was designed this way: A declarative tool specification ensures inputs and outputs are automatically validated by Pydantic, while side effects are rigidly categorized to allow granular governance checks later.
+What it is deliberately not doing: The registry does not execute tools itself or handle any governance—that logic is deferred to the executor choke point. No money-moving side effect type is defined.
+
+
 
 
