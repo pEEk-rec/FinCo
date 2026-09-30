@@ -52,7 +52,35 @@ CREATE TABLE budgets (
     FOREIGN KEY(category_id) REFERENCES categories(id)
 );
 
--- audit_events created in Step 3
+CREATE TABLE audit_events (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    run_id TEXT,
+    occurred_at TEXT NOT NULL,
+    actor TEXT NOT NULL CHECK(actor IN ('user', 'agent', 'system')),
+    event_type TEXT NOT NULL,
+    entity_type TEXT,
+    entity_id TEXT,
+    before_json TEXT,
+    after_json TEXT,
+    reason TEXT NOT NULL,
+    policy_decision TEXT CHECK(policy_decision IN ('allow', 'deny', 'needs_approval')),
+    metadata_json TEXT,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+CREATE TRIGGER trg_audit_events_no_update
+BEFORE UPDATE ON audit_events
+BEGIN
+    SELECT RAISE(ABORT, 'audit_events is append-only, UPDATE is not allowed');
+END;
+
+CREATE TRIGGER trg_audit_events_no_delete
+BEFORE DELETE ON audit_events
+BEGIN
+    SELECT RAISE(ABORT, 'audit_events is append-only, DELETE is not allowed');
+END;
+
 -- memory_entries schema (Step 8)
 CREATE TABLE memory_entries (
     id TEXT PRIMARY KEY,

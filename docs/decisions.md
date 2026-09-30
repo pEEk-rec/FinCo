@@ -24,4 +24,10 @@ What was built: Pydantic models for core entities (User, Account, Category, Tran
 Why it was designed this way: A raw SQLite schema avoids the overhead of an ORM while providing strong guarantees (e.g., negative budget limit prevention, foreign keys). `user_id` is mandatory on all tables to enforce data boundaries natively.
 What it is deliberately not doing: No goals or virtual buckets logic is implemented; the tables are just reserved. No ORM is used.
 
+## Step 3: Audit event log
+What was built: An append-only audit log in SQLite with functions to record and query events.
+Why it was designed this way: A reliable audit trail is critical for safety. SQLite `BEFORE UPDATE` and `BEFORE DELETE` triggers enforce the append-only constraint at the database level so bugs cannot mutate history.
+What it is deliberately not doing: No hash-chaining or event-sourced architecture is implemented; a simple table with triggers is sufficient for Phase 0.
+
+
 
