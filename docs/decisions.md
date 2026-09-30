@@ -67,3 +67,8 @@ Rounding: `ROUND_HALF_UP` in `decimal` is half away from zero, so refunds round 
 What changed: repo and audit functions no longer call `commit()`. `db.connection.savepoint(conn)` marks a unit of work: at top level it commits on exit, inside a caller's transaction it nests, and on any exception it undoes everything since entry. `execute_tool` runs the handler, output validation and the success audit event inside one savepoint. `update_transaction_category` returns False when no row matched.
 Why: each function committed on its own, so a category change could be saved while its audit event failed, leaving a change with no audit trail. It also meant a failed handler left half-written state behind.
 Not doing: no connection pool or retry on `database is locked`; Phase 0 is single-process.
+
+### Audit log hardening
+What changed: a `BEFORE INSERT` trigger rejects re-inserting an existing audit id; `record_event` validates actor, decision, non-empty type/reason and JSON-serialisability before writing, and takes an optional `clock`; `list_events` returns typed `AuditEvent` models (JSON decoded) ordered by `occurred_at` then `rowid`.
+Why: `INSERT OR REPLACE` overwrote an audit row because SQLite does not fire DELETE triggers for REPLACE. Timestamps are second-precision, so same-second events needed a deterministic tie-breaker.
+Known limit: a process with raw write access can still `DROP TRIGGER`. Triggers protect against bugs in our code, not against a hostile database owner; hash-chaining is deferred (section 5).

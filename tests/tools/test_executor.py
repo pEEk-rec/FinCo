@@ -99,9 +99,9 @@ def test_read_tool_allowed_and_audited(ctx):
 
     events = list_events(ctx.conn, "u1")
     assert len(events) == 1
-    assert events[0]["event_type"] == "tool_execution"
-    assert events[0]["policy_decision"] == "allow"
-    assert events[0]["entity_id"] == "read_tool"
+    assert events[0].event_type == "tool_execution"
+    assert events[0].policy_decision == "allow"
+    assert events[0].entity_id == "read_tool"
 
 
 def test_write_tool_blocked_without_approval(ctx):
@@ -115,7 +115,7 @@ def test_write_tool_blocked_without_approval(ctx):
 
     events = list_events(ctx.conn, "u1")
     assert len(events) == 1
-    assert events[0]["policy_decision"] == "needs_approval"
+    assert events[0].policy_decision == "needs_approval"
 
 
 def test_write_tool_runs_with_approval(ctx):
@@ -154,7 +154,7 @@ def test_handler_exception_returns_failure(ctx):
 
     events = list_events(ctx.conn, "u1")
     assert len(events) == 1
-    assert "failed" in events[0]["reason"]
+    assert "failed" in events[0].reason
 
 
 def test_no_money_movement_tools_registered():
@@ -197,7 +197,7 @@ def test_failed_handler_writes_are_rolled_back(ctx):
     assert result.error.code == ErrorCode.TOOL_FAILURE
     assert ctx.conn.execute("SELECT COUNT(*) FROM users WHERE id = 'ghost'").fetchone()[0] == 0
     # The failure itself is still audited
-    assert [e["policy_decision"] for e in list_events(ctx.conn, "u1")] == ["allow"]
+    assert [e.policy_decision for e in list_events(ctx.conn, "u1")] == ["allow"]
 
 
 def test_invalid_output_rolls_back_handler_writes(ctx):

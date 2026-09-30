@@ -108,6 +108,15 @@ BEGIN
     SELECT RAISE(ABORT, 'audit_events is append-only, DELETE is not allowed');
 END;
 
+-- INSERT OR REPLACE deletes the old row without firing DELETE triggers, so block re-inserting
+-- an existing id before the conflict is resolved.
+CREATE TRIGGER trg_audit_events_no_replace
+BEFORE INSERT ON audit_events
+WHEN EXISTS (SELECT 1 FROM audit_events WHERE id = NEW.id)
+BEGIN
+    SELECT RAISE(ABORT, 'audit_events is append-only, an existing id cannot be re-inserted');
+END;
+
 -- memory_entries schema (Step 8)
 CREATE TABLE memory_entries (
     id TEXT PRIMARY KEY,

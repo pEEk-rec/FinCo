@@ -1,39 +1,91 @@
 """
-Audit log implementation enforcing append-only semantics.
+Append-only audit log.
+
+There are deliberately no update or delete functions, and database triggers reject UPDATE,
+DELETE and re-INSERT of an existing id (which is how `INSERT OR REPLACE` would overwrite a row).
+`record_event` does not commit: it joins the caller's unit of work so a state change and its
+audit event are saved together.
 """
 
 import json
 import sqlite3
 import uuid
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any, Literal, Optional
+
+from pydantic import BaseModel
 
 from copilot.core.timeutil import now_utc, to_utc_iso
+
+Actor = Literal["user", "agent", "system"]
+PolicyDecision = Literal["allow", "deny", "needs_approval"]
+_ACTORS = ("user", "agent", "system")
+_DECISIONS = ("allow", "deny", "needs_approval")
+
+
+class AuditEvent(BaseModel):
+    """One audit row, with the JSON columns decoded back into Python values."""
+
+    id: str
+    user_id: str
+    run_id: Optional[str]
+    occurred_at: str
+    actor: Actor
+    event_type: str
+    entity_type: Optional[str]
+    entity_id: Optional[str]
+    before: Optional[Any]
+    after: Optional[Any]
+    reason: str
+    policy_decision: Optional[PolicyDecision]
+    metadata: Optional[Any]
+
+
+def _to_json(value: Optional[Any], field: str) -> Optional[str]:
+    """Serialise a JSON-compatible value (stable key order); raise TypeError otherwise."""
+    if value is None:
+        return None
+    try:
+        return json.dumps(value, sort_keys=True, ensure_ascii=False)
+    except (TypeError, ValueError) as exc:
+        raise TypeError(f"Audit field '{field}' is not JSON-serialisable: {exc}") from exc
 
 
 def record_event(
     conn: sqlite3.Connection,
     user_id: str,
-    actor: str,
+    actor: Actor,
     event_type: str,
     reason: str,
     run_id: Optional[str] = None,
     entity_type: Optional[str] = None,
     entity_id: Optional[str] = None,
-    before_data: Optional[Dict[str, Any]] = None,
-    after_data: Optional[Dict[str, Any]] = None,
-    policy_decision: Optional[str] = None,
-    metadata: Optional[Dict[str, Any]] = None,
+    before_data: Optional[Any] = None,
+    after_data: Optional[Any] = None,
+    policy_decision: Optional[PolicyDecision] = None,
+    metadata: Optional[Any] = None,
+    clock: Optional[datetime] = None,
 ) -> str:
     """
-    Record a new audit event. Returns the generated event ID.
+    Append an audit event and return its id. Does not commit.
+
+    Everything is validated before the INSERT, so a bad call writes nothing.
+    `clock` pins the event time (tests, or the executor's context clock).
     """
+    if actor not in _ACTORS:
+        raise ValueError(f"actor must be one of {_ACTORS}, got {actor!r}")
+    if policy_decision is not None and policy_decision not in _DECISIONS:
+        raise ValueError(f"policy_decision must be one of {_DECISIONS}, got {policy_decision!r}")
+    if not event_type.strip():
+        raise ValueError("event_type must not be empty")
+    if not reason.strip():
+        raise ValueError("reason must not be empty")
+
+    before_json = _to_json(before_data, "before_data")
+    after_json = _to_json(after_data, "after_data")
+    metadata_json = _to_json(metadata, "metadata")
+
     event_id = str(uuid.uuid4())
-    occurred_at = to_utc_iso(now_utc())
-
-    before_json = json.dumps(before_data) if before_data is not None else None
-    after_json = json.dumps(after_data) if after_data is not None else None
-    metadata_json = json.dumps(metadata) if metadata is not None else None
-
     conn.execute(
         """
         INSERT INTO audit_events (
@@ -46,7 +98,7 @@ def record_event(
             event_id,
             user_id,
             run_id,
-            occurred_at,
+            to_utc_iso(now_utc(clock)),
             actor,
             event_type,
             entity_type,
@@ -61,31 +113,41 @@ def record_event(
     return event_id
 
 
+def _row_to_event(row: sqlite3.Row) -> AuditEvent:
+    """Decode a raw audit row into an AuditEvent."""
+    data = dict(row)
+    for column, field in (
+        ("before_json", "before"),
+        ("after_json", "after"),
+        ("metadata_json", "metadata"),
+    ):
+        raw = data.pop(column)
+        data[field] = json.loads(raw) if raw is not None else None
+    return AuditEvent(**data)
+
+
 def list_events(
     conn: sqlite3.Connection,
     user_id: str,
     run_id: Optional[str] = None,
     entity_id: Optional[str] = None,
     event_type: Optional[str] = None,
-) -> List[sqlite3.Row]:
+) -> list[AuditEvent]:
     """
-    List audit events for a user, optionally filtering by run, entity, or type.
+    List a user's audit events, optionally filtered by run, entity or type.
+
+    Ordered by time, then insertion order (rowid) so same-second events keep their sequence.
     """
     query = "SELECT * FROM audit_events WHERE user_id = ?"
-    params = [user_id]
-
+    params: list[str] = [user_id]
     if run_id is not None:
         query += " AND run_id = ?"
         params.append(run_id)
-
     if entity_id is not None:
         query += " AND entity_id = ?"
         params.append(entity_id)
-
     if event_type is not None:
         query += " AND event_type = ?"
         params.append(event_type)
-
-    query += " ORDER BY occurred_at ASC"
-
-    return conn.execute(query, params).fetchall()
+    query += " ORDER BY occurred_at ASC, rowid ASC"
+    return [_row_to_event(row) for row in conn.execute(query, params).fetchall()]
