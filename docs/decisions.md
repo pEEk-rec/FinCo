@@ -103,3 +103,28 @@ What was built: `llm/client.py` with the `LLMClient` protocol, a scripted `FakeL
 Why: every model call goes through one validated path, so malformed output can never reach business logic as raw text.
 Guard: `structured_call` refuses output models with any `*_paise` field (nested too), so the LLM is never asked to produce money (design principle 1).
 Not doing: no provider SDK, API keys or network; the real adapter is a later task and only has to implement `complete()`.
+
+## Step 10: Config, golden tests, Phase 0 exit review
+What was built: `config/settings.yaml` + `core/config.py` (strict Pydantic; relative paths resolve against the project root; `timezone`, `currency` and `forecast_method` only accept the values the code implements, and a test checks settings agree with the code). `tests/golden/scenarios.json` holds 10 scenarios whose data is written in rupees and IST wall-clock time so every expected value can be checked by hand; `test_golden.py` runs them through the real executor, repo policy, tools and audit log.
+Why: golden scenarios freeze Phase 0 behaviour. Checked by mutation: making the warning check `>` instead of `>=`, ignoring refunds, or computing month bounds in UTC each fails at least one scenario.
+Rule: never edit an expected value to make a test pass; a change there is a behaviour change and needs its own entry here.
+
+### Phase 0 exit checklist (verified 2026-10-01)
+- [x] `pytest` passes fully (296 tests); `ruff check` and `ruff format --check` are clean.
+- [x] Money is integer paise everywhere: StrictInt in models, STRICT INTEGER columns, no float arithmetic in money paths (scanned).
+- [x] Month boundaries are IST, half-open, with tests at 23:59 / 00:00 IST, leap and non-leap February, and year rollover.
+- [x] Every table has `user_id` (tested by introspection); `goals` and `buckets` exist with no logic.
+- [x] Audit log is append-only, enforced by triggers for UPDATE, DELETE and re-INSERT (REPLACE).
+- [x] Every tool call goes through `execute_tool` and is audited: allowed, denied, needs-approval, not found, invalid input and failed.
+- [x] Default deny works (and `default` cannot be set to anything else); write tools are blocked without approval; handler provably not called.
+- [x] `test_no_money_movement_tools_registered` scans the real registry; no EXTERNAL tool exists, and EXTERNAL is denied in code.
+- [x] Deterministic tools covered by hand-computed boundary tests (threshold, limit, one paisa over; forecast day 1, mid, last day, zero spend).
+- [x] Synthetic data is seeded and reproducible, with ground-truth anomalies.
+- [x] `RunState` is versioned and projection works; memory schema has provenance, source and confidence.
+- [x] LLM layer validates structured output with retries and uses only the fake client.
+- [x] 10 golden scenarios pass.
+- [x] `docs/decisions.md` has an entry for every step, plus the review fixes.
+- [x] No AI attribution in code, docs or git history (scanned).
+- [x] Nothing from PLAN section 5 was built (the out-of-scope chat loop was removed).
+
+Known history notes: commit `ad51480` also contains the schema/model hardening that was uncommitted when it was made, and `9dd0466` ("Final Phase 0 testing and lockdown") added the since-removed integration test. History was not rewritten (PLAN 0.3).

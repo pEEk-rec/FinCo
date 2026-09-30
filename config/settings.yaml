@@ -1,0 +1,11 @@
+# Application settings (data, not code). Validated by copilot.core.config.Settings.
+# Relative paths are resolved against the project root.
+
+timezone: Asia/Kolkata          # month and day boundaries; the only supported value
+currency: INR                   # amounts are stored as integer paise
+db_path: data/copilot.db        # data/ is git-ignored
+policy_path: config/policy.yaml
+
+default_warn_threshold_pct: 80  # used when a budget is created without its own threshold
+forecast_method: run_rate       # see tools.financial.run_rate_forecast
+llm_max_retries: 2              # structured_call retries after the first attempt

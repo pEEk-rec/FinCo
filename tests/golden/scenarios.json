@@ -1,0 +1,111 @@
+{
+  "_readme": "Golden scenarios for Phase 0. Amounts are rupee strings (positive = debit/spend, negative = credit); times are IST wall-clock. Every expected value can be checked by hand from the base data below. Do not edit an expected value to make a test pass: a change here must be a deliberate behaviour change, recorded in docs/decisions.md.",
+  "seed": 42,
+  "clock_ist": "2024-03-15T12:00",
+  "base": {
+    "categories": ["food", "travel", "stationery"],
+    "transactions": [
+      {"id": "pocket", "at_ist": "2024-03-01T08:00", "rupees": "-9000.00", "category": null, "merchant": "NEFT-CR-PARENT-POCKETMONEY-REF1"},
+      {"id": "swiggy", "at_ist": "2024-03-02T13:00", "rupees": "450.00", "category": "food", "merchant": "UPI-SWIGGY-swiggy1@ybl-REF1"},
+      {"id": "mess", "at_ist": "2024-03-05T09:00", "rupees": "800.00", "category": "food", "merchant": "UPI-HOSTELMESS-mess@oksbi-REF2"},
+      {"id": "rapido", "at_ist": "2024-03-07T18:00", "rupees": "300.00", "category": "travel", "merchant": "UPI/RAPIDO/rapido9@paytm/3"},
+      {"id": "xerox", "at_ist": "2024-03-10T11:00", "rupees": "80.00", "category": null, "merchant": "XEROXCORNER UPI 4 xerox@ibl"},
+      {"id": "refund", "at_ist": "2024-03-13T20:00", "rupees": "-50.00", "category": "food", "merchant": "UPI-SWIGGY-REFUND-REF5"}
+    ],
+    "budgets": [
+      {"category": "food", "limit": "1500.00", "warn_pct": 80},
+      {"category": "travel", "limit": "300.00", "warn_pct": 90},
+      {"category": "stationery", "limit": "100.00", "warn_pct": 80}
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "01_month_totals",
+      "description": "Net spend per category for March. Food 450 + 800 - 50 refund = 1200; travel 300; uncategorised xerox 80; pocket money is income, not spend.",
+      "kind": "aggregate",
+      "months": {"2024-03": {"totals": {"food": "1200.00", "travel": "300.00", "null": "80.00"}, "grand_total": "1580.00"}}
+    },
+    {
+      "id": "02_budget_exactly_at_warning_threshold",
+      "description": "Food 1200 of 1500 is exactly 80%, the warn threshold, so it warns. Travel 300 of 300 is exactly at the limit: warning, not exceeded. Stationery has no spend.",
+      "kind": "check_budgets",
+      "expected": {
+        "food": {"spent": "1200.00", "pct_used": 80, "status": "warning"},
+        "travel": {"spent": "300.00", "pct_used": 100, "status": "warning"},
+        "stationery": {"spent": "0.00", "pct_used": 0, "status": "ok"}
+      }
+    },
+    {
+      "id": "03_budget_exceeded_by_one_paisa",
+      "description": "One extra paisa of travel takes it from exactly-at-limit to exceeded.",
+      "kind": "check_budgets",
+      "extra_transactions": [
+        {"id": "paisa", "at_ist": "2024-03-14T10:00", "rupees": "0.01", "category": "travel", "merchant": "UPI-RAPIDO-TIP"}
+      ],
+      "expected": {
+        "travel": {"spent": "300.01", "pct_used": 100, "status": "exceeded"}
+      }
+    },
+    {
+      "id": "04_forecast_mid_month",
+      "description": "Clock is 15 March 12:00 IST, so 15 of 31 days have elapsed. Food 1200 / 15 * 31 = 2480.00 exactly.",
+      "kind": "forecast",
+      "category": "food",
+      "expected": {"spent": "1200.00", "days_elapsed": 15, "days_in_month": 31, "projected": "2480.00"}
+    },
+    {
+      "id": "05_recategorize_changes_totals_and_audits",
+      "description": "With approval, moving the uncategorised xerox (80) to stationery moves 80 between buckets, keeps the grand total, and records before/after in the audit log.",
+      "kind": "recategorize",
+      "input": {"transaction_id": "xerox", "new_category_id": "stationery"},
+      "approved": true,
+      "months": {"2024-03": {"totals": {"food": "1200.00", "stationery": "80.00", "travel": "300.00"}, "grand_total": "1580.00"}},
+      "audit_before": {"category_id": null, "category_source": "none", "category_confidence": null},
+      "audit_after": {"category_id": "stationery", "category_source": "user", "category_confidence": 1.0}
+    },
+    {
+      "id": "06_write_tool_blocked_without_approval",
+      "description": "The same recategorize without approval is refused, nothing changes, and the refusal itself is audited.",
+      "kind": "recategorize",
+      "input": {"transaction_id": "xerox", "new_category_id": "stationery"},
+      "approved": false,
+      "error_code": "APPROVAL_REQUIRED",
+      "months": {"2024-03": {"totals": {"food": "1200.00", "travel": "300.00", "null": "80.00"}, "grand_total": "1580.00"}}
+    },
+    {
+      "id": "07_unknown_tool_denied",
+      "description": "A tool that does not exist (a money-movement attempt) is refused with NOT_FOUND and the attempt is audited.",
+      "kind": "unknown_tool",
+      "tool_name": "transfer_money",
+      "input": {"to": "someone@upi", "amount": "5000.00"},
+      "error_code": "NOT_FOUND"
+    },
+    {
+      "id": "08_bank_failure_handled",
+      "description": "A simulated bank outage surfaces as a retryable TOOL_FAILURE and writes nothing.",
+      "kind": "bank_failure",
+      "months": 2,
+      "error_code": "TOOL_FAILURE",
+      "retryable": true
+    },
+    {
+      "id": "09_timezone_edge_last_minute_of_month",
+      "description": "23:59 IST on 31 March is 18:29 UTC and belongs to March; 00:00 IST on 1 April is 18:30 UTC on 31 March but belongs to April.",
+      "kind": "aggregate",
+      "extra_transactions": [
+        {"id": "late_auto", "at_ist": "2024-03-31T23:59", "rupees": "25.00", "category": "travel", "merchant": "UPI-RAPIDO-LATE"},
+        {"id": "april_auto", "at_ist": "2024-04-01T00:00", "rupees": "40.00", "category": "travel", "merchant": "UPI-RAPIDO-EARLY"}
+      ],
+      "months": {
+        "2024-03": {"totals": {"food": "1200.00", "travel": "325.00", "null": "80.00"}, "grand_total": "1605.00"},
+        "2024-04": {"totals": {"travel": "40.00"}, "grand_total": "40.00"}
+      }
+    },
+    {
+      "id": "10_duplicate_in_ground_truth_and_visible",
+      "description": "With the fixed seed, the planted duplicate charge is listed in ground truth, survives loading, and both copies are returned by get_transactions.",
+      "kind": "duplicate_visible",
+      "months": 2
+    }
+  ]
+}
