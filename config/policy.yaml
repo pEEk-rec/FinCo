@@ -1,0 +1,8 @@
+default: deny
+side_effects:
+  read:          {decision: allow}
+  write_logical: {decision: needs_approval}
+  external:      {decision: deny}
+tools:
+  get_transactions:          {decision: allow}
+  recategorize_transaction:  {decision: needs_approval}

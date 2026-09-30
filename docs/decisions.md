@@ -34,6 +34,12 @@ What was built: Pydantic-based definitions for tools (`ToolSpec`) and error type
 Why it was designed this way: A declarative tool specification ensures inputs and outputs are automatically validated by Pydantic, while side effects are rigidly categorized to allow granular governance checks later.
 What it is deliberately not doing: The registry does not execute tools itself or handle any governance—that logic is deferred to the executor choke point. No money-moving side effect type is defined.
 
+## Step 5: Governance and the executor choke point
+What was built: A central `execute_tool` function that enforces policy rules (loaded from `policy.yaml`) before running any tool handler, recording every decision and execution outcome to the audit log.
+Why it was designed this way: A single choke point guarantees that no tool can bypass governance or auditing. Pydantic validation on inputs and outputs prevents malformed data from causing silent corruption.
+What it is deliberately not doing: No dynamic rule evaluation or complex permissions matrix; policy is a simple default-deny YAML lookup based on side-effects or specific tool overrides.
+
+
 
 
 
