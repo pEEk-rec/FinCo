@@ -5,7 +5,7 @@ All money math happens here, never in the LLM.
 import calendar
 from typing import Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from copilot.audit.events import record_event
 from copilot.core.timeutil import IST, month_bounds, now_utc
@@ -15,17 +15,17 @@ from copilot.db.repo import (
     list_transactions,
     update_transaction_category,
 )
-from copilot.tools.contracts import SideEffect, ToolSpec
+from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
 
 
 # --- 1. get_transactions ---
-class GetTransactionsInput(BaseModel):
+class GetTransactionsInput(ToolInput):
     start_utc: str
     end_utc: str
     category_id: Optional[str] = None
     limit: Optional[int] = Field(default=None, gt=0)
 
-class TransactionOutput(BaseModel):
+class TransactionOutput(ToolOutput):
     id: str
     amount_paise: int
     direction: str
@@ -33,7 +33,7 @@ class TransactionOutput(BaseModel):
     category_id: Optional[str]
     occurred_at: str
 
-class GetTransactionsOutput(BaseModel):
+class GetTransactionsOutput(ToolOutput):
     transactions: List[TransactionOutput]
 
 def get_transactions_handler(
@@ -55,10 +55,10 @@ def get_transactions_handler(
     return {"transactions": out_txs}
 
 # --- 2. get_balance ---
-class GetBalanceInput(BaseModel):
+class GetBalanceInput(ToolInput):
     pass
 
-class GetBalanceOutput(BaseModel):
+class GetBalanceOutput(ToolOutput):
     balance_paise: int
 
 def get_balance_handler(ctx) -> dict:
@@ -75,15 +75,15 @@ def get_balance_handler(ctx) -> dict:
     return {"balance_paise": balance}
 
 # --- 3. aggregate_spend_by_category ---
-class AggregateSpendInput(BaseModel):
+class AggregateSpendInput(ToolInput):
     year: int
     month: int
 
-class CategoryTotal(BaseModel):
+class CategoryTotal(ToolOutput):
     category_id: Optional[str]  # None means uncategorized
     total_spend_paise: int
 
-class AggregateSpendOutput(BaseModel):
+class AggregateSpendOutput(ToolOutput):
     totals: List[CategoryTotal]
     grand_total_spend_paise: int
 
@@ -104,18 +104,18 @@ def aggregate_spend_by_category_handler(ctx, year: int, month: int) -> dict:
     return {"totals": out, "grand_total_spend_paise": grand_total}
 
 # --- 4. check_budgets ---
-class CheckBudgetsInput(BaseModel):
+class CheckBudgetsInput(ToolInput):
     year: int
     month: int
 
-class BudgetStatus(BaseModel):
+class BudgetStatus(ToolOutput):
     category_id: str
     spent_paise: int
     limit_paise: int
     pct_used: int
     status: Literal["ok", "warning", "exceeded"]
 
-class CheckBudgetsOutput(BaseModel):
+class CheckBudgetsOutput(ToolOutput):
     statuses: List[BudgetStatus]
 
 def check_budgets_handler(ctx, year: int, month: int) -> dict:
@@ -153,12 +153,12 @@ def check_budgets_handler(ctx, year: int, month: int) -> dict:
     return {"statuses": out}
 
 # --- 5. forecast_category_spend ---
-class ForecastInput(BaseModel):
+class ForecastInput(ToolInput):
     year: int
     month: int
     category_id: str
 
-class ForecastOutput(BaseModel):
+class ForecastOutput(ToolOutput):
     projected_spend_paise: int
     spent_so_far_paise: int
     days_elapsed: int
@@ -198,11 +198,11 @@ def forecast_category_spend_handler(ctx, year: int, month: int, category_id: str
     }
 
 # --- 6. recategorize_transaction ---
-class RecategorizeInput(BaseModel):
+class RecategorizeInput(ToolInput):
     transaction_id: str
     new_category_id: Optional[str]
 
-class RecategorizeOutput(BaseModel):
+class RecategorizeOutput(ToolOutput):
     success: bool
 
 def recategorize_transaction_handler(

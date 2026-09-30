@@ -1,57 +1,83 @@
 """
-Policy evaluation for tools.
+Governance policy: a capability matrix loaded from YAML, and `decide()`.
+
+Order of evaluation:
+  1. EXTERNAL side effects are always denied (hard rule in code, not overridable by config).
+  2. A tool-specific rule, if present.
+  3. The rule for the tool's side-effect class, if present.
+  4. The global default, which must be `deny`.
+
+The file is validated strictly: a typo such as `decision: "deny "` or an unknown key is a load
+error, never a silent fall-through to a more permissive rule.
 """
-from typing import Dict, Literal
+
+from pathlib import Path
+from typing import Literal
 
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from copilot.tools.contracts import ToolSpec
+from copilot.tools.contracts import SideEffect, ToolSpec
+
+Outcome = Literal["allow", "deny", "needs_approval"]
 
 
 class Decision(BaseModel):
-    outcome: Literal["allow", "deny", "needs_approval"]
+    """Governance verdict for one tool, with a readable reason."""
+
+    outcome: Outcome
     reason: str
 
-class PolicySettings(BaseModel):
-    default: Literal["allow", "deny", "needs_approval"]
-    side_effects: Dict[str, Dict[str, str]] = {}
-    tools: Dict[str, Dict[str, str]] = {}
 
-def load_policy(path: str) -> PolicySettings:
-    """Load policy from a YAML file."""
-    with open(path, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
-    return PolicySettings(**data)
+class PolicyRule(BaseModel):
+    """One entry in the matrix."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    decision: Outcome
+
+
+class PolicySettings(BaseModel):
+    """The whole capability matrix. `default` can only be `deny` (default-deny principle)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    default: Literal["deny"] = "deny"
+    side_effects: dict[SideEffect, PolicyRule] = {}
+    tools: dict[str, PolicyRule] = {}
+
+
+def load_policy(path: str | Path) -> PolicySettings:
+    """Load and strictly validate a policy YAML file."""
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"Policy file {path} must contain a mapping, got {type(data).__name__}")
+    return PolicySettings.model_validate(data)
+
 
 def decide(policy: PolicySettings, tool_spec: ToolSpec) -> Decision:
-    """
-    Decide whether a tool can be executed based on the policy.
-    Tool-specific rules override side-effect defaults.
-    """
-    tool_name = tool_spec.name
-    side_effect = tool_spec.side_effect.value.lower()
-    
-    # 1. Check tool-specific rule
-    if policy.tools and tool_name in policy.tools:
-        outcome = policy.tools[tool_name].get("decision")
-        if outcome in ["allow", "deny", "needs_approval"]:
-            return Decision(
-                outcome=outcome, # type: ignore
-                reason=f"Tool-specific policy rule applied: {outcome}"
-            )
-            
-    # 2. Check side-effect default
-    if policy.side_effects and side_effect in policy.side_effects:
-        outcome = policy.side_effects[side_effect].get("decision")
-        if outcome in ["allow", "deny", "needs_approval"]:
-            return Decision(
-                outcome=outcome, # type: ignore
-                reason=f"Side-effect policy rule applied: {outcome}"
-            )
-            
-    # 3. Apply global default
+    """Decide whether `tool_spec` may run under `policy`."""
+    if tool_spec.side_effect is SideEffect.EXTERNAL:
+        return Decision(
+            outcome="deny",
+            reason=f"'{tool_spec.name}' has an external side effect; these are never allowed.",
+        )
+
+    tool_rule = policy.tools.get(tool_spec.name)
+    if tool_rule is not None:
+        return Decision(
+            outcome=tool_rule.decision,
+            reason=f"Tool rule for '{tool_spec.name}' says {tool_rule.decision}.",
+        )
+
+    effect_rule = policy.side_effects.get(tool_spec.side_effect)
+    if effect_rule is not None:
+        return Decision(
+            outcome=effect_rule.decision,
+            reason=f"Rule for {tool_spec.side_effect.value} tools says {effect_rule.decision}.",
+        )
+
     return Decision(
         outcome=policy.default,
-        reason=f"Default policy rule applied: {policy.default}"
+        reason=f"No rule matches '{tool_spec.name}', so the default ({policy.default}) applies.",
     )
