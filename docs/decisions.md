@@ -97,3 +97,9 @@ Confidence is a threshold signal for "act / ask / ignore", not a calibrated prob
 - LLM-only judgement: capped at 0.7, whatever the model claims, so it can never reach the "act without asking" band on its own.
 - Observed pattern (memory): starts at 0.5 and is only raised by user confirmation (Phase 3).
 - No signal: null, never 0.0 (0.0 would mean "confidently wrong").
+
+## Step 9: LLM access layer
+What was built: `llm/client.py` with the `LLMClient` protocol, a scripted `FakeLLMClient`, and `structured_call(client, prompt, output_model, max_retries=2)`. It asks for JSON matching the model's schema, accepts a single ```json fenced block, validates with Pydantic, and on invalid output retries with the original task plus a short "your last output was invalid because ..." note. After exactly `max_retries + 1` attempts it raises `StructuredOutputError`, a `ToolFailure` with TOOL_FAILURE. A failing client is wrapped as a retryable TOOL_FAILURE and not retried here. Prompt text lives only in `llm/prompts.py`.
+Why: every model call goes through one validated path, so malformed output can never reach business logic as raw text.
+Guard: `structured_call` refuses output models with any `*_paise` field (nested too), so the LLM is never asked to produce money (design principle 1).
+Not doing: no provider SDK, API keys or network; the real adapter is a later task and only has to implement `complete()`.
