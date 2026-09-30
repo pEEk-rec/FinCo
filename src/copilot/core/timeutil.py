@@ -1,5 +1,8 @@
 """
 Time primitives enforcing UTC storage and IST-based bounds.
+
+Canonical storage format is second-precision UTC with a 'Z' suffix, e.g. "2024-01-31T18:30:00Z".
+Because every stored timestamp has this exact shape, SQL string comparison orders them correctly.
 """
 
 from datetime import datetime, timezone
@@ -7,10 +10,12 @@ from zoneinfo import ZoneInfo
 
 IST = ZoneInfo("Asia/Kolkata")
 
+
 def now_utc(clock: datetime | None = None) -> datetime:
     """
-    Get the current UTC time. 
-    Accepts an optional `clock` for testing purposes.
+    Get the current UTC time.
+
+    Pass `clock` (a timezone-aware datetime) to pin "now" in tests.
     """
     if clock is not None:
         if clock.tzinfo is None:
@@ -18,51 +23,48 @@ def now_utc(clock: datetime | None = None) -> datetime:
         return clock.astimezone(timezone.utc)
     return datetime.now(timezone.utc)
 
+
 def to_utc_iso(dt: datetime) -> str:
-    """
-    Convert a timezone-aware datetime to a UTC ISO-8601 string.
-    """
+    """Convert a timezone-aware datetime to the canonical UTC ISO-8601 string (seconds, 'Z')."""
     if dt.tzinfo is None:
         raise ValueError("Datetime must be timezone-aware.")
     utc_dt = dt.astimezone(timezone.utc)
-    return utc_dt.isoformat(timespec='seconds').replace('+00:00', 'Z')
+    return utc_dt.isoformat(timespec="seconds").replace("+00:00", "Z")
+
 
 def from_utc_iso(s: str) -> datetime:
     """
-    Parse a UTC ISO-8601 string into a timezone-aware UTC datetime.
+    Parse an ISO-8601 string with an explicit offset into an aware UTC datetime.
+
+    Strings without an offset are rejected: a naive timestamp is ambiguous.
     """
-    if s.endswith('Z'):
-        s = s[:-1] + '+00:00'
-    dt = datetime.fromisoformat(s)
+    if not isinstance(s, str):
+        raise TypeError("Timestamp must be a string.")
+    text = s[:-1] + "+00:00" if s.endswith("Z") else s
+    dt = datetime.fromisoformat(text)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    else:
-        dt = dt.astimezone(timezone.utc)
-    return dt
+        raise ValueError(f"Timestamp {s!r} has no timezone offset.")
+    return dt.astimezone(timezone.utc)
+
+
+def normalize_utc_iso(s: str) -> str:
+    """Parse any offset-aware ISO string and return it in canonical UTC form."""
+    return to_utc_iso(from_utc_iso(s))
+
 
 def month_bounds(year: int, month: int) -> tuple[str, str]:
     """
-    Get half-open bounds [start, end) for a given year and month in IST,
-    returned as UTC ISO strings.
+    Get half-open bounds [start, end) for a calendar month in IST, as canonical UTC strings.
     """
-    start_ist = datetime(year, month, 1, 0, 0, 0, tzinfo=IST)
-    
-    # Calculate next month
-    if month == 12:
-        next_year = year + 1
-        next_month = 1
-    else:
-        next_year = year
-        next_month = month + 1
-        
-    end_ist = datetime(next_year, next_month, 1, 0, 0, 0, tzinfo=IST)
-    
+    if not 1 <= month <= 12:
+        raise ValueError(f"Month must be 1..12, got {month}.")
+    next_year, next_month = (year + 1, 1) if month == 12 else (year, month + 1)
+    start_ist = datetime(year, month, 1, tzinfo=IST)
+    end_ist = datetime(next_year, next_month, 1, tzinfo=IST)
     return to_utc_iso(start_ist), to_utc_iso(end_ist)
 
+
 def month_of(utc_iso: str) -> tuple[int, int]:
-    """
-    Get the (year, month) in IST for a given UTC ISO string.
-    """
-    dt = from_utc_iso(utc_iso)
-    ist_dt = dt.astimezone(IST)
+    """Get the (year, month) in IST for a UTC ISO string."""
+    ist_dt = from_utc_iso(utc_iso).astimezone(IST)
     return ist_dt.year, ist_dt.month
