@@ -22,6 +22,14 @@ pytest                    # unit tests + tests/golden (10 hand-verified scenario
 ruff check . && ruff format --check .
 ```
 
+## See it run
+
+```bash
+python scripts/demo.py                    # full walkthrough on an in-memory database
+python scripts/demo.py --seed 7           # different synthetic data
+python scripts/demo.py --db data/demo.db  # keep the database to inspect afterwards
+```
+
 ## Layout
 
 | Path | What it holds |
@@ -37,6 +45,7 @@ ruff check . && ruff format --check .
 | `src/copilot/bank/` | Seeded synthetic data, mock bank connector, loader |
 | `src/copilot/llm/` | `LLMClient` interface, fake client, validated `structured_call`, prompts |
 | `src/copilot/planner/` | `Planner` interface and placeholder `TrivialRouter` |
+| `scripts/demo.py` | Walkthrough of the whole stack (not part of the product) |
 | `tests/` | Mirrors `src/`; `tests/golden/` holds end-to-end scenarios |
 | `docs/PLAN.md`, `docs/decisions.md` | The Phase 0 plan and the design log (why each piece is the way it is) |
 
