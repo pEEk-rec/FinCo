@@ -16,6 +16,12 @@ def insert_user(conn: sqlite3.Connection, user: User) -> None:
     conn.execute("INSERT INTO users (id, created_at) VALUES (?, ?)", (user.id, user.created_at))
 
 
+def get_user(conn: sqlite3.Connection, user_id: str) -> User | None:
+    """Get a user by ID, or None."""
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    return User(**dict(row)) if row else None
+
+
 def insert_account(conn: sqlite3.Connection, account: Account) -> None:
     """Insert a new account."""
     conn.execute(

@@ -1,7 +1,29 @@
 ## Current state
-Last completed stage: 1.10 | Blockers: none
+Last completed stage: 1.11 | Blockers: none
 
-## Stage 1.10: Monthly review: DONE
+## Stage 1.11: CLI (primary demo surface): DONE
+Goal: The primary interactive demo and evaluation surface (PLAN_PHASE1 Section 5.9).
+Built:
+- Installed `typer>=0.9.0` and `rich>=13.0.0` as core runtime dependencies; registered `copilot = "copilot.cli.main:app"` console script in `pyproject.toml`.
+- `src/copilot/cli/storage.py`: Cross-process persistence layer for synthetic mock bank transactions (`data/mock_bank_<user_id>.json`), graph execution traces (`data/trace_<run_id>.json`), database resolution, and `MockAAConnector` synchronization from sqlite consent records.
+- `src/copilot/cli/formatters.py`: Rich visual presentation layer implementing clean terminal tables (`print_transactions_table`, `print_budgets_table`, `print_anomalies_table`, `print_recurring_table`, `print_consents_table`, `print_audit_table`), state summary panels (`print_state_panel`), and clean standard output serializers (`print_json` using unstyled stdout for piping, `print_error` to stderr without Python tracebacks, `print_success`).
+- `src/copilot/cli/main.py`: Full Typer application implementing all commands:
+  - `init-db`: Idempotent database schema initialization.
+  - `seed`: Seeds demo user, accounts, standard categories, budgets, and synthetic bank data.
+  - `consent`: Full consent lifecycle subcommands (`list`, `create`, `approve`, `revoke`).
+  - `run`: Runs full autonomous agent LangGraph workflow with trace capture and human review options.
+  - `review-month`: Generates versioned monthly review and renders GitHub Markdown and styled HTML reports.
+  - `txns`: Lists transactions with filters (`--month`, `--needs-review`, `--limit`, `--json`).
+  - `correct`: User correction to override a transaction's category with optional `--remember` merchant rule.
+  - `undo` & `undo-batch`: Reverses specific audit events or automated categorization batches.
+  - `budgets`, `forecast`, `anomalies`, `recurring`, `state`: Real-time financial domain analysis views.
+  - `audit`: Queryable audit log with before/after state diffs and reversibility indicators.
+  - `trace`: Displays node-by-node execution traces and tool timings for any workflow run.
+  - `eval`: Runner interface for Stage 1.12 evaluation scenarios.
+- `docs/demo_script.md`: Comprehensive 5-minute offline demo walkthrough script covering all steps.
+- `tests/cli/test_cli.py`: 11 tests using `typer.testing.CliRunner` covering every command, flag, and error branch.
+Files: src/copilot/cli/main.py, src/copilot/cli/formatters.py, src/copilot/cli/storage.py, src/copilot/cli/__init__.py, src/copilot/cli/__main__.py, tests/cli/test_cli.py, docs/demo_script.md, pyproject.toml, config/policy.yaml, STATUS.md, docs/decisions.md, docs/production_report.md
+Tests: 377 passed / 377 total | Lint: pass (0 ruff errors)
 Goal: The worklet's headline output (PLAN_PHASE1 Section 5.8).
 Built:
 - `src/copilot/review/models.py`: Typed Pydantic data models for the complete review document: `MonthlyReviewData`, `CategoryTotal`, `ReviewBudgetStatus`, `ReviewRecurringItem`, `ReviewAnomalyItem`, `ReviewForecast`, `ReviewAdviceItem`, and `DataQualityNotes`.

@@ -10,7 +10,12 @@ dependencies = [
     "pyyaml",
     "langgraph>=0.2.0",
     "jinja2>=3.0",
+    "typer>=0.9.0",
+    "rich>=13.0.0",
 ]
+
+[project.scripts]
+copilot = "copilot.cli.main:app"
 
 [project.optional-dependencies]
 dev = [

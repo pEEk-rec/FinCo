@@ -20,9 +20,9 @@ This document reports the technical status of Phase 1 (Foundational MVP backend)
 
 - **Stage 1.9 (LangGraph workflow orchestration):** Built fixed agent graph (`ingest → categorize → analyze → advise → review → finalize`) and monthly review graph (`analyze → advise → review → finalize`). Interoperable `AgentState` with `MemorySaver` in-memory checkpointing. Human-in-the-loop review uses LangGraph `interrupt()` and resumes via `Command(resume=...)` applying decisions as `user`. Verified by AST architecture enforcement tests ensuring no module outside tools imports tool handlers and all tool calls use `execute_tool`.
 - **Stage 1.10 (Monthly Review workflow & reporting):** Built typed `MonthlyReviewData` document models, deterministic builder with monotonic versioning (`v1 -> v2`), month-over-month category spending deltas, partial-month handling, and dual renderers (Markdown and styled HTML). Verified by safety validator tests asserting that rendered reports contain no unauthorized or hallucinated numbers.
+- **Stage 1.11 (Unified Typer CLI & interactive demo surface):** Implemented complete CLI suite via `copilot` console script (`init-db`, `seed`, `consent`, `run`, `review-month`, `txns`, `correct`, `undo`, `undo-batch`, `budgets`, `forecast`, `anomalies`, `recurring`, `state`, `audit`, `trace`, `eval`). Emits Rich tables by default and raw pipeable JSON with `--json`. Clear error handling without tracebacks on expected domain failures. Cross-process connector state synchronization and trace persistence. Documented 5-minute offline demo path in `docs/demo_script.md`.
 
-### Upcoming Stages (Workflows, UI, Hardening)
-- **Stage 1.11:** CLI
+### Upcoming Stages (Evaluation, UI, Hardening)
 - **Stage 1.12:** Evaluation harness
 - **Stage 1.13:** Streamlit UI
 - **Stage 1.14:** Hardening & packaging
@@ -31,7 +31,7 @@ This document reports the technical status of Phase 1 (Foundational MVP backend)
 
 ## 2. Test Verification & Concrete Guarantees
 
-The test suite contains **366 automated tests**, all passing in ~2.4s (`pytest`). Static typing and style checks pass cleanly with zero violations (`ruff check src tests scripts`).
+The test suite contains **377 automated tests**, all passing in ~5.4s (`pytest`). Static typing and style checks pass cleanly with zero violations (`ruff check src tests config`).
 
 The test suite establishes the following properties:
 

@@ -14,7 +14,7 @@ tools:
   undo_categorize_batch:       {agent: allow}
   ingest_statements:           {agent: allow}
   detect_transfers:            {agent: allow}
-  detect_recurring:            {agent: allow}
+  detect_recurring:            {agent: allow, user: allow}
   detect_anomalies:            {agent: allow}
   forecast_month:              {agent: allow}
   get_financial_state:         {agent: allow}
