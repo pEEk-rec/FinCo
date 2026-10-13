@@ -1,5 +1,21 @@
 ## Current state
-Last completed stage: 1.12 | Blockers: none
+Last completed stage: 1.13 | Blockers: none
+
+## Stage 1.13: Minimal Streamlit View (Blueprint): DONE
+Goal: A thin, modular visual interface blueprint on which the main UI builds (PLAN_PHASE1 Section 5.11).
+Built:
+- Added `streamlit>=1.30.0` dependency to `pyproject.toml`.
+- `src/copilot/ui/app.py`: Clean, modular Streamlit blueprint implementing all 5 views:
+  1. **Financial Overview Dashboard**: KPI metric cards (balance in INR, total transactions, review queue count, accounts), monthly budget performance progress bars with warning/exceeded status badges, and recent transactions table.
+  2. **Human Review Queue**: Interactive HITL queue displaying transactions flagged with `needs_review=1`, dropdown category selector, "Remember rule" checkbox, and one-click recategorization executing `recategorize_transaction` through `execute_tool(ctx, ...)` with audited user attribution (`category_source='user'`).
+  3. **Financial Advice Approvals**: Lists generated advice items in `draft` status with one-click "Approve" and "Reject" buttons executing `decide_advice` via `execute_tool(ctx, ...)`.
+  4. **Monthly Review Viewer**: Year/month selector with "Generate / Rebuild Monthly Review" button executing `build_monthly_review` and rendering the versioned report as structured GitHub-flavored Markdown.
+  5. **Audit Trail & Undo**: Append-only log of system events with before/after state diff expanders and "Undo" buttons calling `execute_tool(ctx, "undo", {"event_id": eid})`.
+- **Architectural Invariant**: The UI is strictly a thin view layer over existing services/executor. Zero business logic is duplicated, and no actions bypass the policy firewall or audit log.
+- `tests/ui/test_app.py`: 8 unit tests validating context creation, default database path resolution, in-memory schema initialization, and headless execution across all tab renderers.
+Files: src/copilot/ui/app.py, src/copilot/ui/__init__.py, tests/ui/test_app.py, pyproject.toml, STATUS.md
+Tests: 397 passed / 397 total | Lint: pass (0 ruff errors)
+
 
 ## Stage 1.12: Evaluation and Golden Scenarios: DONE
 Goal: Comprehensive evaluation harness and 12 golden scenario tests (PLAN_PHASE1 Section 5.10 & 5.12).
