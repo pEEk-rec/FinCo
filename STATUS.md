@@ -1,18 +1,19 @@
 ## Current state
-Last completed stage: 1.8b | Blockers: none
+Last completed stage: 1.9 | Blockers: none
 
-## Stage 1.8b: Undo divergence checks and advice number matching rule: DONE
-Goal: Harden undo against data loss on interleaved edits and replace overly permissive number matching with an explicit tolerance rule.
+## Stage 1.9: LangGraph workflow: DONE
+Goal: The fixed, demonstrable agent graph (section 5.7).
 Built:
-- `src/copilot/tools/undo.py`: Replaced unconditional force-restore with strict divergence check against `after_data`. An interleaved edit to a transaction or any batch item refuses undo and raises `ToolFailure(ErrorCode.STALE_DATA)`. On direct calls, `undo_refused` is recorded; on `execute_tool` calls, handler savepoint rolls back and executor audits failure with `error_code="STALE_DATA"`. In both cases, entity is unmodified and batches are all-or-nothing.
-- `src/copilot/core/advice.py`: Replaced quantum truncation matching with documented tolerance rule: `tolerance = min(half of the last displayed digit, 5% of the stated value)`.
-- `tests/tools/test_undo.py`: Added tests verifying undo succeeds when state is unchanged, undo is refused after interleaved edit (both directly and through `execute_tool`), and batch undo refusal is all-or-nothing.
-- `tests/core/test_findings.py`: Added boundary tests just inside and just outside for `₹1.2k`, `1 lakh`, `1.5 lakh`, `2 crore`, and plain rupee amounts, plus negative tests ensuring 60,000 and 150,000 fail against 1 lakh.
-- `docs/production_report.md`: Rewritten in plain factual language removing marketing terminology, updating stage mapping (1.9 LangGraph, 1.10 Monthly Review, 1.11 CLI, 1.12 Evaluation, 1.13 Streamlit, 1.14 Hardening), and listing verified test guarantees.
-- `docs/decisions.md`: Documented the number matching tolerance rule and undo divergence checks across direct and executor paths.
-- `docs/open_questions.md`: Documented design question on distinct `undo_refused` event type under executor savepoint.
-Files: src/copilot/tools/undo.py, src/copilot/core/advice.py, tests/tools/test_undo.py, tests/core/test_findings.py, docs/production_report.md, docs/decisions.md, docs/open_questions.md, STATUS.md
-Tests: 343 passed / 343 total | Lint: pass
+- `src/copilot/workflow/state.py`: Serialisable `AgentState` for in-memory checkpointing, `TraceEntry` data structure, and `to_run_state` projecting state into Phase 0 `RunState` for backwards compatibility.
+- `src/copilot/workflow/findings.py`: `build_findings_from_analysis` generating typed, safety-validated `Finding` objects from analysis tool outputs (budgets, spend, forecast, anomalies, recurring).
+- `src/copilot/workflow/nodes.py`: Thin workflow node implementations (`ingest`, `categorize`, `analyze`, `advise`, `review`, `finalize`, `error`), calling tools strictly through `execute_tool(ctx, tool_name, params)`.
+- `src/copilot/workflow/graph.py`: StateGraph definitions and compilation: `build_agent_graph` with conditional edge routing on 0 txns (`analyze` or `finalize`), human-in-the-loop review interruption/resumption, and error routing; plus `build_monthly_review_graph` for targeted monthly reviews (`analyze → advise → review → finalize`).
+- `src/copilot/workflow/trace.py`: `format_trace` and `print_trace` formatting node-by-node execution traces into readable ASCII summary tables.
+- `tests/workflow/test_nodes.py`: 11 unit tests covering all individual node behaviors, tool calls, and error handling.
+- `tests/workflow/test_graph.py`: 5 integration tests verifying full offline execution with `MemorySaver`, interrupt and resume with decisions, conditional edge skips, categorize failure error handling, and monthly review mode.
+- `tests/workflow/test_architecture.py`: 2 AST-based architecture enforcement tests verifying no module outside tool specs imports tool handlers, and all workflow nodes execute tools strictly via `execute_tool`.
+Files: src/copilot/workflow/state.py, src/copilot/workflow/findings.py, src/copilot/workflow/nodes.py, src/copilot/workflow/graph.py, src/copilot/workflow/trace.py, src/copilot/workflow/__init__.py, tests/workflow/test_nodes.py, tests/workflow/test_graph.py, tests/workflow/test_architecture.py, docs/decisions.md, docs/production_report.md, STATUS.md
+Tests: 361 passed / 361 total | Lint: pass
 
 ## Review pass on Stages 1.1-1.8: DONE
 Goal: audit the existing implementation and fix defects before continuing to Stage 1.9.
@@ -87,11 +88,12 @@ Defaults chosen (open_questions.md): none
 Live checks pending: none
 
 ## Proposed commits (awaiting approval)
-- Block stale undo and tighten advice number matching: src/copilot/tools/undo.py, src/copilot/core/advice.py, tests/tools/test_undo.py, tests/core/test_findings.py, docs/production_report.md, docs/decisions.md, STATUS.md
+- Add LangGraph workflow with human review: src/copilot/workflow/, tests/workflow/, docs/decisions.md, docs/production_report.md, STATUS.md
 
 - [x] Stage 1.5: Add transfer and recurring payment detection
 - [x] Stage 1.6: Analysis tools and derived state
 - [x] Stage 1.7: Dispute, correction and undo
 - [x] Stage 1.8: Findings, advice drafting and validator
 - [x] Stage 1.8b: Undo divergence checks and advice number matching
-- [ ] Stage 1.9: LangGraph orchestration
+- [x] Stage 1.9: LangGraph orchestration
+- [ ] Stage 1.10: Monthly review

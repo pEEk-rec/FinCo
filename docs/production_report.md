@@ -18,11 +18,12 @@ This document reports the technical status of Phase 1 (Foundational MVP backend)
   - Refusal of undo when entity or batch state has diverged from `after_data` (interleaved edit preserved, refusal audited as `undo_refused`, all-or-nothing batch semantics).
   - Explicit advice matching tolerance rule: `tolerance = min(half of last displayed digit, 5% of stated value)`.
 
-### Upcoming Stages (Orchestration, Workflows, UI, Hardening)
-- **Stage 1.9:** LangGraph orchestration
-- **Stage 1.10:** Monthly Review workflow
+- **Stage 1.9 (LangGraph workflow orchestration):** Built fixed agent graph (`ingest → categorize → analyze → advise → review → finalize`) and monthly review graph (`analyze → advise → review → finalize`). Interoperable `AgentState` with `MemorySaver` in-memory checkpointing. Human-in-the-loop review uses LangGraph `interrupt()` and resumes via `Command(resume=...)` applying decisions as `user`. Verified by AST architecture enforcement tests ensuring no module outside tools imports tool handlers and all tool calls use `execute_tool`.
+
+### Upcoming Stages (Workflows, UI, Hardening)
+- **Stage 1.10:** Monthly Review workflow & reporting
 - **Stage 1.11:** CLI
-- **Stage 1.12:** Evaluation
+- **Stage 1.12:** Evaluation harness
 - **Stage 1.13:** Streamlit UI
 - **Stage 1.14:** Hardening & packaging
 
@@ -30,7 +31,7 @@ This document reports the technical status of Phase 1 (Foundational MVP backend)
 
 ## 2. Test Verification & Concrete Guarantees
 
-The test suite contains **342 automated tests**, all passing in ~1.6s (`pytest`). Static typing and style checks pass cleanly with zero violations (`ruff check src tests`).
+The test suite contains **361 automated tests**, all passing in ~4.1s (`pytest`). Static typing and style checks pass cleanly with zero violations (`ruff check src tests`).
 
 The test suite establishes the following properties:
 
@@ -68,3 +69,10 @@ The advice validator (`core/advice.py`) checks that any number mentioned in advi
 - Every tool is registered in `FINANCIAL_TOOLS` and dispatched through `execute_tool`.
 - Tools missing in policy or denied by policy are blocked from handler execution.
 - `test_no_money_movement_tools_registered` confirms no external payment or money movement tools are registered.
+
+### G. LangGraph Workflow & Architecture Guarantees
+- **Tool Choke Point Isolation:** AST architecture inspection (`tests/workflow/test_architecture.py`) verifies that zero modules outside tool specifications import `*_handler` functions; workflow nodes only invoke tools via `execute_tool(ctx, tool_name, params)`.
+- **Human-in-the-Loop Interruption:** Execution pauses at `review` using LangGraph's native `interrupt({"drafts": ...})` with `MemorySaver` in-memory checkpoints. Resuming with `Command(resume=[...])` applies decisions as `user` without clobbering state.
+- **Clean Failure & Auditing:** Unhandled failures at any node (including `categorize`) transition cleanly to `error_node`, recording an audited `run_failed` event without crashing the workflow process.
+- **Trace Accountability:** Each run accumulates node timing, tools called, counts, and status, and formats into a human-readable ASCII summary table via `format_trace()`.
+

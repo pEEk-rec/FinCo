@@ -213,3 +213,26 @@ What was built:
   - "1.5 lakh" (`W = 150,000`, `quantum = 10,000`): `half_last_digit = 5,000`, `5% = 7,500` -> `tolerance = 5,000`. Matches `[145,000, 155,000]`.
   - "2 crore" (`W = 20,000,000`, `quantum = 10,000,000`): `half_last_digit = 5,000,000`, `5% = 1,000,000` -> `tolerance = 1,000,000`. Matches `[19,000,000, 21,000,000]`.
   - Plain rupee "₹500" (`W = 500`, `quantum = 1`): `half_last_digit = 0.5`, `5% = 25` -> `tolerance = 0.5`. Matches `[499.5, 500.5]`.
+
+## Stage 1.9: LangGraph workflow
+### 1. Architecture Isolation and Tool Execution Choke Point
+- Workflow nodes NEVER import or execute tool handlers directly (`*_handler`).
+- Every tool interaction passes strictly through `execute_tool(ctx, tool_name, params)` in `src/copilot/tools/executor.py`.
+- An automated AST-based architecture test (`tests/workflow/test_architecture.py`) inspects all Python files outside `src/copilot/tools/` to enforce that no module imports any `*_handler` function, and asserts that workflow nodes execute tools solely via `execute_tool`.
+
+### 2. State Management and In-Memory Checkpointing
+- Defined `AgentState` in `src/copilot/workflow/state.py` as a JSON-serialisable TypedDict so that checkpointers can save and restore state across interruptions without encountering non-picklable database connections.
+- Used `langgraph.checkpoint.memory.MemorySaver` for in-memory checkpointing and resumption within process. Runtime execution contexts (`ExecutionContext`, sqlite connection, policy) are passed via `config["configurable"]` dependency injection.
+- Accumulates execution traces across nodes using `Annotated[list[TraceEntry], operator.add]`, capturing node name, ISO start/end timestamps, duration in ms, tool names invoked, summary counts, and status.
+- Added `to_run_state` projection function to ensure full backwards compatibility with the Phase 0 `RunState` and `to_llm_projection` models.
+
+### 3. Human-in-the-Loop Review Interruption
+- The `review_node` uses LangGraph's native `interrupt({"drafts": ...})` mechanism when pending draft advice items exist and decisions have not been pre-supplied.
+- To prevent swallowing the control flow exception, `review_node` explicitly catches and re-raises `GraphInterrupt`, allowing the LangGraph engine to checkpoint state and pause execution.
+- Resuming the workflow with `Command(resume=[{"advice_id": ..., "decision": "approved" | "rejected"}])` extracts the user decisions and executes `decide_advice` tool with `actor="user"`, properly updating the database and writing audited lifecycle events.
+
+### 4. Conditional Edge Routing and Dual Graph Modes
+- Conditional edge after `ingest`: If 0 new transactions are inserted, skips `categorize` and routes to `analyze` (to produce fresh analysis on existing data) or `finalize` (configurable via `on_zero_txns`). If `inserted > 0`, routes to `categorize`.
+- Error routing: Any unhandled node failure transitions to `error_node`, which records an audited `run_failed` event in `audit_events`, appends an error trace record, and terminates cleanly at `END`.
+- Built `build_agent_graph` for primary end-to-end execution and `build_monthly_review_graph` for targeted monthly reviews (`analyze → advise → review → finalize`).
+
