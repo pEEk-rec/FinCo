@@ -1,21 +1,70 @@
 - match: swiggy
-  is_regex: false
+  is_regex: true
   category_id: food
   confidence: 0.95
 - match: zomato
-  is_regex: false
+  is_regex: true
+  category_id: food
+  confidence: 0.95
+- match: canteen
+  is_regex: true
+  category_id: food
+  confidence: 0.90
+- match: hostelmess
+  is_regex: true
   category_id: food
   confidence: 0.95
 - match: uber
-  is_regex: false
+  is_regex: true
   category_id: travel
   confidence: 0.95
+- match: rapido
+  is_regex: true
+  category_id: travel
+  confidence: 0.95
+- match: irctc
+  is_regex: true
+  category_id: travel
+  confidence: 0.95
+- match: spotify
+  is_regex: true
+  category_id: entertainment
+  confidence: 0.95
+- match: netflix
+  is_regex: true
+  category_id: entertainment
+  confidence: 0.95
+- match: jiorecharge
+  is_regex: true
+  category_id: bills
+  confidence: 0.95
+- match: blinkit
+  is_regex: true
+  category_id: shopping
+  confidence: 0.90
+- match: amazon
+  is_regex: true
+  category_id: shopping
+  confidence: 0.90
+- match: xeroxcorner
+  is_regex: true
+  category_id: shopping
+  confidence: 0.85
+- match: rent
+  is_regex: true
+  category_id: housing
+  confidence: 0.98
 - match: salary
-  is_regex: false
+  is_regex: true
   category_id: income
   confidence: 1.0
   direction: credit
   min_amount_paise: 5000000
+- match: allowance
+  is_regex: true
+  category_id: income
+  confidence: 1.0
+  direction: credit
 - match: ".*store.*"
   is_regex: true
   category_id: groceries

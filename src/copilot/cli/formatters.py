@@ -38,7 +38,7 @@ def print_error(message: str) -> None:
 
 def print_success(message: str) -> None:
     """Print a success confirmation message."""
-    console.print(f"[bold green]✔[/bold green] {message}")
+    console.print(f"[bold green][OK][/bold green] {message}")
 
 
 def print_transactions_table(txs: list[dict[str, Any]]) -> None:

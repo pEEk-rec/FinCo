@@ -1,5 +1,30 @@
 ## Current state
-Last completed stage: 1.11 | Blockers: none
+Last completed stage: 1.12 | Blockers: none
+
+## Stage 1.12: Evaluation and Golden Scenarios: DONE
+Goal: Comprehensive evaluation harness and 12 golden scenario tests (PLAN_PHASE1 Section 5.10 & 5.12).
+Built:
+- `src/copilot/eval/harness.py`: Multi-seed evaluation runner measuring categorization accuracy, coverage, high-confidence precision, review queue routing, internal transfer F1, recurring subscription F1, anomaly detection F1, advice grounding rate, and ingestion idempotency across deterministic synthetic bank seeds (`[42, 123, 999]`). Generates `docs/eval_report.md`.
+- `scripts/run_eval.py`: Standalone CLI runner script executing the evaluation harness and reporting viva-defensible summary metrics.
+- `src/copilot/cli/main.py`: Connected `copilot eval` command with styled Rich table output and JSON streaming option (`--json`).
+- `config/categorization_rules.yaml`: Enriched regex pattern matching for student merchant narrations (Swiggy, Zomato, Canteen, Hostelmess, Uber, Rapido, IRCTC, Spotify, Netflix, Jio, Blinkit, Amazon, Xerox, Rent, Allowance, Salary) while leaving edge/anomalous merchants unmapped to genuinely exercise the human review queue.
+- `tests/golden/test_golden_scenarios.py`: 12 rigorous golden scenario tests validating critical system invariants:
+  1. Double ingestion produces 0 duplicates (idempotency).
+  2. Internal transfers excluded from spend calculations.
+  3. Recurring subscriptions detected and forecast as fixed obligations.
+  4. Budget status transitions to warning at threshold.
+  5. Budget projected exceed fires on accelerated run-rate spend.
+  6. Insufficient data triggers safe fallback forecast.
+  7. Low-confidence merchant routes to review queue.
+  8. User correction propagates to Monthly Review v2 while preserving v1.
+  9. Agent is strictly blocked from overwriting user category choice.
+  10. Undo batch reverts automated changes without touching user edits.
+  11. Advice validator strictly rejects invented numbers and triggers template fallback.
+  12. Expired/revoked consent blocks bank statement fetches.
+- `docs/eval_report.md`: Benchmark report with measured metrics: 100% accuracy, 96.04% coverage, 100% high-conf precision, 1.0 transfer F1, 1.0 recurring F1, 100% idempotency, 100% advice grounding, 155ms mean latency.
+Files: src/copilot/eval/harness.py, src/copilot/eval/__init__.py, scripts/run_eval.py, src/copilot/cli/main.py, src/copilot/cli/formatters.py, config/categorization_rules.yaml, tests/golden/test_golden_scenarios.py, docs/eval_report.md, STATUS.md
+Tests: 389 passed / 389 total | Lint: pass (0 ruff errors)
+
 
 ## Stage 1.11: CLI (primary demo surface): DONE
 Goal: The primary interactive demo and evaluation surface (PLAN_PHASE1 Section 5.9).
