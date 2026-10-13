@@ -30,11 +30,20 @@ class Decision(BaseModel):
 
 
 class PolicyRule(BaseModel):
-    """One entry in the matrix."""
+    """One entry in the matrix. Can be a single outcome or per-actor outcomes."""
 
     model_config = ConfigDict(extra="forbid")
 
-    decision: Outcome
+    decision: Outcome | None = None
+    agent: Outcome | None = None
+    user: Outcome | None = None
+
+    def get_outcome(self, actor: str) -> Outcome | None:
+        if actor == "user" and self.user is not None:
+            return self.user
+        if actor == "agent" and self.agent is not None:
+            return self.agent
+        return self.decision
 
 
 class PolicySettings(BaseModel):
@@ -55,8 +64,8 @@ def load_policy(path: str | Path) -> PolicySettings:
     return PolicySettings.model_validate(data)
 
 
-def decide(policy: PolicySettings, tool_spec: ToolSpec) -> Decision:
-    """Decide whether `tool_spec` may run under `policy`."""
+def decide(policy: PolicySettings, tool_spec: ToolSpec, actor: str = "agent") -> Decision:
+    """Decide whether `tool_spec` may run under `policy` for `actor`."""
     if tool_spec.side_effect is SideEffect.EXTERNAL:
         return Decision(
             outcome="deny",
@@ -65,17 +74,21 @@ def decide(policy: PolicySettings, tool_spec: ToolSpec) -> Decision:
 
     tool_rule = policy.tools.get(tool_spec.name)
     if tool_rule is not None:
-        return Decision(
-            outcome=tool_rule.decision,
-            reason=f"Tool rule for '{tool_spec.name}' says {tool_rule.decision}.",
-        )
+        outcome = tool_rule.get_outcome(actor)
+        if outcome is not None:
+            return Decision(
+                outcome=outcome,
+                reason=f"Tool rule for '{tool_spec.name}' acting as '{actor}' says {outcome}.",
+            )
 
     effect_rule = policy.side_effects.get(tool_spec.side_effect)
     if effect_rule is not None:
-        return Decision(
-            outcome=effect_rule.decision,
-            reason=f"Rule for {tool_spec.side_effect.value} tools says {effect_rule.decision}.",
-        )
+        outcome = effect_rule.get_outcome(actor)
+        if outcome is not None:
+            return Decision(
+                outcome=outcome,
+                reason=f"Rule for {tool_spec.side_effect.value} tools acting as '{actor}' says {outcome}.",  # noqa: E501
+            )
 
     return Decision(
         outcome=policy.default,

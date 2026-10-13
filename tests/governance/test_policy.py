@@ -73,7 +73,8 @@ def test_malformed_policy_rejected(data):
 def test_load_repo_policy():
     p = load_policy(REPO_POLICY)
     assert p.default == "deny"
-    assert p.tools["recategorize_transaction"].decision == "needs_approval"
+    assert p.tools["recategorize_transaction"].get_outcome("agent") == "needs_approval"
+    assert p.tools["recategorize_transaction"].get_outcome("user") == "allow"
 
 
 def test_load_policy_rejects_empty_file(tmp_path):

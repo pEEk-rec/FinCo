@@ -31,25 +31,46 @@ def get_connection(path: str = ":memory:") -> sqlite3.Connection:
 
 def init_db(conn: sqlite3.Connection) -> None:
     """
-    Create the schema on a fresh database. Safe to call again on an initialised one.
-
-    Raises RuntimeError if the database has a schema version this code does not know.
+    Apply all pending migrations in order. Safe to call again on an initialised database.
     """
+    # Maintain Phase 0 PRAGMA user_version for baseline tests
     version = conn.execute("PRAGMA user_version").fetchone()[0]
-    if version == SCHEMA_VERSION:
-        return
-    if version != 0:
+    if version != 0 and version != SCHEMA_VERSION:
         raise RuntimeError(f"Unknown schema version {version}; expected {SCHEMA_VERSION}.")
 
-    schema_path = pathlib.Path(__file__).parent / "schema.sql"
-    schema = schema_path.read_text(encoding="utf-8")
-    # executescript commits any pending transaction first; the script itself is BEGIN..COMMIT.
-    try:
-        conn.executescript(schema)
-    except sqlite3.Error:
-        if conn.in_transaction:
-            conn.rollback()
-        raise
+    # 1. Ensure migrations table exists
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+            version TEXT PRIMARY KEY,
+            applied_at TEXT NOT NULL
+        ) STRICT;
+        """
+    )
+
+    applied = {row[0] for row in conn.execute("SELECT version FROM schema_migrations")}
+
+    migrations_dir = pathlib.Path(__file__).parent / "migrations"
+    if not migrations_dir.exists():
+        return
+
+    migration_files = sorted(migrations_dir.glob("*.sql"))
+
+    for mf in migration_files:
+        version = mf.name
+        if version not in applied:
+            script = mf.read_text(encoding="utf-8")
+            conn.execute("PRAGMA foreign_keys = OFF;")
+            # executescript commits any pending transaction first, so we wrap the migration
+            # and the record insertion in an explicit BEGIN..COMMIT block.
+            wrapped_script = (
+                "BEGIN;\n"
+                f"{script}\n"
+                f"INSERT INTO schema_migrations (version, applied_at) VALUES ('{version}', strftime('%Y-%m-%dT%H:%M:%SZ', 'now'));\n"  # noqa: E501
+                "COMMIT;\n"
+            )
+            conn.executescript(wrapped_script)
+            conn.execute("PRAGMA foreign_keys = ON;")
 
 
 @contextmanager

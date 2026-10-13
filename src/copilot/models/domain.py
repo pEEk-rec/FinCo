@@ -67,9 +67,17 @@ class Transaction(DomainModel):
 
     category_id: Id | None = None
     category_confidence: float | None = Field(default=None, ge=0.0, le=1.0)
-    category_source: Literal["rule", "llm", "user", "none"] = "none"
+    category_source: Literal["rule", "llm", "user", "none", "override", "cache"] = "none"
 
     created_at: UtcTimestamp
+
+    fingerprint: str | None = None
+    batch_id: Id | None = None
+    merchant_normalized: str | None = None
+    mode: Literal["upi", "card", "atm", "neft", "imps", "other"] | None = None
+    is_duplicate_of: Id | None = None
+    needs_review: bool = False
+    excluded_from_spend: bool = False
 
     @model_validator(mode="after")
     def _sign_matches_direction(self) -> "Transaction":
@@ -90,3 +98,125 @@ class Budget(DomainModel):
     period: Literal["monthly"] = "monthly"
     limit_paise: StrictInt = Field(ge=0)
     warn_threshold_pct: StrictInt = Field(ge=0, le=100)
+    forecast_warn: bool = False
+
+
+# -----------------------------------------------------------------------------
+# Phase 1 Models
+# -----------------------------------------------------------------------------
+
+
+class Consent(DomainModel):
+    id: Id
+    user_id: Id
+    purpose: str
+    fi_types: str
+    account_ids: str
+    date_range_from: UtcTimestamp
+    date_range_to: UtcTimestamp
+    status: Literal["pending", "active", "revoked", "expired"]
+    expires_at: UtcTimestamp
+    created_at: UtcTimestamp
+
+
+class IngestionBatch(DomainModel):
+    id: Id
+    user_id: Id
+    consent_id: Id
+    account_id: Id
+    range_from: UtcTimestamp
+    range_to: UtcTimestamp
+    fetched_count: StrictInt = 0
+    inserted_count: StrictInt = 0
+    duplicate_count: StrictInt = 0
+    status: Literal["pending", "completed", "failed"]
+    error_code: str | None = None
+    started_at: UtcTimestamp
+    finished_at: UtcTimestamp | None = None
+
+
+class MerchantOverride(DomainModel):
+    id: Id
+    user_id: Id
+    merchant_normalized: str
+    category_id: Id
+    created_by: Literal["user"]
+    created_at: UtcTimestamp
+
+
+class LLMCategoryCache(DomainModel):
+    id: Id
+    user_id: Id
+    merchant_normalized: str
+    category_id: Id
+    confidence: float = Field(ge=0.0, le=1.0)
+    model: str
+    prompt_version: str
+    created_at: UtcTimestamp
+
+
+class RecurringSeries(DomainModel):
+    id: Id
+    user_id: Id
+    merchant_normalized: str
+    typical_amount_paise: StrictInt
+    cadence_days: StrictInt = Field(gt=0)
+    last_seen: UtcTimestamp
+    next_expected: UtcTimestamp
+    confidence: float = Field(ge=0.0, le=1.0)
+    kind: Literal["subscription", "bill", "income", "other"]
+
+
+class TransferLink(DomainModel):
+    id: Id
+    user_id: Id
+    debit_txn_id: Id
+    credit_txn_id: Id
+    confidence: float = Field(ge=0.0, le=1.0)
+    created_at: UtcTimestamp
+
+
+class Anomaly(DomainModel):
+    id: Id
+    user_id: Id
+    txn_id: Id | None = None
+    kind: str
+    score: float
+    details_json: str
+    run_id: str
+    status: Literal["open", "dismissed"]
+    created_at: UtcTimestamp
+
+
+class Finding(DomainModel):
+    id: Id
+    user_id: Id
+    run_id: str
+    kind: str
+    data_json: str
+    created_at: UtcTimestamp
+
+
+class AdviceItem(DomainModel):
+    id: Id
+    user_id: Id
+    run_id: str
+    finding_ids_json: str
+    text: str
+    evidence_json: str
+    assumptions_json: str
+    status: Literal["draft", "approved", "rejected", "superseded"]
+    decided_at: UtcTimestamp | None = None
+    decided_by: Literal["user"] | None = None
+    created_at: UtcTimestamp
+
+
+class MonthlyReview(DomainModel):
+    id: Id
+    user_id: Id
+    year: StrictInt
+    month: StrictInt = Field(ge=1, le=12)
+    version: StrictInt = Field(ge=1)
+    run_id: str
+    review_json: str
+    created_at: UtcTimestamp

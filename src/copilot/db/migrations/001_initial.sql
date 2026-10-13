@@ -8,8 +8,7 @@
 --     (user_id, <parent>_id). A row can therefore only point at a parent owned by the same user.
 --   * The whole script runs in one transaction and stamps PRAGMA user_version at the end.
 
-BEGIN;
-
+-- The whole script runs as one migration.
 CREATE TABLE users (
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL CHECK (created_at GLOB
@@ -149,5 +148,3 @@ CREATE TABLE buckets (
 ) STRICT;
 
 PRAGMA user_version = 1;
-
-COMMIT;

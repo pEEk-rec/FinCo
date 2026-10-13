@@ -9,4 +9,15 @@ tools:
   aggregate_spend_by_category: {decision: allow}
   check_budgets:               {decision: allow}
   forecast_category_spend:     {decision: allow}
-  recategorize_transaction:    {decision: needs_approval}
+  recategorize_transaction:    {agent: needs_approval, user: allow}
+  categorize_batch:            {agent: allow}
+  undo_categorize_batch:       {agent: allow}
+  ingest_statements:           {agent: allow}
+  detect_transfers:            {agent: allow}
+  detect_recurring:            {agent: allow}
+  detect_anomalies:            {agent: allow}
+  forecast_month:              {agent: allow}
+  get_financial_state:         {agent: allow}
+  undo:                        {agent: allow, user: allow}
+  draft_advice:                {agent: allow}
+  decide_advice:               {user: allow}

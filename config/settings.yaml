@@ -9,3 +9,10 @@ policy_path: config/policy.yaml
 default_warn_threshold_pct: 80  # used when a budget is created without its own threshold
 forecast_method: run_rate       # see tools.financial.run_rate_forecast
 llm_max_retries: 2              # structured_call retries after the first attempt
+transfer_window_hours: 48
+recurring_tolerance_pct: 10
+recurring_min_occurrences: 3
+
+categorization_rules_path: config/categorization_rules.yaml
+merchant_aliases_path: config/merchant_aliases.yaml
+advice_templates_path: config/advice_templates.yaml

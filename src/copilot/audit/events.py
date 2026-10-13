@@ -126,6 +126,13 @@ def _row_to_event(row: sqlite3.Row) -> AuditEvent:
     return AuditEvent(**data)
 
 
+def get_event(conn: sqlite3.Connection, event_id: str) -> AuditEvent | None:
+    row = conn.execute("SELECT * FROM audit_events WHERE id = ?", (event_id,)).fetchone()
+    if not row:
+        return None
+    return _row_to_event(row)
+
+
 def list_events(
     conn: sqlite3.Connection,
     user_id: str,

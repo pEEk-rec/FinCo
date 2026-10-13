@@ -72,8 +72,10 @@ def insert_transaction(conn: sqlite3.Connection, tx: Transaction) -> None:
         INSERT INTO transactions (
             id, user_id, account_id, occurred_at, amount_paise, direction,
             merchant_raw, description, category_id, category_confidence,
-            category_source, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            category_source, created_at, fingerprint, batch_id,
+            merchant_normalized, mode, is_duplicate_of, needs_review,
+            excluded_from_spend
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             tx.id,
@@ -88,6 +90,13 @@ def insert_transaction(conn: sqlite3.Connection, tx: Transaction) -> None:
             tx.category_confidence,
             tx.category_source,
             tx.created_at,
+            tx.fingerprint,
+            tx.batch_id,
+            tx.merchant_normalized,
+            tx.mode,
+            tx.is_duplicate_of,
+            1 if tx.needs_review else 0,
+            1 if tx.excluded_from_spend else 0,
         ),
     )
 
@@ -138,8 +147,8 @@ def insert_budget(conn: sqlite3.Connection, budget: Budget) -> None:
     conn.execute(
         """
         INSERT INTO budgets (
-            id, user_id, category_id, period, limit_paise, warn_threshold_pct
-        ) VALUES (?, ?, ?, ?, ?, ?)
+            id, user_id, category_id, period, limit_paise, warn_threshold_pct, forecast_warn
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
         (
             budget.id,
@@ -148,6 +157,7 @@ def insert_budget(conn: sqlite3.Connection, budget: Budget) -> None:
             budget.period,
             budget.limit_paise,
             budget.warn_threshold_pct,
+            1 if budget.forecast_warn else 0,
         ),
     )
 

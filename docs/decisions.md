@@ -128,3 +128,65 @@ Rule: never edit an expected value to make a test pass; a change there is a beha
 - [x] Nothing from PLAN section 5 was built (the out-of-scope chat loop was removed).
 
 Known history notes: commit `ad51480` also contains the schema/model hardening that was uncommitted when it was made, and `9dd0466` ("Final Phase 0 testing and lockdown") added the since-removed integration test. History was not rewritten (PLAN 0.3).
+
+## Stage 1.0: Align with Phase 0, migrations, config
+What was built: Phase 0 `schema.sql` was moved to `db/migrations/001_initial.sql` and the initialization logic was updated to use a `schema_migrations` table tracking applied SQL files. Pydantic `Settings` was updated to read paths for Phase 1 YAML config files, and `.env.example` was updated with Gemini LLM config properties. A Phase 1 alignment map was written.
+Why it was designed this way: A formal migration mechanism allows safe incremental evolution of the database state. Keeping the Phase 0 PRAGMA logic alongside the migrations table guarantees Phase 0 golden tests remain intact without modifying their assumptions.
+What it deliberately does not do: No actual Phase 1 tables or views are built yet.
+Question: How does the new migration engine preserve the atomicity constraint?
+Answer: Each migration is executed as a whole script inside an overarching explicitly declared `BEGIN; ... COMMIT;` string executed via `executescript`. This allows multiple statements while preserving single-transaction rollback on failure.
+
+## Stage 1.1: Schema and models
+What was built: Phase 1 database schema additions were authored in `002_phase1_schema.sql`, defining tables for consent, data ingestion batches, analytics (anomalies, findings, advice), merchant overrides, recurring series, transfer links, and extending existing core entities. Relevant views (`v_category_totals_month`, `v_budget_status_month`, `v_balance`) were added. Pydantic Domain models were created for each new entity, and data access functions in `repo.py` were adjusted for the new `Transaction` fields. Tests for view correctness and json round-trips were added.
+Why it was designed this way: SQLite enforces `STRICT` table typing. Recreating `transactions` via `new_transactions` table was necessary to append new values to the `CHECK` constraint on `category_source`. Foreign key dependencies were disabled temporarily for the migration to allow renaming. 
+What it deliberately does not do: No domain logic functions have been built for the new entities yet; they are currently just persisted structures.
+Question: Why recreate `transactions` instead of just altering it?
+Answer: SQLite limits `ALTER TABLE` operations; it doesn't support changing `CHECK` constraints (like `category_source IN (...)`). A full table recreate inside a disabled foreign-keys session safely overcomes this limit.
+
+## Stage 1.2: Synthetic data v2 and AA-shaped mock connector
+What was built: The Phase 0 `synth.py` transaction generator was extended to generate data across multiple accounts, including own-account transfers, refunds, recurring subscriptions, salary deposits, and a new ground-truth tracking map per transaction. `mock_bank.py` was rewritten to implement the `BankConnector` interface which mocks Account Aggregator consents (`create_consent`, `approve_consent`, `fetch_session`). The `loader.py` and test suite were updated to ingest based on an active consent instead of a date range.
+Why it was designed this way: Micking the Indian Account Aggregator architecture isolates the copilot logic from the bank connector. If a real AA adapter is written in the future, it just needs to implement `BankConnector` and the rest of the application remains unchanged.
+What it deliberately does not do: No parsing logic (like extracting merchant names from raw text) is done by the mock AA connector. It just provides the raw string to be parsed down the line. It also does not persist consents in a real database, just in memory for the mock.
+Question: Why is ground truth tracked for every transaction separately from the returned `Transaction` models?
+Answer: Keeping ground truth completely separate ensures that the categorisation pipeline cannot accidentally cheat by reading the true category. The evaluation harness will read the hidden truth map to grade the pipeline.
+
+## Review pass on Stages 1.1-1.4: DONE
+Goal: audit the existing implementation and fix defects before continuing to Stage 1.5.
+Fixed:
+- pipeline.py raised NameError (ToolFailure not imported) on any LLM failure; rewritten: batches by config size, validates LLM output (asked merchants, known category ids), caps LLM confidence, per-user cache ids (old id could overwrite another user's row), redacted prompt that lists allowed categories, returns counts-only PipelineReport
+- categorize_batch: unknown category goes to review instead of aborting the batch on a foreign key error; LLM confidence cap enforced inside the tool
+- undo_categorize_batch: restores only rows still in the batch's state (never clobbers a later user edit), idempotent, reverse-order restore
+- ingestion: duplicate-charge flag matched any same merchant and amount (monthly rent and subscriptions would be flagged and dropped from spend); now windowed (24h), flags the later of a pair, order independent
+- rules and aliases YAML now have validated loaders (load_rules, load_aliases); bad regex fails loudly
+- lint: 99 errors cleared (E501 ignored in tests only)
+- GeminiProvider: API key moved from URL to x-goog-api-key header.
+
+## Stage 1.5: Transfers and recurring detection
+What was built: detect_transfers and detect_recurring core logic in core/patterns.py and tool handlers in 	ools/patterns.py. Config settings 	ransfer_window_hours and ecurring_tolerance_pct were added to settings.yaml. Tests added to verify the synthetic data ground-truth anomalies are correctly identified. 
+et_spend_by_category was updated to exclude excluded_from_spend transactions.
+Why it was designed this way: Finding deterministic patterns locally reduces LLM workload and prevents false alarms on known monthly bills or salary deposits. The tool wrapper handles database mutation and audit logging while the core logic stays pure.
+
+## Stage 1.6: Analysis tools and derived state (Started)
+What was built: Examined existing tools in src/copilot/tools/financial.py. Next step is to implement detect_anomalies, update check_budgets for projected_exceed, and add get_financial_state.
+
+## Stage 1.6: Analysis tools and derived state (Completed)
+What was built:
+- Added detect_anomalies which correctly recalls ground truth anomalies (large transactions, new merchants, duplicate charges).
+- Created orecast_month which splits transactions into fixed (recurring series) and variable, and forecasts the rest of the month.
+- Created get_financial_state to output FinancialStateSnapshot including the balance, budget statuses, and queue size.
+- Updated udget_status to include projected_exceed.
+All integrated into src/copilot/tools/analysis.py and registered.
+
+## Stage 1.7: Dispute, correction and undo (Completed)
+What was built:
+- Enhanced ecategorize_transaction to support --remember flag, creating merchant overrides.
+- Applied overrides automatically to past agent-set transactions of the same merchant.
+- Added undo tool that restores efore_data from audit events to revert recategorizations or batch overrides.
+- Configured policy to allow undo for both agent and user.
+
+## Stage 1.8: Findings, advice drafting and validator (Completed)
+What was built:
+- Defined Finding model to encapsulate insights.
+- Implemented draft_advice tool that formats findings and uses a deterministic validator to ensure no halluciations, forbidden content (transfer, fund, stock) and consistent numbers (supporting rounding up to 5% tolerance like 1.2k). Fallbacks used for invalid LLM output.
+- Implemented decide_advice tool to approve/reject draft advice, properly audited.
+- Included corresponding tests checking valid and invalid drafted advice based on real finding numbers.

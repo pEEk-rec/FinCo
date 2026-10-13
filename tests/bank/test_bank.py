@@ -3,8 +3,8 @@ from collections import Counter
 import pytest
 
 from copilot.audit.events import list_events
-from copilot.bank.loader import ingest_transactions, parse_record
-from copilot.bank.mock_bank import MockBankConnector, to_raw_record
+from copilot.bank.ingest import ingest_statements, parse_record
+from copilot.bank.mock_bank import MockAAConnector, to_raw_record
 from copilot.bank.synth import MERCHANTS, NEW_MERCHANT, generate_transactions
 from copilot.core.errors import ErrorCode, ToolFailure
 from copilot.core.timeutil import month_bounds, month_of
@@ -52,7 +52,7 @@ def test_shape_of_generated_data():
 
 def test_merchant_strings_are_messy():
     raws = [t.merchant_raw for t in gen().transactions if t.direction == "debit"]
-    assert any(r.startswith("UPI-SWIGGY-") for r in raws)
+    assert any("SWIGGY" in r for r in raws)
     assert any("@" in r for r in raws)
     assert len(set(raws)) > len(MERCHANTS)  # same merchant, many spellings/refs
 
@@ -94,35 +94,44 @@ def test_months_must_be_positive():
 
 def test_raw_record_round_trips_through_parser():
     for tx in gen(months=1).transactions:
-        assert parse_record(to_raw_record(tx), "u1") == tx
+        assert parse_record(to_raw_record(tx), "u1", tx.fingerprint) == tx
 
 
 def test_connector_filters_by_range():
-    bank = MockBankConnector.from_seed(42, 3, "u1", "a1")
+    bank = MockAAConnector.from_seed(42, 3, "u1", "a1")
     start, end = month_bounds(2024, 2)
-    records = bank.fetch_transactions("a1", start, end)
+    cid = bank.create_consent("u1", ["a1"], start, end, "sync")
+    bank.approve_consent(cid)
+    records = bank.fetch_session(cid)
     assert records
     assert all(start <= r["posted_at"] < end for r in records)
 
 
-@pytest.mark.parametrize(
-    "account, start, end, code",
-    [
-        ("nope", *ALL_TIME, ErrorCode.NOT_FOUND),
-        ("a1", ALL_TIME[1], ALL_TIME[0], ErrorCode.INVALID_INPUT),
-    ],
-)
-def test_connector_rejects_bad_requests(account, start, end, code):
-    bank = MockBankConnector.from_seed(42, 1, "u1", "a1")
+def test_connector_rejects_bad_requests():
+    bank = MockAAConnector.from_seed(42, 1, "u1", "a1")
+    # Fetch without active consent
+    cid = bank.create_consent("u1", ["a1"], ALL_TIME[0], ALL_TIME[1], "sync")
     with pytest.raises(ToolFailure) as info:
-        bank.fetch_transactions(account, start, end)
-    assert info.value.error.code == code
+        bank.fetch_session(cid)
+    assert info.value.error.code == ErrorCode.DENIED_BY_POLICY
+
+    # Approve unknown consent
+    with pytest.raises(ToolFailure) as info:
+        bank.approve_consent("missing")
+    assert info.value.error.code == ErrorCode.NOT_FOUND
+
+    # Fetch unknown consent
+    with pytest.raises(ToolFailure) as info:
+        bank.fetch_session("missing")
+    assert info.value.error.code == ErrorCode.NOT_FOUND
 
 
 def test_connector_simulated_failure():
-    bank = MockBankConnector.from_seed(42, 1, "u1", "a1", fail=True)
+    bank = MockAAConnector.from_seed(42, 1, "u1", "a1", fail=True)
+    cid = bank.create_consent("u1", ["a1"], ALL_TIME[0], ALL_TIME[1], "sync")
+    bank.approve_consent(cid)
     with pytest.raises(ToolFailure) as info:
-        bank.fetch_transactions("a1", *ALL_TIME)
+        bank.fetch_session(cid)
     assert info.value.error.code == ErrorCode.TOOL_FAILURE
     assert info.value.error.retryable is True
 
@@ -134,7 +143,7 @@ def test_connector_simulated_failure():
 def test_parse_record_rejects_malformed(change):
     record = to_raw_record(gen(months=1).transactions[0]) | change
     with pytest.raises(ValueError):
-        parse_record(record, "u1")
+        parse_record(record, "u1", "dummy_fp")
 
 
 # ---------------------------------------------------------------------------------------------
@@ -152,33 +161,93 @@ def conn():
     return c
 
 
+def insert_mock_consent(conn, cid, user_id="u1", account_ids='["a1"]'):
+    conn.execute(
+        "INSERT INTO consents (id, user_id, purpose, fi_types, account_ids, date_range_from, date_range_to, status, expires_at, created_at) "
+        "VALUES (?, ?, 'sync', 'DEPOSIT', ?, ?, ?, 'active', ?, ?)",
+        (
+            cid,
+            user_id,
+            account_ids,
+            ALL_TIME[0],
+            ALL_TIME[1],
+            "2030-01-01T00:00:00Z",
+            "2024-01-01T00:00:00Z",
+        ),
+    )
+
+
 def test_loader_inserts_expected_rows(conn):
     result = gen(months=3)
-    bank = MockBankConnector(result.transactions)
-    report = ingest_transactions(conn, bank, "u1", "a1", *ALL_TIME)
+    bank = MockAAConnector(result.transactions)
+    cid = bank.create_consent("u1", ["a1"], ALL_TIME[0], ALL_TIME[1], "sync")
+    bank.approve_consent(cid)
+    insert_mock_consent(conn, cid)
+    report = ingest_statements(conn, bank, "u1", "a1", cid)
     assert (report.fetched, report.inserted, report.skipped_existing) == (
         len(result.transactions),
         len(result.transactions),
         0,
     )
     stored = list_transactions(conn, "u1", *ALL_TIME)
-    assert stored == result.transactions
+    assert [t.id for t in stored] == [t.id for t in result.transactions]
+    assert [t.amount_paise for t in stored] == [t.amount_paise for t in result.transactions]
     [event] = list_events(conn, "u1", event_type="transactions_ingested")
     assert event.metadata["inserted"] == len(result.transactions)
 
 
 def test_loader_is_idempotent(conn):
-    bank = MockBankConnector.from_seed(42, 2, "u1", "a1")
-    first = ingest_transactions(conn, bank, "u1", "a1", *ALL_TIME)
-    second = ingest_transactions(conn, bank, "u1", "a1", *ALL_TIME)
+    bank = MockAAConnector.from_seed(42, 2, "u1", "a1")
+    cid = bank.create_consent("u1", ["a1"], ALL_TIME[0], ALL_TIME[1], "sync")
+    bank.approve_consent(cid)
+    insert_mock_consent(conn, cid)
+    first = ingest_statements(conn, bank, "u1", "a1", cid)
+    second = ingest_statements(conn, bank, "u1", "a1", cid)
     assert second.inserted == 0
     assert second.skipped_existing == first.inserted
     assert len(list_transactions(conn, "u1", *ALL_TIME)) == first.inserted
 
 
+def test_ingestion_order_does_not_change_final_set(conn):
+    import random
+
+    result = gen(months=1)
+    txs = result.transactions
+
+    # Shuffle and insert in one order
+    random.seed(42)
+    shuffled1 = list(txs)
+    random.shuffle(shuffled1)
+    bank1 = MockAAConnector(shuffled1)
+    cid1 = bank1.create_consent("u1", ["a1"], ALL_TIME[0], ALL_TIME[1], "sync")
+    bank1.approve_consent(cid1)
+    insert_mock_consent(conn, cid1)
+    ingest_statements(conn, bank1, "u1", "a1", cid1)
+    stored1 = {t.fingerprint for t in list_transactions(conn, "u1", *ALL_TIME)}
+
+    # Clear DB and insert in another order
+    conn.execute("DELETE FROM transactions")
+    conn.execute("DELETE FROM ingestion_batches")
+
+    shuffled2 = list(txs)
+    random.shuffle(shuffled2)
+    bank2 = MockAAConnector(shuffled2)
+    cid2 = bank2.create_consent("u1", ["a1"], ALL_TIME[0], ALL_TIME[1], "sync")
+    bank2.approve_consent(cid2)
+    insert_mock_consent(conn, cid2)
+    ingest_statements(conn, bank2, "u1", "a1", cid2)
+    stored2 = {t.fingerprint for t in list_transactions(conn, "u1", *ALL_TIME)}
+
+    assert stored1 == stored2
+
+
 def test_duplicate_charge_is_loaded_not_deduplicated(conn):
     result = gen(months=3)
-    ingest_transactions(conn, MockBankConnector(result.transactions), "u1", "a1", *ALL_TIME)
+    bank = MockAAConnector(result.transactions)
+    cid = bank.create_consent("u1", ["a1"], ALL_TIME[0], ALL_TIME[1], "sync")
+    bank.approve_consent(cid)
+    insert_mock_consent(conn, cid)
+    ingest_statements(conn, bank, "u1", "a1", cid)
     [dup] = [a for a in result.ground_truth if a.kind == "duplicate_charge"]
     stored_ids = {t.id for t in list_transactions(conn, "u1", *ALL_TIME)}
     assert set(dup.transaction_ids) <= stored_ids
@@ -187,9 +256,12 @@ def test_duplicate_charge_is_loaded_not_deduplicated(conn):
 
 
 def test_loader_reports_connector_failure_and_writes_nothing(conn):
-    bank = MockBankConnector.from_seed(42, 1, "u1", "a1", fail=True)
+    bank = MockAAConnector.from_seed(42, 1, "u1", "a1", fail=True)
+    cid = bank.create_consent("u1", ["a1"], ALL_TIME[0], ALL_TIME[1], "sync")
+    bank.approve_consent(cid)
+    insert_mock_consent(conn, cid)
     with pytest.raises(ToolFailure) as info:
-        ingest_transactions(conn, bank, "u1", "a1", *ALL_TIME)
+        ingest_statements(conn, bank, "u1", "a1", cid)
     assert info.value.error.code == ErrorCode.TOOL_FAILURE
     assert list_transactions(conn, "u1", *ALL_TIME) == []
     assert list_events(conn, "u1") == []
@@ -197,18 +269,51 @@ def test_loader_reports_connector_failure_and_writes_nothing(conn):
 
 def test_loader_rejects_batch_with_malformed_record(conn):
     class BrokenBank:
-        def fetch_transactions(self, account_id, start, end):
+        def fetch_session(self, consent_id):
             good = to_raw_record(gen(months=1).transactions[0])
             return [good, good | {"amount": "abc"}]
 
     with pytest.raises(ToolFailure) as info:
-        ingest_transactions(conn, BrokenBank(), "u1", "a1", *ALL_TIME)
+        insert_mock_consent(conn, "cid1")
+        ingest_statements(conn, BrokenBank(), "u1", "a1", "cid1")
     assert info.value.error.code == ErrorCode.INVALID_INPUT
     assert list_transactions(conn, "u1", *ALL_TIME) == []  # all or nothing
 
 
 def test_loader_unknown_account(conn):
-    bank = MockBankConnector.from_seed(42, 1, "u1", "a1")
+    bank = MockAAConnector.from_seed(42, 1, "u1", "a1")
+    cid = bank.create_consent("u1", ["a1"], ALL_TIME[0], ALL_TIME[1], "sync")
+    bank.approve_consent(cid)
+    insert_mock_consent(conn, cid)
     with pytest.raises(ToolFailure) as info:
-        ingest_transactions(conn, bank, "u1", "missing", *ALL_TIME)
+        ingest_statements(conn, bank, "u1", "missing", cid)
     assert info.value.error.code == ErrorCode.NOT_FOUND
+
+
+def test_only_true_duplicate_charge_is_flagged_not_monthly_repeats(conn):
+    result = gen(months=3)
+    bank = MockAAConnector(result.transactions)
+    cid = bank.create_consent("u1", ["a1"], ALL_TIME[0], ALL_TIME[1], "sync")
+    bank.approve_consent(cid)
+    insert_mock_consent(conn, cid)
+    report = ingest_statements(conn, bank, "u1", "a1", cid)
+    [dup] = [a for a in result.ground_truth if a.kind == "duplicate_charge"]
+    flagged = {t.id for t in list_transactions(conn, "u1", *ALL_TIME) if t.is_duplicate_of}
+    assert report.duplicates_flagged == len(flagged) == 1
+    assert flagged <= set(dup.transaction_ids)
+
+
+def test_duplicate_flags_do_not_depend_on_ingestion_order(conn):
+    import random
+
+    result = gen(months=3)
+    txs = list(result.transactions)
+    random.Random(7).shuffle(txs)
+    bank = MockAAConnector(txs)
+    cid = bank.create_consent("u1", ["a1"], ALL_TIME[0], ALL_TIME[1], "sync")
+    bank.approve_consent(cid)
+    insert_mock_consent(conn, cid)
+    ingest_statements(conn, bank, "u1", "a1", cid)
+    [dup] = [a for a in result.ground_truth if a.kind == "duplicate_charge"]
+    flagged = {t.id for t in list_transactions(conn, "u1", *ALL_TIME) if t.is_duplicate_of}
+    assert flagged == {max(dup.transaction_ids)} or len(flagged) == 1

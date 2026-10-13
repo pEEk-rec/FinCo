@@ -12,8 +12,9 @@ import argparse
 import sqlite3
 from datetime import datetime
 
-from copilot.audit.events import list_events
 from copilot.bank.loader import ingest_transactions
+
+from copilot.audit.events import list_events
 from copilot.bank.mock_bank import MockBankConnector
 from copilot.bank.synth import generate_transactions
 from copilot.core.config import load_settings

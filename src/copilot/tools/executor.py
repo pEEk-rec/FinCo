@@ -136,7 +136,7 @@ def execute_tool(
             error = ToolError(code=ErrorCode.NOT_FOUND, message=f"Tool '{tool_name}' not found.")
             return _fail(ctx, str(tool_name), raw_input, None, approved, error)
 
-        decision = decide(ctx.policy, spec)
+        decision = decide(ctx.policy, spec, ctx.actor)
         if decision.outcome == "deny":
             error = ToolError(code=ErrorCode.DENIED_BY_POLICY, message=decision.reason)
             return _fail(ctx, spec.name, raw_input, decision, approved, error)

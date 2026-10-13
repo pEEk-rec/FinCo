@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 # Earliest timestamp we treat as "all time" for balance queries.
 _EPOCH = "1970-01-01T00:00:00Z"
 
-BudgetState = Literal["ok", "warning", "exceeded"]
+BudgetState = Literal["ok", "warning", "exceeded", "projected_exceed"]
 
 # ---------------------------------------------------------------------------------------------
 # Pure functions
@@ -63,7 +63,11 @@ def net_spend_by_category(txs: Iterable[Transaction]) -> dict[str | None, int]:
 
 
 def budget_status(
-    spent_paise: int, limit_paise: int, warn_threshold_pct: int
+    spent_paise: int,
+    limit_paise: int,
+    warn_threshold_pct: int,
+    projected_spend_paise: int = 0,
+    forecast_warn: bool = False,
 ) -> tuple[int | None, BudgetState]:
     """
     Status of one budget, using integer comparisons only.
@@ -78,6 +82,8 @@ def budget_status(
         return pct_used, "exceeded"
     if spent_paise > 0 and spent_paise * 100 >= warn_threshold_pct * limit_paise:
         return pct_used, "warning"
+    if forecast_warn and projected_spend_paise > limit_paise:
+        return pct_used, "projected_exceed"
     return pct_used, "ok"
 
 
@@ -284,10 +290,15 @@ def check_budgets_handler(ctx: "ExecutionContext", year: int, month: int) -> Che
     """Compare each budget with the month's net spend in its category."""
     txs = list_transactions(ctx.conn, ctx.user_id, *month_bounds(year, month))
     spend = net_spend_by_category(txs)
+    days_in_month = calendar.monthrange(year, month)[1]
+    elapsed = days_elapsed_in_month(year, month, now_utc(ctx.clock))
     statuses = []
     for budget in list_budgets(ctx.conn, ctx.user_id):
         spent = spend.get(budget.category_id, 0)
-        pct_used, status = budget_status(spent, budget.limit_paise, budget.warn_threshold_pct)
+        projected = run_rate_forecast(spent, elapsed, days_in_month)
+        pct_used, status = budget_status(
+            spent, budget.limit_paise, budget.warn_threshold_pct, projected, budget.forecast_warn
+        )
         statuses.append(
             BudgetStatusOutput(
                 category_id=budget.category_id,
@@ -351,6 +362,7 @@ class RecategorizeInput(ToolInput):
 
     transaction_id: Id
     new_category_id: Id | None
+    remember: bool = False
 
 
 class RecategorizeOutput(ToolOutput):
@@ -363,19 +375,27 @@ class RecategorizeOutput(ToolOutput):
 
 
 def recategorize_transaction_handler(
-    ctx: "ExecutionContext", transaction_id: str, new_category_id: str | None
+    ctx: "ExecutionContext",
+    transaction_id: str,
+    new_category_id: str | None,
+    remember: bool = False,
 ) -> RecategorizeOutput:
     """
     Set a transaction's category (source 'user', confidence 1.0) and audit before/after.
 
-    The before state holds every field changed, so the event alone is enough to undo it.
-    Runs inside the executor's savepoint: the update and the audit event commit together.
+    If remember=True, creates a merchant override and re-applies it to past agent-set
+    transactions of that merchant.
     """
     tx = get_transaction(ctx.conn, ctx.user_id, transaction_id)
     if tx is None:
         raise ToolFailure(ErrorCode.NOT_FOUND, f"Transaction '{transaction_id}' not found.")
     if new_category_id is not None and get_category(ctx.conn, ctx.user_id, new_category_id) is None:
         raise ToolFailure(ErrorCode.NOT_FOUND, f"Category '{new_category_id}' not found.")
+
+    if tx.category_source == "user" and ctx.actor != "user":
+        raise ToolFailure(
+            ErrorCode.DENIED_BY_POLICY, "Agent cannot recategorize a user-set transaction."
+        )
 
     before = {
         "category_id": tx.category_id,
@@ -397,6 +417,71 @@ def recategorize_transaction_handler(
         after_data=after,
         clock=ctx.clock,
     )
+
+    if remember and tx.merchant_normalized:
+        # Create override
+        import uuid
+
+        ctx.conn.execute(
+            """
+            INSERT INTO merchant_overrides (
+                id, user_id, merchant_normalized, category_id, created_by, created_at
+            )
+            VALUES (?, ?, ?, ?, 'user', ?)
+            ON CONFLICT(user_id, merchant_normalized) DO UPDATE SET
+                category_id = excluded.category_id,
+                created_at = excluded.created_at
+            """,
+            (
+                str(uuid.uuid4()),
+                ctx.user_id,
+                tx.merchant_normalized,
+                new_category_id,
+                tx.created_at,
+            ),
+        )
+
+        # Apply to past non-user transactions
+        past_txs = ctx.conn.execute(
+            "SELECT id, category_id, category_source, category_confidence FROM transactions "
+            "WHERE user_id = ? AND merchant_normalized = ? "
+            "AND category_source != 'user' AND id != ?",
+            (ctx.user_id, tx.merchant_normalized, transaction_id),
+        ).fetchall()
+
+        if past_txs:
+            before_batch = {}
+            after_batch = {}
+            for p_tx in past_txs:
+                p_id = p_tx[0]
+                before_batch[p_id] = {
+                    "category_id": p_tx[1],
+                    "category_source": p_tx[2],
+                    "category_confidence": p_tx[3],
+                }
+                after_batch[p_id] = {
+                    "category_id": new_category_id,
+                    "category_source": "override",
+                    "category_confidence": 1.0,
+                }
+                update_transaction_category(
+                    ctx.conn, ctx.user_id, p_id, new_category_id, "override", 1.0
+                )
+
+            record_event(
+                ctx.conn,
+                user_id=ctx.user_id,
+                actor=ctx.actor,
+                event_type="override_applied",
+                reason=f"Override applied from transaction {transaction_id}",
+                run_id=ctx.run_id,
+                entity_type="transaction_batch",
+                entity_id=tx.merchant_normalized,
+                before_data=before_batch,
+                after_data=after_batch,
+                clock=ctx.clock,
+            )
+
     return RecategorizeOutput(
         transaction_id=transaction_id,
         previous_category_id=tx.category_id,
@@ -406,62 +491,149 @@ def recategorize_transaction_handler(
 
 
 # ---------------------------------------------------------------------------------------------
-# Registration
+# 7. ingest_statements (WRITE_LOGICAL)
 # ---------------------------------------------------------------------------------------------
 
+
+class IngestStatementsInput(ToolInput):
+    account_id: str
+    consent_id: str
+
+
+class IngestStatementsOutput(ToolOutput):
+    fetched: int
+    inserted: int
+    skipped_existing: int
+    duplicates_flagged: int
+
+
+from copilot.bank.ingest import ingest_statements_handler  # noqa: E402
+from copilot.tools.advice import ADVICE_TOOLS  # noqa: E402
+from copilot.tools.analysis import ANALYSIS_TOOLS  # noqa: E402
+from copilot.tools.categorisation import (  # noqa: E402
+    CategorizeBatchInput,
+    CategorizeBatchOutput,
+    UndoCategorizeBatchInput,
+    UndoCategorizeBatchOutput,
+    categorize_batch_handler,
+    undo_categorize_batch_handler,
+)
+
+# ---------------------------------------------------------------------------------------------
+# Registration
+# ---------------------------------------------------------------------------------------------
+from copilot.tools.patterns import (  # noqa: E402
+    DetectRecurringInput,
+    DetectRecurringOutput,
+    DetectTransfersInput,
+    DetectTransfersOutput,
+    detect_recurring_handler,
+    detect_transfers_handler,
+)
+from copilot.tools.undo import UNDO_TOOL  # noqa: E402
+
 FINANCIAL_TOOLS: tuple[ToolSpec, ...] = (
-    ToolSpec(
-        name="get_transactions",
-        description="List the user's transactions in a UTC time range, optionally by category.",
-        input_model=GetTransactionsInput,
-        output_model=GetTransactionsOutput,
-        side_effect=SideEffect.READ,
-        handler=get_transactions_handler,
-    ),
-    ToolSpec(
-        name="get_balance",
-        description="Current balance of one account or all accounts, in paise.",
-        input_model=GetBalanceInput,
-        output_model=GetBalanceOutput,
-        side_effect=SideEffect.READ,
-        handler=get_balance_handler,
-    ),
-    ToolSpec(
-        name="aggregate_spend_by_category",
-        description="Net spend per category for an IST calendar month, in paise.",
-        input_model=MonthInput,
-        output_model=AggregateSpendOutput,
-        side_effect=SideEffect.READ,
-        handler=aggregate_spend_by_category_handler,
-    ),
-    ToolSpec(
-        name="check_budgets",
-        description="Status (ok / warning / exceeded) of every monthly budget.",
-        input_model=MonthInput,
-        output_model=CheckBudgetsOutput,
-        side_effect=SideEffect.READ,
-        handler=check_budgets_handler,
-    ),
-    ToolSpec(
-        name="forecast_category_spend",
-        description="Run-rate forecast of month-end spend for one category.",
-        input_model=ForecastInput,
-        output_model=ForecastOutput,
-        side_effect=SideEffect.READ,
-        handler=forecast_category_spend_handler,
-    ),
-    ToolSpec(
-        name="recategorize_transaction",
-        description="Change a transaction's category; audited and reversible.",
-        input_model=RecategorizeInput,
-        output_model=RecategorizeOutput,
-        side_effect=SideEffect.WRITE_LOGICAL,
-        handler=recategorize_transaction_handler,
-    ),
+    ANALYSIS_TOOLS
+    + (UNDO_TOOL,)
+    + ADVICE_TOOLS
+    + (
+        ToolSpec(
+            name="get_transactions",
+            description="List the user's transactions in a UTC time range, optionally by category.",
+            input_model=GetTransactionsInput,
+            output_model=GetTransactionsOutput,
+            side_effect=SideEffect.READ,
+            handler=get_transactions_handler,
+        ),
+        ToolSpec(
+            name="get_balance",
+            description="Current balance of one account or all accounts, in paise.",
+            input_model=GetBalanceInput,
+            output_model=GetBalanceOutput,
+            side_effect=SideEffect.READ,
+            handler=get_balance_handler,
+        ),
+        ToolSpec(
+            name="aggregate_spend_by_category",
+            description="Net spend per category for an IST calendar month, in paise.",
+            input_model=MonthInput,
+            output_model=AggregateSpendOutput,
+            side_effect=SideEffect.READ,
+            handler=aggregate_spend_by_category_handler,
+        ),
+        ToolSpec(
+            name="check_budgets",
+            description="Status (ok / warning / exceeded) of every monthly budget.",
+            input_model=MonthInput,
+            output_model=CheckBudgetsOutput,
+            side_effect=SideEffect.READ,
+            handler=check_budgets_handler,
+        ),
+        ToolSpec(
+            name="forecast_category_spend",
+            description="Run-rate forecast of month-end spend for one category.",
+            input_model=ForecastInput,
+            output_model=ForecastOutput,
+            side_effect=SideEffect.READ,
+            handler=forecast_category_spend_handler,
+        ),
+        ToolSpec(
+            name="recategorize_transaction",
+            description="Change a transaction's category; audited and reversible.",
+            input_model=RecategorizeInput,
+            output_model=RecategorizeOutput,
+            side_effect=SideEffect.WRITE_LOGICAL,
+            handler=recategorize_transaction_handler,
+        ),
+        ToolSpec(
+            name="categorize_batch",
+            description="Batch update transaction categories.",
+            input_model=CategorizeBatchInput,
+            output_model=CategorizeBatchOutput,
+            side_effect=SideEffect.WRITE_LOGICAL,
+            handler=categorize_batch_handler,
+        ),
+        ToolSpec(
+            name="undo_categorize_batch",
+            description="Undo a batch categorization by run ID.",
+            input_model=UndoCategorizeBatchInput,
+            output_model=UndoCategorizeBatchOutput,
+            side_effect=SideEffect.WRITE_LOGICAL,
+            handler=undo_categorize_batch_handler,
+        ),
+        ToolSpec(
+            name="ingest_statements",
+            description="Ingest bank records from a consent. Allowed for agent.",
+            input_model=IngestStatementsInput,
+            output_model=IngestStatementsOutput,
+            side_effect=SideEffect.WRITE_LOGICAL,
+            handler=ingest_statements_handler,
+        ),
+    )
 )
 
 
 def register_financial_tools(register_fn: Callable[[ToolSpec], None] = register) -> None:
     """Register every financial tool (into the global registry by default)."""
+    register(
+        ToolSpec(
+            name="detect_transfers",
+            description="Find and link own-account transfers, excluding them from spend.",
+            side_effect=SideEffect.WRITE_LOGICAL,
+            input_model=DetectTransfersInput,
+            output_model=DetectTransfersOutput,
+            handler=detect_transfers_handler,
+        )
+    )
+    register(
+        ToolSpec(
+            name="detect_recurring",
+            description="Detect recurring series of transactions.",
+            side_effect=SideEffect.WRITE_LOGICAL,
+            input_model=DetectRecurringInput,
+            output_model=DetectRecurringOutput,
+            handler=detect_recurring_handler,
+        )
+    )
     for spec in FINANCIAL_TOOLS:
         register_fn(spec)

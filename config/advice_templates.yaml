@@ -1,0 +1,6 @@
+default: "You had a {subject} finding in {period_label}."
+templates:
+  category_spend: "Your net spend on {subject} in {period_label} was {spend}."
+assumptions:
+  category_spend:
+    - "Excludes transfers to your own accounts."

@@ -84,7 +84,7 @@ def test_every_table_has_user_id(conn):
         )
     ]
     for table in tables:
-        if table == "users":
+        if table in ("users", "schema_migrations"):
             continue
         cols = {r["name"]: r for r in conn.execute(f"PRAGMA table_info({table})")}
         assert "user_id" in cols, table

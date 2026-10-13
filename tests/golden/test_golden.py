@@ -11,8 +11,8 @@ from typing import Any
 import pytest
 
 from copilot.audit.events import list_events
-from copilot.bank.loader import ingest_transactions
-from copilot.bank.mock_bank import MockBankConnector
+from copilot.bank.ingest import ingest_statements
+from copilot.bank.mock_bank import MockAAConnector
 from copilot.bank.synth import generate_transactions
 from copilot.core.config import load_settings
 from copilot.core.errors import ToolFailure
@@ -164,12 +164,31 @@ def run_unknown_tool(s: dict[str, Any]) -> None:
     assert (event.entity_id, event.before) == (s["tool_name"], s["input"])
 
 
+def insert_mock_consent(conn, cid, user_id="u1", account_ids='["a1"]'):
+    conn.execute(
+        "INSERT INTO consents (id, user_id, purpose, fi_types, account_ids, date_range_from, date_range_to, status, expires_at, created_at) "
+        "VALUES (?, ?, 'sync', 'DEPOSIT', ?, ?, ?, 'active', ?, ?)",
+        (
+            cid,
+            user_id,
+            account_ids,
+            ALL_TIME[0],
+            ALL_TIME[1],
+            "2030-01-01T00:00:00Z",
+            "2024-01-01T00:00:00Z",
+        ),
+    )
+
+
 def run_bank_failure(s: dict[str, Any]) -> None:
     ctx = build_ctx(s)
     before = ctx.conn.execute("SELECT COUNT(*) FROM transactions").fetchone()[0]
-    bank = MockBankConnector.from_seed(GOLDEN["seed"], s["months"], "u1", "a1", fail=True)
+    bank = MockAAConnector.from_seed(GOLDEN["seed"], s["months"], "u1", "a1", fail=True)
+    cid = bank.create_consent("u1", ["a1"], ALL_TIME[0], ALL_TIME[1], "sync")
+    bank.approve_consent(cid)
+    insert_mock_consent(ctx.conn, cid)
     with pytest.raises(ToolFailure) as info:
-        ingest_transactions(ctx.conn, bank, "u1", "a1", *ALL_TIME)
+        ingest_statements(ctx.conn, bank, "u1", "a1", cid)
     assert info.value.error.code.value == s["error_code"]
     assert info.value.error.retryable is s["retryable"]
     assert ctx.conn.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == before
@@ -181,7 +200,11 @@ def run_duplicate_visible(s: dict[str, Any]) -> None:
     insert_user(conn, User(id="u1", created_at=T0))
     insert_account(conn, Account(id="a1", user_id="u1", name="Savings", created_at=T0))
     synth = generate_transactions(GOLDEN["seed"], s["months"], "u1", "a1")
-    ingest_transactions(conn, MockBankConnector(synth.transactions), "u1", "a1", *ALL_TIME)
+    bank = MockAAConnector(synth.transactions)
+    cid = bank.create_consent("u1", ["a1"], ALL_TIME[0], ALL_TIME[1], "sync")
+    bank.approve_consent(cid)
+    insert_mock_consent(conn, cid)
+    ingest_statements(conn, bank, "u1", "a1", cid)
     [dup] = [a for a in synth.ground_truth if a.kind == "duplicate_charge"]
     first = next(t for t in synth.transactions if t.id == dup.transaction_ids[0])
     ctx = ExecutionContext(conn, "u1", s["id"], load_policy(load_settings().policy_path))

@@ -17,6 +17,9 @@ policy_path: config/policy.yaml
 default_warn_threshold_pct: 80
 forecast_method: run_rate
 llm_max_retries: 2
+categorization_rules_path: config/categorization_rules.yaml
+merchant_aliases_path: config/merchant_aliases.yaml
+advice_templates_path: config/advice_templates.yaml
 """
 
 
