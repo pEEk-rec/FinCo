@@ -357,22 +357,22 @@ Only after every earlier stage is done. A thin page over the same services (no b
 
 ## 7. Phase 1 exit checklist
 
-- [ ] Full suite and lint pass; Phase 0 tests unchanged and green
-- [ ] Migrations apply cleanly on a fresh database and are idempotent
-- [ ] Ingestion idempotent; duplicates flagged, never dropped
-- [ ] Consent required, scoped and expiring for every fetch
-- [ ] Categorization: user > override > rule > cache > LLM > review queue; agent never overwrites user choices
-- [ ] Every LLM prompt redacted (tested); LLM failures degrade to review, never crash
-- [ ] Transfers excluded from spend; recurring payments drive fixed-part forecasts
-- [ ] Forecast returns ranges or "insufficient data"; no floats in money paths
-- [ ] Advice is draft-only, validated against findings, template fallback works
-- [ ] Corrections propagate to totals, budgets and monthly review; full undo
-- [ ] Audit trail shows before/after, reason, timestamp, status, reversibility for every change
-- [ ] LangGraph graph runs end to end with interrupt-based review and a printable trace
-- [ ] No tool handler reachable except through the executor (tested); no money-movement tool (tested)
-- [ ] CLI demo script runs offline end to end
-- [ ] Evaluation report generated with honest numbers and held-out seeds
-- [ ] No AI attribution anywhere
+- [x] Full suite and lint pass; Phase 0 tests unchanged and green
+- [x] Migrations apply cleanly on a fresh database and are idempotent
+- [x] Ingestion idempotent; duplicates flagged, never dropped
+- [x] Consent required, scoped and expiring for every fetch
+- [x] Categorization: user > override > rule > cache > LLM > review queue; agent never overwrites user choices
+- [x] Every LLM prompt redacted (tested); LLM failures degrade to review, never crash
+- [x] Transfers excluded from spend; recurring payments drive fixed-part forecasts
+- [x] Forecast returns ranges or "insufficient data"; no floats in money paths
+- [x] Advice is draft-only, validated against findings, template fallback works
+- [x] Corrections propagate to totals, budgets and monthly review; full undo
+- [x] Audit trail shows before/after, reason, timestamp, status, reversibility for every change
+- [x] LangGraph graph runs end to end with interrupt-based review and a printable trace
+- [x] No tool handler reachable except through the executor (tested); no money-movement tool (tested)
+- [x] CLI demo script runs offline end to end
+- [x] Evaluation report generated with honest numbers and held-out seeds
+- [x] No AI attribution anywhere
 
 ---
 

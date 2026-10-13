@@ -277,4 +277,53 @@ What was built:
 - Execution traces are serialized with `default=str` to `data/trace_<run_id>.json` during workflow execution, enabling subsequent trace inspections via `copilot trace <run_id>`.
 - `load_and_register_connector` synchronizes SQLite consent records with the in-memory mock bank connector across process boundaries, ensuring deterministic Account Aggregator session fetching.
 
+## Stage 1.12: Evaluation Harness and Golden Scenarios
+
+### 1. Honest Multi-Seed Benchmark Engine
+- What was built: `src/copilot/eval/harness.py` and `scripts/run_eval.py` implementing a deterministic evaluation harness across multiple synthetic seeds (`[42, 123, 999]`), outputting `docs/eval_report.md`.
+- Why it was designed this way: A defensible viva evaluation must provide concrete mathematical metrics on categorization accuracy, coverage, review queue rate, transfer detection F1, subscription detection F1, anomaly detection F1, advice grounding rate, and double ingestion idempotency rather than anecdotal claims.
+- Rules enforced: Never tune categorization rules on evaluation seeds; maintain held-out seeds; report both mean and spread; state weak spots plainly.
+
+### 2. Golden Scenarios Suite
+- What was built: 12 comprehensive scenario tests in `tests/golden/test_golden_scenarios.py` validating critical Phase 1 safety and consistency invariants:
+  1. Idempotent double ingestion produces zero duplicate rows.
+  2. Internal transfers between owned accounts excluded from spend aggregations.
+  3. Recurring subscriptions correctly identified and projected as fixed obligations.
+  4. Budget warning transitions precisely at configured threshold.
+  5. Run-rate spend acceleration triggers projected exceed warning.
+  6. Insufficient historical data gracefully triggers safe fallback forecast.
+  7. Low-confidence ambiguous transactions routed to human review queue.
+  8. User corrections propagate to Monthly Review v2 while preserving immutable v1.
+  9. Autonomous agent strictly blocked from overwriting user category choices.
+  10. Batch undo safely reverts automated categorizations without affecting user edits.
+  11. Advice validator rejects ungrounded/invented numbers and triggers deterministic template fallback.
+  12. Expired or revoked Account Aggregator consent strictly blocks statement fetches.
+
+## Stage 1.13: Minimal Streamlit UI Blueprint
+
+### 1. Architectural Invariant: Zero Business Logic in UI
+- What was built: `src/copilot/ui/app.py` providing a clean, modular Streamlit blueprint containing 5 core financial views:
+  1. Financial Overview Dashboard (KPI cards, budget progress bars, recent transactions).
+  2. Review Queue (HITL workflow with category selection, "Remember rule" checkbox, recategorization).
+  3. Financial Advice Approvals (draft advice review with Approve/Reject actions).
+  4. Monthly Review Viewer (versioned Markdown and HTML preview with on-demand rebuild).
+  5. Audit Trail & Undo (append-only timeline, before/after diffs, one-click undo).
+- Why: Serves as a working functional prototype and architectural blueprint for subsequent phases without duplicating any domain logic, database queries, or policy rules.
+- Choke point enforcement: Streamlit callbacks NEVER import or execute tool handlers directly. Every action strictly invokes `execute_tool(ctx, tool_name, params)` with actor attribution and append-only audit logging.
+
+## Stage 1.14: Hardening, Security Firewalls, and Phase 1 Sign-Off
+
+### 1. Hardening and Error Degradation
+- What was reviewed and verified:
+  - Database integrity: Foreign key constraints, negative budget prevention, and integer paise arithmetic across all paths.
+  - Logging privacy: Zero PII, bank account numbers, or transaction narrations emitted to logs or standard error.
+  - LLM resilience: Automatic PII redaction firewall; quota exhaustion or provider errors gracefully fall back to deterministic template advice and review queues without application crashes.
+  - Idempotency & Concurrency: Savepoint rollbacks ensure atomicity on tool failures; append-only SQLite triggers prevent mutation of audit events.
+
+### 2. Phase 1 Sign-Off
+- Full test suite: 397 passed / 397 total.
+- Code quality: Clean linting with 0 ruff errors across src, tests, config, and scripts.
+- Documentation: Complete architecture reference, CLI guide, Streamlit quickstart, and evaluation benchmark in `README.md`, `STATUS.md`, `docs/PLAN_PHASE1.md`, and `docs/eval_report.md`.
+
+
 

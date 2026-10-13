@@ -1,5 +1,27 @@
 ## Current state
-Last completed stage: 1.13 | Blockers: none
+Last completed stage: 1.14 (Phase 1 Complete) | Blockers: none
+
+## Stage 1.14: Hardening, Documentation, and Phase 1 Sign-Off: DONE
+Goal: Production-quality finish, security hardening pass, complete documentation, and Phase 1 exit sign-off (PLAN_PHASE1 Section 5.12 & Section 7).
+Built & Verified:
+- **Hardening and Failure-Handling Pass**:
+  - Validated strict database constraints: SQLite foreign keys, `user_id` isolation on every query, negative budget limit prevention, and integer-paise financial arithmetic across all paths.
+  - Validated LLM safety firewall: Automatic PII redaction (account numbers, emails, phone numbers, merchant names) before prompt assembly; graceful degradation to deterministic template advice and review queues on LLM quota or connection errors.
+  - Validated consent security: Account Aggregator sessions require active, unexpired consent; expired or revoked consents block data fetching deterministically.
+  - Validated partial and empty months: Safe run-rate projections and zero-transaction workflow paths.
+- **Privacy & Logging Audit**:
+  - Zero PII, account credentials, or transaction narrations emitted to system loggers or stderr.
+- **Documentation & Deliverables**:
+  - `README.md`: Comprehensive guide featuring full ASCII architecture diagrams, core design principles, security firewalls, quickstart setup, unified CLI reference, Streamlit UI instructions, and evaluation harness metrics.
+  - `docs/PLAN_PHASE1.md`: All 16 Phase 1 Exit Checklist criteria verified and marked green.
+  - `docs/decisions.md`: Complete architectural decisions log recorded for Stages 1.0 through 1.14.
+  - `docs/eval_report.md`: Formal evaluation benchmark report across deterministic seeds.
+- **Verification**:
+  - Full test suite: 397 / 397 tests passing (`pytest`).
+  - Linter: 0 errors (`ruff check src tests config scripts`).
+Files: README.md, docs/PLAN_PHASE1.md, docs/decisions.md, STATUS.md
+Tests: 397 passed / 397 total | Lint: pass (0 ruff errors)
+
 
 ## Stage 1.13: Minimal Streamlit View (Blueprint): DONE
 Goal: A thin, modular visual interface blueprint on which the main UI builds (PLAN_PHASE1 Section 5.11).
