@@ -190,3 +190,26 @@ What was built:
 - Implemented draft_advice tool that formats findings and uses a deterministic validator to ensure no halluciations, forbidden content (transfer, fund, stock) and consistent numbers (supporting rounding up to 5% tolerance like 1.2k). Fallbacks used for invalid LLM output.
 - Implemented decide_advice tool to approve/reject draft advice, properly audited.
 - Included corresponding tests checking valid and invalid drafted advice based on real finding numbers.
+
+## Stage 1.8b: Undo divergence checks and advice number matching rule
+### 1. Undo divergence check
+What was built:
+- Removed unconditional force-restore in `src/copilot/tools/undo.py`.
+- Before reverting any transaction or batch, the undo handler compares the entity's current state with `after_data` recorded in the audit event.
+- If the current state has diverged (e.g. an interleaved user or agent edit occurred after the event), the undo is refused.
+- On the direct handler path, a refusal audit event (`event_type="undo_refused"`) is recorded with `metadata.refusal_reason` ("state_diverged" or "batch_item_diverged") and a `ToolFailure(ErrorCode.STALE_DATA)` is raised.
+- On the `execute_tool` path (production path for agents and CLI), the executor's savepoint cleanly rolls back the failed handler's internal writes, and `execute_tool._fail` audits the refusal in its own savepoint as `event_type="tool_call"` with `metadata.error_code="STALE_DATA"` and `reason="Undo refused: ..."`. In both paths, the entity is never modified.
+- For batch undos (`override_applied`), divergence checks are executed across all transactions in the batch first; if any item has diverged, none are restored (all-or-nothing guarantee).
+
+### 2. Advice number matching rule
+What was built:
+- Documented and implemented the exact number matching tolerance in `src/copilot/core/advice.py`:
+  `tolerance = min(half of the last displayed digit, 5% of the stated value)`.
+- A written figure `W` matches a true value `T` from a finding if and only if `abs(W - T) <= tolerance`.
+- This replaced the previous quantum truncation rule, which was overly permissive (accepting 50,000 to 199,999 for "1 lakh").
+- Examples of accepted and rejected ranges under this rule:
+  - "1 lakh" (`W = 100,000`, `quantum = 100,000`): `half_last_digit = 50,000`, `5% = 5,000` -> `tolerance = 5,000`. Matches `[95,000, 105,000]`. Correctly rejects 60,000 and 150,000.
+  - "₹1.2k" (`W = 1,200`, `quantum = 100`): `half_last_digit = 50`, `5% = 60` -> `tolerance = 50`. Matches `[1,150, 1,250]`. Correctly accepts 1,234.50 and rejects 1,149 / 1,251.
+  - "1.5 lakh" (`W = 150,000`, `quantum = 10,000`): `half_last_digit = 5,000`, `5% = 7,500` -> `tolerance = 5,000`. Matches `[145,000, 155,000]`.
+  - "2 crore" (`W = 20,000,000`, `quantum = 10,000,000`): `half_last_digit = 5,000,000`, `5% = 1,000,000` -> `tolerance = 1,000,000`. Matches `[19,000,000, 21,000,000]`.
+  - Plain rupee "₹500" (`W = 500`, `quantum = 1`): `half_last_digit = 0.5`, `5% = 25` -> `tolerance = 0.5`. Matches `[499.5, 500.5]`.

@@ -1,5 +1,18 @@
 ## Current state
-Last completed stage: 1.8 | Blockers: none
+Last completed stage: 1.8b | Blockers: none
+
+## Stage 1.8b: Undo divergence checks and advice number matching rule: DONE
+Goal: Harden undo against data loss on interleaved edits and replace overly permissive number matching with an explicit tolerance rule.
+Built:
+- `src/copilot/tools/undo.py`: Replaced unconditional force-restore with strict divergence check against `after_data`. An interleaved edit to a transaction or any batch item refuses undo and raises `ToolFailure(ErrorCode.STALE_DATA)`. On direct calls, `undo_refused` is recorded; on `execute_tool` calls, handler savepoint rolls back and executor audits failure with `error_code="STALE_DATA"`. In both cases, entity is unmodified and batches are all-or-nothing.
+- `src/copilot/core/advice.py`: Replaced quantum truncation matching with documented tolerance rule: `tolerance = min(half of the last displayed digit, 5% of the stated value)`.
+- `tests/tools/test_undo.py`: Added tests verifying undo succeeds when state is unchanged, undo is refused after interleaved edit (both directly and through `execute_tool`), and batch undo refusal is all-or-nothing.
+- `tests/core/test_findings.py`: Added boundary tests just inside and just outside for `₹1.2k`, `1 lakh`, `1.5 lakh`, `2 crore`, and plain rupee amounts, plus negative tests ensuring 60,000 and 150,000 fail against 1 lakh.
+- `docs/production_report.md`: Rewritten in plain factual language removing marketing terminology, updating stage mapping (1.9 LangGraph, 1.10 Monthly Review, 1.11 CLI, 1.12 Evaluation, 1.13 Streamlit, 1.14 Hardening), and listing verified test guarantees.
+- `docs/decisions.md`: Documented the number matching tolerance rule and undo divergence checks across direct and executor paths.
+- `docs/open_questions.md`: Documented design question on distinct `undo_refused` event type under executor savepoint.
+Files: src/copilot/tools/undo.py, src/copilot/core/advice.py, tests/tools/test_undo.py, tests/core/test_findings.py, docs/production_report.md, docs/decisions.md, docs/open_questions.md, STATUS.md
+Tests: 343 passed / 343 total | Lint: pass
 
 ## Review pass on Stages 1.1-1.8: DONE
 Goal: audit the existing implementation and fix defects before continuing to Stage 1.9.
@@ -74,12 +87,11 @@ Defaults chosen (open_questions.md): none
 Live checks pending: none
 
 ## Proposed commits (awaiting approval)
-1. Add migrations and Phase 1 config: docs/phase1_alignment.md, src/copilot/db/connection.py, src/copilot/db/migrations/001_initial.sql, src/copilot/core/config.py, config/settings.yaml, .env.example, docs/decisions.md, tests/db/test_schema.py, tests/core/test_config.py, src/copilot/db/schema.sql (deleted)
-2. Add Phase 1 schema and models: src/copilot/db/migrations/002_phase1_schema.sql, src/copilot/models/domain.py, src/copilot/db/repo.py, tests/models/test_phase1_models.py, tests/db/test_phase1_repo.py, docs/decisions.md
-5. Add idempotent ingestion tools and handlers: src/copilot/bank/ingest.py, src/copilot/tools/financial.py, config/policy.yaml, tests/bank/test_bank.py
-6. Add deterministic categorization, pipeline, LLM clients, and batch tools: src/copilot/core/categorisation.py, src/copilot/core/pipeline.py, src/copilot/llm/gemini.py, src/copilot/llm/redactor.py, src/copilot/tools/categorisation.py, src/copilot/tools/financial.py, config/policy.yaml, src/copilot/core/config.py, config/categorization_rules.yaml, config/merchant_aliases.yaml, config/advice_templates.yaml, src/copilot/governance/policy.py, src/copilot/tools/executor.py, tests/core/test_categorisation.py, tests/core/test_pipeline.py, tests/tools/test_categorisation_tools.py, tests/llm/test_redactor.py, tests/governance/test_policy.py
+- Block stale undo and tighten advice number matching: src/copilot/tools/undo.py, src/copilot/core/advice.py, tests/tools/test_undo.py, tests/core/test_findings.py, docs/production_report.md, docs/decisions.md, STATUS.md
 
 - [x] Stage 1.5: Add transfer and recurring payment detection
 - [x] Stage 1.6: Analysis tools and derived state
 - [x] Stage 1.7: Dispute, correction and undo
 - [x] Stage 1.8: Findings, advice drafting and validator
+- [x] Stage 1.8b: Undo divergence checks and advice number matching
+- [ ] Stage 1.9: LangGraph orchestration

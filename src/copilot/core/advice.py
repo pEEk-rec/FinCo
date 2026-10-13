@@ -5,23 +5,21 @@ This is the main safety piece of Phase 1 (PLAN_PHASE1 section 5.6). The LLM may 
 findings; `validate_advice` rejects any text that mentions an unknown finding, a number that
 is not in the referenced findings, or forbidden content.
 
-Number matching rule (decided 2026-10-07, see docs/decisions.md)
+Number matching rule (decided 2026-10-13, see docs/decisions.md)
 -----------------------------------------------------------------
-Each number written in the text has a *quantum*: the value of its last written digit times
-its suffix multiplier ("1,234" -> 1, "1,234.5" -> 0.1, "1.2k" -> 100, "3 lakh" -> 100000).
-A written number W matches a true value T when W equals T **rounded half-up** or **truncated**
-to that quantum. So for T = ₹1,234.56:
-  accepted: "₹1,234.56", "₹1,235", "₹1,234", "1.2k", "₹1k"
-  rejected: "₹1,236", "1.3k", "₹1,240" (quantum 1, so 1,240 != 1,235 or 1,234)
-Amounts (₹ / Rs / INR / "rupees") compare only with paise numbers, percentages only with
-percent numbers, and bare numbers with any number of the referenced findings. Bare years and
-months of the referenced periods, and digits inside a finding's subject (e.g. "7-Eleven"), are
-allowed. There is no "small numbers are fine" exemption: an invented "3%" or "5 times" fails.
+Each number written in the text has a *quantum*: the place value of its last displayed digit
+times its suffix multiplier ("1,234" -> 1, "1,234.5" -> 0.1, "1.2k" -> 100, "1 lakh" -> 100000).
+A written number W matches a true value T when:
+    abs(W - T) <= min(half of the last displayed digit, 5% of the stated value)
+For example:
+- "1 lakh" (W = 100,000, quantum = 100,000): tolerance = min(50,000, 5,000) = 5,000
+  -> accepted range is [95,000, 105,000]
+- "₹1.2k" (W = 1,200, quantum = 100): tolerance = min(50, 60) = 50 -> [1,150, 1,250]
 """
 
 import re
 from dataclasses import dataclass, field
-from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
+from decimal import Decimal
 from pathlib import Path
 from string import Formatter
 from typing import Literal
@@ -123,11 +121,16 @@ def extract_numbers(text: str) -> list[NumberMention]:
 
 
 def matches(written: Decimal, true_value: Decimal, quantum: Decimal) -> bool:
-    """True if `written` is `true_value` rounded half-up or truncated to `quantum`."""
+    """True if `true_value` is within tolerance of `written`.
+
+    Rule: tolerance = min(half of the last displayed digit, 5% of the stated value).
+    """
     t = abs(true_value)
-    rounded = (t / quantum).quantize(Decimal(1), rounding=ROUND_HALF_UP) * quantum
-    truncated = (t / quantum).quantize(Decimal(1), rounding=ROUND_DOWN) * quantum
-    return written in (rounded, truncated)
+    w = abs(written)
+    half_last_digit = quantum / Decimal(2)
+    five_percent = w * Decimal("0.05")
+    tolerance = min(half_last_digit, five_percent)
+    return abs(w - t) <= tolerance
 
 
 def _allowed_values(findings: list[Finding]) -> dict[str, list[Decimal]]:
