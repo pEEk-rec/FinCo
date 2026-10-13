@@ -1,5 +1,30 @@
 ## Current state
-Last completed stage: 1.9 | Blockers: none
+Last completed stage: 1.10 | Blockers: none
+
+## Stage 1.10: Monthly review: DONE
+Goal: The worklet's headline output (PLAN_PHASE1 Section 5.8).
+Built:
+- `src/copilot/review/models.py`: Typed Pydantic data models for the complete review document: `MonthlyReviewData`, `CategoryTotal`, `ReviewBudgetStatus`, `ReviewRecurringItem`, `ReviewAnomalyItem`, `ReviewForecast`, `ReviewAdviceItem`, and `DataQualityNotes`.
+- `src/copilot/review/builder.py`: Deterministic review builder and versioning engine:
+  - Aggregates income, spend, and net cashflow using integer paise.
+  - Computes previous-month baseline and category change deltas (amount & percentage).
+  - Tracks budget status, recurring series, anomalies, and month-end forecast.
+  - Automatically handles partial months by capping `effective_end_utc` at the review clock, computing `days_recorded` and `missing_days`.
+  - Increments version counter (`v1 -> v2`) on re-run, persisting immutable review snapshots in `monthly_reviews`.
+- `src/copilot/review/renderers.py`: Jinja2-based renderers for GitHub-flavored Markdown (`render_markdown`) and self-contained styled HTML (`render_html`).
+  - Strict number extractor and validator (`extract_numbers_from_rendered_text`, `extract_all_review_numbers`) to prove the number containment invariant.
+- `src/copilot/db/repo.py`: Added repository methods `insert_monthly_review`, `get_monthly_review`, `list_monthly_reviews`, and `list_categories`.
+- `tests/review/test_monthly_review.py`: 5 tests covering:
+  1. Review numbers match independent domain analysis tools (`net_spend_by_category`, `budget_status`, `forecast_month`).
+  2. Re-run after user category correction creates version 2 with updated category totals while preserving version 1.
+  3. Partial month handling with recorded vs missing day calculation.
+  4. Month-over-month comparison accurately reflects prior month totals and deltas.
+  5. CRITICAL SAFETY INVARIANT: Rendered Markdown and HTML contain no numbers absent from the `MonthlyReviewData` object.
+- `scripts/generate_sample_report.py`: Generates sample reports for September 2026 under gitignored `reports/`:
+  - `reports/2026-09.md` (2,430 bytes)
+  - `reports/2026-09.html` (9,856 bytes)
+Files: src/copilot/review/models.py, src/copilot/review/builder.py, src/copilot/review/renderers.py, src/copilot/review/__init__.py, src/copilot/core/forecast.py, src/copilot/db/repo.py, scripts/generate_sample_report.py, tests/review/test_monthly_review.py, pyproject.toml, .gitignore, STATUS.md, docs/decisions.md, docs/production_report.md
+Tests: 366 passed / 366 total | Lint: pass
 
 ## Stage 1.9: LangGraph workflow: DONE
 Goal: The fixed, demonstrable agent graph (section 5.7).
@@ -88,7 +113,7 @@ Defaults chosen (open_questions.md): none
 Live checks pending: none
 
 ## Proposed commits (awaiting approval)
-- Add LangGraph workflow with human review: src/copilot/workflow/, tests/workflow/, docs/decisions.md, docs/production_report.md, STATUS.md
+- Add versioned monthly review and report rendering: src/copilot/review/, scripts/generate_sample_report.py, tests/review/, src/copilot/core/forecast.py, src/copilot/db/repo.py, pyproject.toml, .gitignore, docs/decisions.md, docs/production_report.md, STATUS.md
 
 - [x] Stage 1.5: Add transfer and recurring payment detection
 - [x] Stage 1.6: Analysis tools and derived state
@@ -96,4 +121,5 @@ Live checks pending: none
 - [x] Stage 1.8: Findings, advice drafting and validator
 - [x] Stage 1.8b: Undo divergence checks and advice number matching
 - [x] Stage 1.9: LangGraph orchestration
-- [ ] Stage 1.10: Monthly review
+- [x] Stage 1.10: Monthly review
+- [ ] Stage 1.11: CLI (primary demo surface)

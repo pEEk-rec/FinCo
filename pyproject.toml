@@ -9,6 +9,7 @@ dependencies = [
     "tzdata; sys_platform == 'win32'",
     "pyyaml",
     "langgraph>=0.2.0",
+    "jinja2>=3.0",
 ]
 
 [project.optional-dependencies]

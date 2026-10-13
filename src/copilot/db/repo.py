@@ -7,7 +7,7 @@ unit of work in `copilot.db.connection.savepoint`.
 
 import sqlite3
 
-from copilot.models.domain import Account, Budget, Category, Transaction, User
+from copilot.models.domain import Account, Budget, Category, MonthlyReview, Transaction, User
 from copilot.models.memory import MemoryEntry
 
 
@@ -63,6 +63,14 @@ def get_category(conn: sqlite3.Connection, user_id: str, category_id: str) -> Ca
         "SELECT * FROM categories WHERE id = ? AND user_id = ?", (category_id, user_id)
     ).fetchone()
     return Category(**dict(row)) if row else None
+
+
+def list_categories(conn: sqlite3.Connection, user_id: str) -> list[Category]:
+    """List all categories for a user, ordered by name."""
+    rows = conn.execute(
+        "SELECT * FROM categories WHERE user_id = ? ORDER BY name, id", (user_id,)
+    ).fetchall()
+    return [Category(**dict(row)) for row in rows]
 
 
 def insert_transaction(conn: sqlite3.Connection, tx: Transaction) -> None:
@@ -224,3 +232,71 @@ def list_memory_entries(
         params.append(kind)
     query += " ORDER BY created_at ASC, id ASC"
     return [MemoryEntry(**dict(row)) for row in conn.execute(query, params).fetchall()]
+
+
+def insert_monthly_review(conn: sqlite3.Connection, review: MonthlyReview) -> None:
+    """Insert a new monthly review version."""
+    conn.execute(
+        """
+        INSERT INTO monthly_reviews (
+            id, user_id, year, month, version, run_id, review_json, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            review.id,
+            review.user_id,
+            review.year,
+            review.month,
+            review.version,
+            review.run_id,
+            review.review_json,
+            review.created_at,
+        ),
+    )
+
+
+def get_monthly_review(
+    conn: sqlite3.Connection,
+    user_id: str,
+    year: int,
+    month: int,
+    version: int | None = None,
+) -> MonthlyReview | None:
+    """Get the latest (or specific version) monthly review."""
+    if version is not None:
+        row = conn.execute(
+            """
+            SELECT * FROM monthly_reviews
+            WHERE user_id = ? AND year = ? AND month = ? AND version = ?
+            """,
+            (user_id, year, month, version),
+        ).fetchone()
+    else:
+        row = conn.execute(
+            """
+            SELECT * FROM monthly_reviews
+            WHERE user_id = ? AND year = ? AND month = ?
+            ORDER BY version DESC LIMIT 1
+            """,
+            (user_id, year, month),
+        ).fetchone()
+    return MonthlyReview(**dict(row)) if row else None
+
+
+def list_monthly_reviews(
+    conn: sqlite3.Connection,
+    user_id: str,
+    year: int | None = None,
+    month: int | None = None,
+) -> list[MonthlyReview]:
+    """List monthly reviews for a user, sorted newest version first."""
+    query = "SELECT * FROM monthly_reviews WHERE user_id = ?"
+    params: list[object] = [user_id]
+    if year is not None:
+        query += " AND year = ?"
+        params.append(year)
+    if month is not None:
+        query += " AND month = ?"
+        params.append(month)
+    query += " ORDER BY year DESC, month DESC, version DESC"
+    return [MonthlyReview(**dict(row)) for row in conn.execute(query, params).fetchall()]

@@ -1,4 +1,9 @@
-from typing import Any
+from typing import Any, NamedTuple
+
+
+class Series(NamedTuple):
+    merchant_normalized: str
+    typical_amount_paise: int
 
 
 def forecast_month(

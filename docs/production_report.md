@@ -19,9 +19,9 @@ This document reports the technical status of Phase 1 (Foundational MVP backend)
   - Explicit advice matching tolerance rule: `tolerance = min(half of last displayed digit, 5% of stated value)`.
 
 - **Stage 1.9 (LangGraph workflow orchestration):** Built fixed agent graph (`ingest → categorize → analyze → advise → review → finalize`) and monthly review graph (`analyze → advise → review → finalize`). Interoperable `AgentState` with `MemorySaver` in-memory checkpointing. Human-in-the-loop review uses LangGraph `interrupt()` and resumes via `Command(resume=...)` applying decisions as `user`. Verified by AST architecture enforcement tests ensuring no module outside tools imports tool handlers and all tool calls use `execute_tool`.
+- **Stage 1.10 (Monthly Review workflow & reporting):** Built typed `MonthlyReviewData` document models, deterministic builder with monotonic versioning (`v1 -> v2`), month-over-month category spending deltas, partial-month handling, and dual renderers (Markdown and styled HTML). Verified by safety validator tests asserting that rendered reports contain no unauthorized or hallucinated numbers.
 
 ### Upcoming Stages (Workflows, UI, Hardening)
-- **Stage 1.10:** Monthly Review workflow & reporting
 - **Stage 1.11:** CLI
 - **Stage 1.12:** Evaluation harness
 - **Stage 1.13:** Streamlit UI
@@ -31,7 +31,7 @@ This document reports the technical status of Phase 1 (Foundational MVP backend)
 
 ## 2. Test Verification & Concrete Guarantees
 
-The test suite contains **361 automated tests**, all passing in ~4.1s (`pytest`). Static typing and style checks pass cleanly with zero violations (`ruff check src tests`).
+The test suite contains **366 automated tests**, all passing in ~2.4s (`pytest`). Static typing and style checks pass cleanly with zero violations (`ruff check src tests scripts`).
 
 The test suite establishes the following properties:
 
@@ -75,4 +75,9 @@ The advice validator (`core/advice.py`) checks that any number mentioned in advi
 - **Human-in-the-Loop Interruption:** Execution pauses at `review` using LangGraph's native `interrupt({"drafts": ...})` with `MemorySaver` in-memory checkpoints. Resuming with `Command(resume=[...])` applies decisions as `user` without clobbering state.
 - **Clean Failure & Auditing:** Unhandled failures at any node (including `categorize`) transition cleanly to `error_node`, recording an audited `run_failed` event without crashing the workflow process.
 - **Trace Accountability:** Each run accumulates node timing, tools called, counts, and status, and formats into a human-readable ASCII summary table via `format_trace()`.
+
+### H. Monthly Review & Number Containment Invariant
+- **Immutable Monotonic Versioning:** Every monthly review is versioned monotonically (`v1`, `v2`, ...). When category adjustments or reversals occur, a new version is created while preserving past records in `monthly_reviews`.
+- **Temporal Integrity on Partial Months:** Partial months cap transaction evaluation at the execution clock, computing activity days recorded vs missing days without future leakage.
+- **Renderer Number Invariant:** `test_renderer_contains_no_unauthorized_numbers` extracts all numerical values rendered in Markdown and HTML outputs and mathematically proves they are a subset of the numbers in the underlying `MonthlyReviewData` object, guaranteeing zero hallucinated numbers in reports.
 

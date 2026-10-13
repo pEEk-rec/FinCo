@@ -236,3 +236,28 @@ What was built:
 - Error routing: Any unhandled node failure transitions to `error_node`, which records an audited `run_failed` event in `audit_events`, appends an error trace record, and terminates cleanly at `END`.
 - Built `build_agent_graph` for primary end-to-end execution and `build_monthly_review_graph` for targeted monthly reviews (`analyze → advise → review → finalize`).
 
+## Stage 1.10: Monthly Review Architecture and Safety Invariants
+
+### 1. Document Schema and Immutable Snapshot Versioning
+- Modeled the monthly review as a typed Pydantic document (`MonthlyReviewData`) in `src/copilot/review/models.py`, comprising:
+  - Income, spend, net cashflow (all in integer paise)
+  - Prior month period baseline and category change deltas (paise and percentage)
+  - Category expenditures sorted descending by spend
+  - Budget performance statuses (`ok`, `warning`, `exceeded`, `projected_exceed`)
+  - Detected recurring payment series and cadence
+  - Anomalies and month-end run-rate forecasts
+  - Approved/draft financial advice items with stated assumptions
+  - Data quality and completeness metrics (`review_queue_size`, `duplicates_flagged`, `days_recorded`, `missing_days`, `is_partial_month`)
+- Versioning is strictly monotonic per `(user_id, year, month)`: re-generating a review (e.g., following a user category correction) increments the version counter (`v1 -> v2`). Both versions remain permanently accessible via `get_monthly_review(conn, user_id, year, month, version=N)` and `monthly_reviews` table.
+
+### 2. Temporal Consistency for Partial Months
+- When building a review for an ongoing month (`now_dt < end_of_month`), `effective_end_utc` is capped at `clock` (the current execution time), ensuring future transactions from the bank connector or synthetic mocks do not pollute partial month aggregates.
+- `days_recorded` computes distinct IST calendar days having transaction activity up to the clock timestamp, and `missing_days` tracks elapsed days without transaction records.
+
+### 3. Renderer Number Containment Invariant
+- CRITICAL SAFETY INVARIANT: The Markdown and HTML renderers must NEVER invent, fabricate, or hardcode numerical figures not present in the structured `MonthlyReviewData` model.
+- Enforced and validated via `extract_numbers_from_rendered_text` and `extract_all_review_numbers`:
+  - Strips HTML tags, styles, and currency glyphs (`₹`, `Rs.`).
+  - Normalizes token signs (ensuring absolute, positive, and negative Decimal representations match).
+  - Safety test (`test_renderer_contains_no_unauthorized_numbers`) asserts `rendered_numbers.issubset(review_numbers)`. Negative tampering tests confirm that any injected unauthorized number immediately triggers a test failure.
+
