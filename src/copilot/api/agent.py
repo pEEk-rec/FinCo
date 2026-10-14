@@ -1,5 +1,6 @@
 """Run one `ask` through the planner agent graph and return a JSON-ready result."""
 
+import logging
 import sqlite3
 import uuid
 from typing import Any
@@ -13,6 +14,8 @@ from copilot.core.answers import compose_answer, narrate
 from copilot.db.repo import list_categories
 from copilot.core.timeutil import now_utc, to_utc_iso
 from copilot.workflow.agent_graph import build_planner_agent_graph
+
+log = logging.getLogger("copilot.api.agent")
 
 
 def run_ask(
@@ -65,12 +68,16 @@ def run_ask(
     observations = result.get("observations", [])
     answer = None
     if not result.get("refusal_reason") and not question:
-        names = {c.id: c.name for c in list_categories(conn, state.user_id)}
-        answer = compose_answer(
-            conn, state.user_id, result.get("intent"), observations, names, state.clock
-        )
-        if answer is not None and llm is not None and getattr(llm, "available", lambda: True)():
-            answer = narrate(llm, text, answer) or answer
+        try:
+            names = {c.id: c.name for c in list_categories(conn, state.user_id)}
+            answer = compose_answer(
+                conn, state.user_id, result.get("intent"), observations, names, state.clock
+            )
+            if answer is not None and llm is not None and getattr(llm, "available", lambda: True)():
+                answer = narrate(llm, text, answer) or answer
+        except Exception:  # noqa: BLE001 - the tool results below are still valid and shown
+            log.exception("Could not write the answer; showing the tool results only")
+            answer = None
     return {
         "answer": answer.model_dump() if answer else None,
         "llm": {

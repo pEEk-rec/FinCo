@@ -6,12 +6,13 @@ tool list and argument bindings from the intent.
 Always available; baseline for LLM-off mode and fallback when LLM plans fail validation.
 """
 
+import re
 import uuid
 from datetime import UTC, datetime
 from typing import Any
 
 from copilot.config.phase2 import PlanTemplatesConfig, load_plan_templates
-from copilot.core.timeutil import IST, month_bounds
+from copilot.core.timeutil import IST, month_bounds, previous_months
 from copilot.models.agentic import Intent, Plan, PlanStep
 
 
@@ -52,7 +53,16 @@ class DeterministicPlanner:
             year = year or ist_now.year
             month = month or ist_now.month
 
-        period_str = intent.period or f"{year:04d}-{month:02d}"
+        # A relative span ("last 3 months", "this week") is not one month. Tools that take a
+        # single period get the current month; a span of months is planned month by month.
+        one_month = bool(intent.period and re.fullmatch(r"\d{4}-\d{2}", intent.period))
+        period_str = intent.period if one_month else f"{year:04d}-{month:02d}"
+        span = (
+            re.fullmatch(r"last_(\d+)_months", intent.period or "")
+            if intent.type == "summarize_period"
+            else None
+        )
+        span_months = previous_months(year, month, min(int(span.group(1)), 6)) if span else []
 
         # Fetch plan template for intent type
         template = self.config.templates.get(intent.type)
@@ -65,6 +75,7 @@ class DeterministicPlanner:
             for step_tpl in template.default_steps:
                 tool_name = step_tpl.tool_name
                 args: dict[str, Any] = {}
+                variants: list[dict[str, Any]] | None = None
 
                 if tool_name in (
                     "aggregate_spend_by_category",
@@ -73,6 +84,8 @@ class DeterministicPlanner:
                     "get_financial_state",
                 ):
                     args = {"year": year, "month": month}
+                    if tool_name == "aggregate_spend_by_category" and span_months:
+                        variants = [{"year": int(p[:4]), "month": int(p[5:])} for p in span_months]
 
                 elif tool_name == "get_transactions":
                     start_utc, end_utc = month_bounds(year, month)
@@ -139,17 +152,19 @@ class DeterministicPlanner:
                     if intent.category_id:
                         args["category_id"] = intent.category_id
 
-                step = PlanStep(
-                    id=f"step_{uuid.uuid4().hex[:8]}",
-                    task_id=task_id,
-                    user_id=user_id,
-                    seq=len(steps),
-                    tool_name=tool_name,
-                    args=args,
-                    rationale=step_tpl.rationale or f"Deterministic step for {intent.type}",
-                    proposed_by="deterministic",
-                    status="proposed",
-                )
-                steps.append(step)
+                for step_args in variants or [args]:
+                    steps.append(
+                        PlanStep(
+                            id=f"step_{uuid.uuid4().hex[:8]}",
+                            task_id=task_id,
+                            user_id=user_id,
+                            seq=len(steps),
+                            tool_name=tool_name,
+                            args=step_args,
+                            rationale=step_tpl.rationale or f"Deterministic step for {intent.type}",
+                            proposed_by="deterministic",
+                            status="proposed",
+                        )
+                    )
 
         return Plan(task_id=task_id, steps=steps)

@@ -420,3 +420,17 @@ def test_user_can_create_a_category_and_it_is_audited(client, state):
     assert [e.event_type for e in audit(state)].count("category_created") == 1
     assert client.post("/api/categories", headers=AUTH, json={"name": ""}).status_code == 422
     assert client.post("/api/categories", json={"name": "x"}).status_code == 401
+
+
+@pytest.mark.parametrize(
+    "text, expect",
+    [
+        ("how much did I spend in the last 3 months", "over the last"),
+        ("what did I spend this week", "whole months"),
+    ],
+)
+def test_relative_periods_are_answered_honestly_not_crashed(client, text, expect):
+    out = client.post("/api/ask", headers=AUTH, json={"text": text})
+    assert out.status_code == 200
+    body = out.json()["answer"]
+    assert expect in body["headline"] + " ".join(body["points"])

@@ -22,7 +22,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
 
 from copilot.core.advice import _CAUSAL_CLAIM, _FORBIDDEN, format_inr, period_label
-from copilot.core.timeutil import IST, from_utc_iso, now_utc
+from copilot.core.timeutil import IST, from_utc_iso, now_utc, previous_months
 from copilot.llm.client import LLMClient, StructuredOutputError, structured_call
 
 _MONTHS = (
@@ -166,11 +166,67 @@ def _previous(period: str) -> str:
     return f"{year - 1}-12" if month == 1 else f"{year}-{month - 1:02d}"
 
 
+_ONE_MONTH = re.compile(r"^\d{4}-\d{2}$")
+_SPAN = re.compile(r"^last_(\d+)_months$")
+
+
 def _period_of(intent: dict[str, Any], clock: datetime | None) -> str:
-    if intent.get("period"):
+    """The single month the answer is about. A relative span falls back to the current month."""
+    if intent.get("period") and _ONE_MONTH.match(str(intent["period"])):
         return str(intent["period"])
     now = now_utc(clock).astimezone(IST)
     return f"{now.year:04d}-{now.month:02d}"
+
+
+def _span_months(intent: dict[str, Any], clock: datetime | None) -> list[str]:
+    """The months of a "last N months" question (capped like the plan), oldest first."""
+    m = _SPAN.match(str(intent.get("period") or ""))
+    if not m or intent.get("type") != "summarize_period":
+        return []
+    now = now_utc(clock).astimezone(IST)
+    return previous_months(now.year, now.month, min(int(m.group(1)), 6))
+
+
+def _summary_span(
+    observations: list[dict[str, Any]], names: dict[str, str], months: list[str]
+) -> Answer | None:
+    """One spend summary across several months, from one aggregate result per month."""
+    results = [
+        o["data_summary"]
+        for o in observations
+        if o.get("tool_name") == "aggregate_spend_by_category"
+        and o.get("ok")
+        and o.get("data_summary")
+    ]
+    if len(results) != len(months):
+        return None  # some month failed; better no answer than a partial total
+    f = Facts()
+    grand = sum(r["grand_total_spend_paise"] for r in results)
+    span = f"{f.period(months[0])} to {f.period(months[-1])}"
+    if grand <= 0:
+        return _build(f, f"No spending is recorded from {span}.", [], [])
+    by_category: dict[str | None, int] = {}
+    for r in results:
+        for t in r["totals"]:
+            by_category[t["category_id"]] = (
+                by_category.get(t["category_id"], 0) + t["total_spend_paise"]
+            )
+    points = [
+        f"{f.period(m)}: {f.money('month', r['grand_total_spend_paise'])}"
+        for m, r in zip(months, results, strict=True)
+    ]
+    for cat, paise in sorted(by_category.items(), key=lambda kv: -kv[1])[:3]:
+        points.append(
+            f"{_name(names, cat)}: {f.money('amount', paise)} "
+            f"({f.percent('share', paise * 100 // grand)} of the total)"
+        )
+    return _build(
+        f,
+        f"You spent {f.money('total', grand)} over the last "
+        f"{f.count('months', len(months), 'months')}, {span}.",
+        points,
+        ["How is my budget doing this month?", "Forecast my spending this month"],
+    )
 
 
 def _name(names: dict[str, str], category_id: str | None) -> str:
@@ -326,8 +382,16 @@ def _explain(
     else:
         headline = f"{label} changed by {f.abs_money('change', change)} versus {prev_label}."
     parts = [
-        ("new_merchant_paise", "from merchants you had not used before", "from merchants you had not used before"),
-        ("stopped_merchant_paise", "from merchants you used before", "from merchants you did not use this time"),
+        (
+            "new_merchant_paise",
+            "from merchants you had not used before",
+            "from merchants you had not used before",
+        ),
+        (
+            "stopped_merchant_paise",
+            "from merchants you used before",
+            "from merchants you did not use this time",
+        ),
         ("ticket_effect_paise", "from paying more per purchase", "from paying less per purchase"),
         ("volume_effect_paise", "from buying more often", "from buying less often"),
         ("residual_paise", "that I cannot attribute", "that I cannot attribute"),
@@ -344,7 +408,11 @@ def _explain(
         top = max(supported, key=lambda h: h["contribution_paise"])
         points.append(
             f"Main factor: {HYPOTHESIS_PHRASE.get(top['code'], top['code'])}"
-            + (f" ({f.abs_money('factor', top['contribution_paise'])})" if top["contribution_paise"] else "")
+            + (
+                f" ({f.abs_money('factor', top['contribution_paise'])})"
+                if top["contribution_paise"]
+                else ""
+            )
         )
     if not explained:
         points.append(
@@ -406,14 +474,18 @@ def _whatif(
     base_status = cmp["baseline"]["budget_statuses"].get(key)
     scen_status = cmp["scenarios"][0]["budget_statuses"].get(key)
     if base_status and scen_status and base_status != scen_status:
-        points.append(f"{cat} budget: {_words(base_status)} now, {_words(scen_status)} with this change.")
+        points.append(
+            f"{cat} budget: {_words(base_status)} now, {_words(scen_status)} with this change."
+        )
     elif scen_status and scen_status != "ok":
         points.append(f"{cat} budget stays {_words(scen_status)}.")
     for gid_month, status in cmp["scenarios"][0]["goal_impacts"].items():
         gid, month = gid_month.rsplit(":", 1)
         if month != last_month:
             continue
-        row = conn.execute("SELECT name FROM goals WHERE id = ? AND user_id = ?", (gid, user_id)).fetchone()
+        row = conn.execute(
+            "SELECT name FROM goals WHERE id = ? AND user_id = ?", (gid, user_id)
+        ).fetchone()
         base_goal = cmp["baseline"]["goal_impacts"].get(gid_month, "unknown")
         points.append(
             f"{row[0] if row else 'Your goal'}: {_words(base_goal)} now, {_words(status)} with this change."
@@ -427,7 +499,9 @@ def _whatif(
     )
 
 
-def _goals(obs: list[dict[str, Any]], intent: dict[str, Any], clock: datetime | None) -> Answer | None:
+def _goals(
+    obs: list[dict[str, Any]], intent: dict[str, Any], clock: datetime | None
+) -> Answer | None:
     data = _obs(obs, "list_goals")
     if data is None:
         return None
@@ -451,19 +525,25 @@ def _goals(obs: list[dict[str, Any]], intent: dict[str, Any], clock: datetime | 
         today = now_utc(clock).astimezone(IST).date()
         months_left = max(1, (due.year - today.year) * 12 + due.month - today.month)
         need = (remaining + months_left - 1) // months_left
-        points.append(f"Deadline: {f.date_text(due)}, about {f.count('left', months_left, 'months')} away.")
+        points.append(
+            f"Deadline: {f.date_text(due)}, about {f.count('left', months_left, 'months')} away."
+        )
         points.append(f"To get there, set aside about {f.money('need', need)} a month.")
     elif remaining == 0:
         points.append("You've reached the target.")
     bal = _obs(obs, "get_balance")
     if bal:
         points.append(f"Your current balance is {f.money('balance', bal['balance_paise'])}.")
-    return _build(f, headline, points, ["What if I spend less on dining?", "How is my budget doing this month?"], "high")
+    return _build(
+        f,
+        headline,
+        points,
+        ["What if I spend less on dining?", "How is my budget doing this month?"],
+        "high",
+    )
 
 
-def _anomalies(
-    obs: list[dict[str, Any]], conn: sqlite3.Connection, user_id: str
-) -> Answer | None:
+def _anomalies(obs: list[dict[str, Any]], conn: sqlite3.Connection, user_id: str) -> Answer | None:
     data = _obs(obs, "detect_anomalies")
     if data is None:
         return None
@@ -565,15 +645,22 @@ def compose_answer(
         answer = _forecast(d, period)
     if answer is None and (d := _obs(observations, "check_budgets")):
         answer = _budgets(d, names, period)
-    if answer is None and (d := _obs(observations, "aggregate_spend_by_category")):
+    if answer is None and (span := _span_months(intent, clock)):
+        answer = _summary_span(observations, names, span)
+    elif answer is None and (d := _obs(observations, "aggregate_spend_by_category")):
         answer = _summary(d, names, period)
+        if intent.get("period") == "this_week":
+            answer.points.insert(0, "I look at whole months, so this is the month so far.")
     if answer is None:
         return None
     problems = validate_answer(answer)
     if problems:  # a bug in a composer must never show an ungrounded number
         return Answer(
             headline="I found the figures below but could not phrase them safely.",
-            points=[], followups=[], facts=answer.facts, confidence=answer.confidence,
+            points=[],
+            followups=[],
+            facts=answer.facts,
+            confidence=answer.confidence,
         )
     return answer
 
@@ -621,16 +708,24 @@ def narrate(client: LLMClient, question: str, draft: Answer) -> Answer | None:
             correction=correction,
         )
         try:
-            out = structured_call(client, prompt, NarrationDraft, max_retries=0, purpose="narration")
+            out = structured_call(
+                client, prompt, NarrationDraft, max_retries=0, purpose="narration"
+            )
         except (StructuredOutputError, Exception):  # noqa: BLE001 - the draft is the fallback
             return None
         text = " ".join([out.headline, *out.points])
         problems = check_text(text, draft.facts, causal_ok=draft.causal_ok)
         if not problems and out.headline.strip():
             return draft.model_copy(
-                update={"headline": out.headline.strip(), "points": [p.strip() for p in out.points[:5]], "written_by": "ai"}
+                update={
+                    "headline": out.headline.strip(),
+                    "points": [p.strip() for p in out.points[:5]],
+                    "written_by": "ai",
+                }
             )
         correction = (
-            "\nYour previous reply was rejected: " + "; ".join(problems[:3]) + ". Fix exactly that.\n"
+            "\nYour previous reply was rejected: "
+            + "; ".join(problems[:3])
+            + ". Fix exactly that.\n"
         )
     return None

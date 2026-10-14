@@ -66,6 +66,15 @@ def month_bounds(year: int, month: int) -> tuple[str, str]:
     return to_utc_iso(start_ist), to_utc_iso(end_ist)
 
 
+def previous_months(year: int, month: int, count: int) -> list[str]:
+    """The `count` calendar months before (year, month) as "YYYY-MM", oldest first."""
+    out: list[str] = []
+    for _ in range(count):
+        year, month = (year - 1, 12) if month == 1 else (year, month - 1)
+        out.append(f"{year:04d}-{month:02d}")
+    return out[::-1]
+
+
 def month_of(utc_iso: str) -> tuple[int, int]:
     """Get the (year, month) in IST for a UTC ISO string."""
     ist_dt = from_utc_iso(utc_iso).astimezone(IST)

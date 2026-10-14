@@ -294,3 +294,28 @@ def test_december_whatif_starts_in_january_of_next_year():
         ),
     )
     assert plan.steps[1].args["scenarios"][0]["start_month"] == "2025-01"
+
+
+def test_spend_summary_over_several_months_plans_one_step_per_month():
+    from copilot.models.agentic import Intent
+    from copilot.planner.deterministic import DeterministicPlanner
+
+    intent = Intent(type="summarize_period", period="last_3_months", horizon_months=3)
+    plan = DeterministicPlanner().propose(
+        "t1", "u1", intent, {"clock": "2024-03-18T06:30:00+00:00"}
+    )
+    months = [(s.args["year"], s.args["month"]) for s in plan.steps]
+    assert months == [(2023, 12), (2024, 1), (2024, 2)]
+
+
+def test_a_relative_period_never_reaches_a_tool_as_text():
+    from copilot.models.agentic import Intent
+    from copilot.planner.deterministic import DeterministicPlanner
+
+    for period in ("last_3_months", "this_week"):
+        intent = Intent(type="explain_change", period=period, category_id="food")
+        plan = DeterministicPlanner().propose(
+            "t1", "u1", intent, {"clock": "2024-03-18T06:30:00+00:00"}
+        )
+        explain = next(s for s in plan.steps if s.tool_name == "explain_change")
+        assert explain.args["period"] == "2024-03"
