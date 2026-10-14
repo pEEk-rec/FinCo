@@ -1,6 +1,7 @@
 import {
   ArrowsLeftRight,
   Clock,
+  Broadcast,
   CloudArrowDown,
   FileText,
   ListChecks,
@@ -84,6 +85,9 @@ export function Shell() {
               count={item.to === '/review' ? review.data?.total : undefined}
             />
           ))}
+          {session.data?.data_source === 'connected' ? (
+            <NavItem to="/live" label={copy.nav.live} icon={<Broadcast size={18} />} />
+          ) : null}
           <NavItem
             to="/agent"
             label={copy.nav.agent}
@@ -101,6 +105,10 @@ export function Shell() {
           {session.data?.data_source === 'synthetic_demo' ? (
             <Badge tone="neutral" className="self-start">
               {copy.demoData}
+            </Badge>
+          ) : session.data?.data_source === 'connected' ? (
+            <Badge tone="positive" className="self-start">
+              {copy.liveData}
             </Badge>
           ) : null}
           <button

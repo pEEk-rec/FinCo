@@ -8,6 +8,7 @@ import {
   useRecategorize,
   useTransaction,
   useTransactions,
+  useSession,
   useUndo,
 } from '../api/hooks';
 import { Badge, CategoryPill, Chip, SourceBadge } from '../components/Badge';
@@ -25,7 +26,23 @@ import { NumberTicker } from '../motion/NumberTicker';
 
 const T = copy.transactions;
 const PAGE = 60;
-const PERIODS = ['2024-03', '2024-02', '2024-01'];
+/** The current month and the two before it, from the session (demo: the fixed demo month). */
+function recentPeriods(current: string | undefined): string[] {
+  const match = /^(\d{4})-(\d{2})$/.exec(current ?? '');
+  if (!match) return [];
+  let year = Number(match[1]);
+  let month = Number(match[2]);
+  const out: string[] = [];
+  for (let i = 0; i < 3; i += 1) {
+    out.push(`${year}-${String(month).padStart(2, '0')}`);
+    month -= 1;
+    if (month === 0) {
+      month = 12;
+      year -= 1;
+    }
+  }
+  return out;
+}
 
 function periodLabel(period: string): string {
   const names = [
@@ -269,6 +286,7 @@ function Detail({ id }: { id: string }) {
 }
 
 export function TransactionsScreen() {
+  const periods = recentPeriods(useSession().data?.period);
   const [params, setParams] = useSearchParams();
   const period = params.get('period') ?? '';
   const category = params.get('category') ?? '';
@@ -329,7 +347,7 @@ export function TransactionsScreen() {
             <Chip selected={period === ''} onClick={() => set('period', null)}>
               {T.allTime}
             </Chip>
-            {PERIODS.map((p) => (
+            {periods.map((p) => (
               <Chip key={p} selected={period === p} onClick={() => set('period', p)}>
                 {periodLabel(p)}
               </Chip>

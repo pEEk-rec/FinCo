@@ -6,6 +6,7 @@
 export const copy = {
   product: 'FinCo',
   demoData: 'Demo data (synthetic)',
+  liveData: 'Live data (your bank)',
   nav: {
     dashboard: 'Dashboard',
     transactions: 'Transactions',
@@ -13,6 +14,7 @@ export const copy = {
     monthly: 'Monthly review',
     agent: 'Agent',
     connect: 'Connect and import',
+    live: 'Live data',
     timeline: 'Activity',
     ask: 'Ask anything',
     askHint: 'Ask about your spending',

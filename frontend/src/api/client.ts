@@ -17,6 +17,61 @@ export type ImportBatchView = S['ImportBatchView'];
 export type MonthlyReviewOut = S['MonthlyReviewOut'];
 export type AdviceExplanation = S['AdviceExplanation'];
 export type AskOut = S['AskOut'];
+/** Live-mode routes exist only when the backend runs `copilot.live`, so they are typed by hand. */
+export type LivePaceRow = {
+  category_id: string;
+  category_name: string;
+  limit: string;
+  limit_paise: number;
+  percent_settled: number;
+  percent_provisional: number;
+  settled: string;
+  provisional: string;
+  total: string;
+  projected: string;
+  projected_percent: number;
+  status: string;
+  message: string;
+};
+export type LivePacing = {
+  period: string;
+  headline: string;
+  rows: LivePaceRow[];
+  provisional_count: number;
+};
+export type LiveEvent = {
+  id: string;
+  status: string;
+  direction: string;
+  amount: string;
+  merchant: string;
+  category_name: string | null;
+  needs_review: boolean;
+};
+export type LiveStatus = {
+  live: boolean;
+  counts: { transactions: number; needs_review: number; alerts_waiting: number };
+  webhook: { path: string; secret: string };
+  aa: { configured: boolean; gateway: string | null; note: string };
+};
+export type LiveImport = {
+  source: string;
+  read: number;
+  inserted: number;
+  skipped_existing: number;
+  needs_review: number;
+  unreadable: number;
+  unreadable_examples: string[];
+  verified_alerts: number;
+  still_provisional: number;
+};
+export type LiveReceipt = {
+  outcome: string;
+  reason: string | null;
+  receipt_id: string | null;
+  merchant: string | null;
+  parts: { id: string; category_name: string | null; category_id: string; amount: string }[];
+};
 export type LlmStatus = { available: boolean; router: Record<string, unknown> | null };
 export type InvestigationOut = S['InvestigationOut'];
 export type Session = S['Session'];
@@ -148,6 +203,23 @@ export const api = {
   ask: (text: string, clarification?: string, useLlm = true) =>
     post<AskOut>('/ask', { text, clarification: clarification ?? null, use_llm: useLlm }),
   llmStatus: () => get<LlmStatus>('/llm/status'),
+  live: {
+    status: () => get<LiveStatus>('/live/status'),
+    pacing: () => get<LivePacing>('/live/pacing'),
+    events: () => get<LiveEvent[]>('/live/events'),
+    importStatement: (text: string, filename?: string) =>
+      post<LiveImport>('/live/import/statement', { text, filename: filename ?? null }),
+    reconcile: () => post<{ verified: number; still_provisional: number }>('/live/reconcile'),
+    receipt: (text: string) => post<LiveReceipt>('/live/receipt', { text }),
+    decideSplit: (id: string, decision: 'approved' | 'rejected') =>
+      post<Record<string, unknown>>(`/live/splits/${encodeURIComponent(id)}/decision`, {
+        decision,
+      }),
+    aaConsent: (mobile: string) =>
+      post<{ id: string; url: string; status: string }>('/live/aa/consent', { mobile }),
+    aaStatus: (id: string) => get<{ id: string; status: string }>(`/live/aa/consent/${id}`),
+    aaFetch: (consentId: string) => post<LiveImport>('/live/aa/fetch', { consent_id: consentId }),
+  },
   timeline: () => get<Timeline>('/timeline'),
   alerts: () => get<S['AlertsOut']>('/alerts'),
   decideAlert: (id: string, body: AlertDecisionIn) =>
