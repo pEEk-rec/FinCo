@@ -1,0 +1,11 @@
+{
+  "name": "finco",
+  "private": true,
+  "description": "Forwards the demo and live commands to the frontend folder so they work from the project root.",
+  "scripts": {
+    "demo": "npm --prefix frontend run demo",
+    "demo:imported": "npm --prefix frontend run demo:imported",
+    "live": "npm --prefix frontend run live",
+    "live:lan": "npm --prefix frontend run live -- --lan"
+  }
+}
