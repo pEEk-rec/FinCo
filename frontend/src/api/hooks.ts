@@ -82,6 +82,15 @@ export function useRecategorize() {
   });
 }
 
+/** Create a category of the user's own; the list refreshes everywhere. */
+export function useCreateCategory() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) => api.createCategory(name),
+    onSuccess: () => client.invalidateQueries({ queryKey: keys.categories }),
+  });
+}
+
 export function useUndo() {
   const invalidate = useInvalidateFinancials();
   return useMutation({

@@ -20,7 +20,7 @@ const API_PORT = process.env.LIVE_PORT ?? '8200';
 const WEB_PORT = process.env.LIVE_WEB_PORT ?? '5273';
 const TOKEN = process.env.LIVE_TOKEN ?? randomBytes(12).toString('base64url');
 const lan = process.argv.includes('--lan'); // let a phone on the same Wi-Fi reach the webhook
-const withModel = process.argv.includes('--llm');
+const noModel = process.argv.includes('--no-llm'); // default: the model labels unknown merchants
 
 const python =
   process.platform === 'win32'
@@ -29,7 +29,7 @@ const python =
 const env = { ...process.env, PYTHONIOENCODING: 'utf-8', LIVE_TOKEN: TOKEN, LIVE_PORT: API_PORT };
 if (lan) env.LIVE_LAN = '1';
 
-const api = spawn(python, ['-m', 'copilot.live', ...(withModel ? ['--llm'] : [])], {
+const api = spawn(python, ['-m', 'copilot.live', ...(noModel ? ['--no-llm'] : [])], {
   cwd: root,
   stdio: 'inherit',
   env,

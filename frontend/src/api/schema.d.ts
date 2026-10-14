@@ -136,7 +136,11 @@ export interface paths {
         /** Categories */
         get: operations["categories_api_categories_get"];
         put?: never;
-        post?: never;
+        /**
+         * Create Category
+         * @description Add a category of the user's own. The same name again returns the existing one.
+         */
+        post: operations["create_category_api_categories_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -801,6 +805,11 @@ export interface components {
             source: string;
             /** Transaction Id */
             transaction_id: string;
+        };
+        /** CategoryIn */
+        CategoryIn: {
+            /** Name */
+            name: string;
         };
         /** CategoryOut */
         CategoryOut: {
@@ -2277,6 +2286,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    create_category_api_categories_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

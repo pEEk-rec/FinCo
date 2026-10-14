@@ -49,9 +49,9 @@ class GuardedLLM:
         """False while the breaker is open."""
         return time.monotonic() >= self._off_until
 
-    def begin_request(self) -> None:
-        """Start the time budget for one Ask."""
-        self._budget_until = time.monotonic() + REQUEST_BUDGET_S
+    def begin_request(self, seconds: float = REQUEST_BUDGET_S) -> None:
+        """Start the time budget for one Ask (or a longer one for a bulk import)."""
+        self._budget_until = time.monotonic() + seconds
 
     def complete(self, prompt: str, **options: Any) -> str:
         """Run one completion within the deadline, or raise a retryable ToolFailure."""

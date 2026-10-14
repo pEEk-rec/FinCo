@@ -131,7 +131,7 @@ def attach_live_routes(
         try:
             out = service.import_rows(conn, uid, parsed.rows, "statement_csv", state.clock, parsed)
             conn.commit()
-            return out
+            return service.ai_categorize(state, conn, out)
         finally:
             conn.close()
 
@@ -261,7 +261,7 @@ def attach_live_routes(
         try:
             out = service.import_rows(conn, uid, rows, "account_aggregator", state.clock)
             conn.commit()
-            return out
+            return service.ai_categorize(state, conn, out)
         finally:
             conn.close()
 

@@ -744,7 +744,11 @@ def build_review_queue(conn: sqlite3.Connection, user_id: str, limit: int = 50) 
         if tx["category_source"] == "llm":
             candidates.append((tx["category_id"], "ai_suggestion"))
         candidates += [(s["category_id"], "past_choice") for s in similar_rows]
-        candidates += [(cat, "frequent") for cat in frequent]
+        candidates += [
+            (cat, "frequent")
+            for cat in frequent
+            if not (cat == "income" and tx["direction"] == "debit")  # a payment is not income
+        ]
         suggestions = _suggestions(candidates, names)
         items.append(
             ReviewItem(

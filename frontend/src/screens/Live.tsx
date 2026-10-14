@@ -47,6 +47,13 @@ function ImportSummary({ result }: { result: LiveImport }) {
         <span className="tabular">{result.inserted}</span> new,{' '}
         <span className="tabular">{result.skipped_existing}</span> already there.
       </p>
+      {result.ai_used && result.ai_applied > 0 ? (
+        <p className="mt-1">
+          The AI labelled <span className="tabular">{result.ai_applied}</span> rows that the rules
+          did not know. Unsure ones are left for you.
+        </p>
+      ) : null}
+      {result.ai_note ? <p className="mt-1 text-ink-2">{result.ai_note}</p> : null}
       {result.needs_review > 0 ? (
         <p className="mt-1">
           <span className="tabular">{result.needs_review}</span> need a category from you.{' '}

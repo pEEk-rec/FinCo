@@ -408,3 +408,15 @@ def test_the_planner_is_only_offered_read_and_compute_tools():
         "dismiss_anomaly",
     }
     assert selectable and selectable.isdisjoint(writes)
+
+
+def test_user_can_create_a_category_and_it_is_audited(client, state):
+    out = client.post("/api/categories", headers=AUTH, json={"name": "  Pet   care "})
+    assert out.status_code == 200 and out.json() == {"id": "pet_care", "name": "Pet care"}
+    again = client.post("/api/categories", headers=AUTH, json={"name": "pet CARE"}).json()
+    assert again["id"] == "pet_care"  # same name, no duplicate
+    names = [c["name"] for c in client.get("/api/categories", headers=AUTH).json()]
+    assert names.count("Pet care") == 1
+    assert [e.event_type for e in audit(state)].count("category_created") == 1
+    assert client.post("/api/categories", headers=AUTH, json={"name": ""}).status_code == 422
+    assert client.post("/api/categories", json={"name": "x"}).status_code == 401

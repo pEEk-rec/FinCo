@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 
 import { ApiError, type ReviewItem } from '../api/client';
-import { useCategories, useRecategorize, useReviewQueue, useUndo } from '../api/hooks';
+import {
+  useCategories,
+  useCreateCategory,
+  useRecategorize,
+  useReviewQueue,
+  useUndo,
+} from '../api/hooks';
 import { Badge, CategoryPill } from '../components/Badge';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
@@ -21,6 +27,8 @@ export function ReviewScreen() {
   const queue = useReviewQueue();
   const categories = useCategories();
   const recategorize = useRecategorize();
+  const createCategory = useCreateCategory();
+  const [newName, setNewName] = useState('');
   const undo = useUndo();
   const toast = useToast();
 
@@ -205,6 +213,54 @@ export function ReviewScreen() {
               {current.suggestions.length === 0 ? (
                 <p className="text-small text-ink-3">{T.noSuggestions}</p>
               ) : null}
+              <details className="mt-5 rounded-control border border-hairline px-4 py-3">
+                <summary className="cursor-pointer select-none text-[14px] text-ink-2 hover:text-ink">
+                  {T.allCategories}
+                </summary>
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {(categories.data ?? [])
+                    .filter((c) => c.id !== 'income' || current.transaction.direction === 'credit')
+                    .map((c) => (
+                      <li key={c.id}>
+                        <button
+                          type="button"
+                          disabled={recategorize.isPending}
+                          onClick={() => void confirm(c.id)}
+                          className="h-9 rounded-control border border-hairline-strong bg-surface px-3 text-[14px] text-ink-2 transition-colors duration-fast hover:bg-surface-hover hover:text-ink"
+                        >
+                          {c.name}
+                        </button>
+                      </li>
+                    ))}
+                </ul>
+                <form
+                  className="mt-3 flex max-w-sm gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const name = newName.trim();
+                    if (!name) return;
+                    void createCategory
+                      .mutateAsync(name)
+                      .then((made) => {
+                        setNewName('');
+                        return confirm(made.id);
+                      })
+                      .catch((error: Error) => toast({ message: error.message, tone: 'negative' }));
+                  }}
+                >
+                  <input
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    maxLength={40}
+                    aria-label={T.createPlaceholder}
+                    placeholder={T.createPlaceholder}
+                    className="h-9 w-full rounded-control border border-input-border bg-surface px-3 text-[14px] text-ink placeholder:text-ink-3"
+                  />
+                  <Button type="submit" busy={createCategory.isPending}>
+                    {T.createAndUse}
+                  </Button>
+                </form>
+              </details>
               <div className="mt-6 max-w-sm">
                 <Toggle
                   checked={remember}

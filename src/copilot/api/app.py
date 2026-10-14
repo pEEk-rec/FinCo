@@ -10,6 +10,7 @@ Rules (PLAN_UI 6.1):
 """
 
 import logging
+import re
 import secrets
 import sqlite3
 import time
@@ -27,10 +28,18 @@ from copilot.api import read_models as rm
 from copilot.api.errors import ApiError, ApiException, not_found, unwrap
 from copilot.api.services import draft_month_advice, register_all_tools, run_import
 from copilot.api.state import ApiState, connection_scope
+from copilot.audit.events import record_event
 from copilot.core.simulation import ScenarioComparison
 from copilot.core.timeline import build_timeline
 from copilot.core.timeutil import IST, now_utc, to_utc_iso
-from copilot.db.repo import get_monthly_review, list_categories, list_goals, list_monthly_reviews
+from copilot.db.repo import (
+    get_monthly_review,
+    insert_category,
+    list_categories,
+    list_goals,
+    list_monthly_reviews,
+)
+from copilot.models.domain import Category
 from copilot.models.agentic import Goal, Investigation, Projection, Timeline
 from copilot.review.models import MonthlyReviewData
 from copilot.tools.executor import execute_tool
@@ -42,6 +51,8 @@ log = logging.getLogger("copilot.api")
 # Small response models
 # ---------------------------------------------------------------------------------------------
 
+
+MAX_CATEGORIES = 60
 
 class Health(BaseModel):
     status: Literal["ok"]
@@ -125,6 +136,10 @@ class AdviceExplanation(BaseModel):
     tools_used: list[Any]
     memories: list[Any]
     simulation_id: str | None
+
+
+class CategoryIn(BaseModel):
+    name: str = Field(min_length=1, max_length=40)
 
 
 class AskIn(BaseModel):
@@ -346,6 +361,35 @@ def create_app(state: ApiState) -> FastAPI:
     @app.get("/api/categories", response_model=list[CategoryOut], dependencies=auth)
     def categories(conn: Conn) -> list[CategoryOut]:
         return [CategoryOut(id=c.id, name=c.name) for c in list_categories(conn, state.user_id)]
+
+    @app.post("/api/categories", response_model=CategoryOut, dependencies=auth)
+    def create_category(body: CategoryIn, conn: Conn) -> CategoryOut:
+        """Add a category of the user's own. The same name again returns the existing one."""
+        name = " ".join(body.name.split())
+        existing = list_categories(conn, state.user_id)
+        for c in existing:
+            if c.name.lower() == name.lower():
+                return CategoryOut(id=c.id, name=c.name)
+        if len(existing) >= MAX_CATEGORIES:
+            raise ApiException(
+                409, ApiError(code="LIMIT_REACHED", message="That is the most categories allowed.")
+            )
+        base = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")[:30] or "custom"
+        taken = {c.id for c in existing}
+        slug, n = base, 2
+        while slug in taken:
+            slug, n = f"{base}_{n}", n + 1
+        now = now_utc(state.clock)
+        insert_category(
+            conn,
+            Category(id=slug, user_id=state.user_id, name=name, created_at=to_utc_iso(now)),
+        )
+        record_event(
+            conn, state.user_id, "user", "category_created", "User created a category.",
+            entity_type="category", entity_id=slug, after_data={"name": name}, clock=now,
+        )
+        conn.commit()
+        return CategoryOut(id=slug, name=name)
 
     @app.get("/api/transactions", response_model=rm.TransactionPage, dependencies=auth)
     def transactions(

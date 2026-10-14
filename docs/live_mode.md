@@ -10,12 +10,27 @@ at the same time.
 | API / web ports | 8765 / 5173 | 8200 / 5273 |
 | Database | `frontend/.demo/demo.db` (synthetic) | `frontend/.demo/live.db` (yours, git-ignored) |
 | Clock | fixed demo date | real time |
-| Language model | on if keys exist | **off** unless you pass `--llm` |
+| Language model | on if keys exist | **on** (labels unknown merchants); `--no-llm` turns it off |
 | Extra screen | none | **Live data** |
 
 Budgets for live mode come from `config/live.yaml`. Edit them, then restart.
 
 ## What works with real data today
+
+### How a statement row gets its category (most certain first)
+
+1. **Your own earlier choice** for the same merchant (remembered, never overridden).
+2. **Rules** (known merchants, bill-pay billers, ATM, hospitals and so on).
+3. **The AI model**, for merchants the rules do not know. Merchant text is redacted first and each
+   distinct merchant is sent once. A confident answer is applied; an unsure one stays in Review
+   with the AI's suggestion shown first. The model may only choose from your own categories.
+4. **You**, in Review: pick from the suggestions, from **all** categories, or type a **new
+   category** of your own (it is created, audited, and used by the AI from then on). "Remember for
+   this merchant" makes the choice stick for every future statement.
+
+Categories for everyday life are built in (healthcare, cash withdrawal, friends and family,
+personal care, gifts and donations, bank fees) on top of the usual spending ones.
+Re-importing the same file is safe and re-runs the AI on anything still waiting in Review.
 
 1. **Statement import (CSV).** Download your statement from net banking, open **Live data**,
    choose the file. Reads HDFC-style (separate debit and credit columns), single amount with Dr/Cr,
@@ -54,8 +69,9 @@ RBI-registered FIU or a licensed provider. Endpoint paths and header names are c
 
 - Everything stays in `live.db` on your computer. It is git-ignored; do not copy it elsewhere.
 - Raw statement narrations are kept locally; audit events record counts only.
-- The model is off in live mode. With `--llm`, prompts are redacted and the answer step only
-  receives computed figures, not statement lines.
+- The model is on in live mode. Only redacted merchant names (no amounts, dates or account
+  numbers) are sent to label unknown merchants, and the answer step only receives computed
+  figures. Use `--no-llm` to keep everything on this computer.
 - All routes need the session token printed by `npm run live`. The SMS webhook has its own secret.
 - Nothing here moves money. It is read-only analysis and drafts.
 - Use `--lan` only on a network you trust; the webhook is then reachable from it.

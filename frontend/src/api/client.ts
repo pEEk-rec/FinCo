@@ -64,6 +64,11 @@ export type LiveImport = {
   unreadable_examples: string[];
   verified_alerts: number;
   still_provisional: number;
+  ai_used: boolean;
+  ai_applied: number;
+  ai_calls: number;
+  ai_failed_calls: number;
+  ai_note: string | null;
 };
 export type LiveReceipt = {
   outcome: string;
@@ -203,6 +208,7 @@ export const api = {
   ask: (text: string, clarification?: string, useLlm = true) =>
     post<AskOut>('/ask', { text, clarification: clarification ?? null, use_llm: useLlm }),
   llmStatus: () => get<LlmStatus>('/llm/status'),
+  createCategory: (name: string) => post<CategoryOut>('/categories', { name }),
   live: {
     status: () => get<LiveStatus>('/live/status'),
     pacing: () => get<LivePacing>('/live/pacing'),

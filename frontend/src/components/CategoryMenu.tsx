@@ -19,6 +19,8 @@ export function CategoryMenu({
   onChange,
   disabled,
   searchLabel,
+  onCreate,
+  createLabel,
 }: {
   categories: CategoryOption[];
   value: string | null;
@@ -26,6 +28,9 @@ export function CategoryMenu({
   onChange: (categoryId: string) => void;
   disabled?: boolean;
   searchLabel: string;
+  /** When given, typing a name that does not exist offers to create it. */
+  onCreate?: (name: string) => void;
+  createLabel?: (name: string) => string;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -36,6 +41,18 @@ export function CategoryMenu({
     const q = query.trim().toLowerCase();
     return q ? categories.filter((c) => c.name.toLowerCase().includes(q)) : categories;
   }, [categories, query]);
+
+  const typed = query.trim();
+  const canCreate =
+    !!onCreate &&
+    typed.length > 0 &&
+    !categories.some((c) => c.name.toLowerCase() === typed.toLowerCase());
+  const create = () => {
+    if (!onCreate || !typed) return;
+    onCreate(typed);
+    setOpen(false);
+    setQuery('');
+  };
 
   const choose = (id: string) => {
     onChange(id);
@@ -53,6 +70,9 @@ export function CategoryMenu({
     } else if (event.key === 'Enter' && filtered[active]) {
       event.preventDefault();
       choose(filtered[active].id);
+    } else if (event.key === 'Enter' && canCreate) {
+      event.preventDefault();
+      create();
     }
   };
 
@@ -124,6 +144,15 @@ export function CategoryMenu({
               );
             })}
           </ul>
+          {canCreate ? (
+            <button
+              type="button"
+              onClick={create}
+              className="mt-1 w-full rounded-[6px] border-t border-hairline px-2.5 py-2 text-left text-small text-agent hover:bg-surface-hover"
+            >
+              {createLabel ? createLabel(typed) : `Create "${typed}"`}
+            </button>
+          ) : null}
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

@@ -8,6 +8,7 @@ import {
   useRecategorize,
   useTransaction,
   useTransactions,
+  useCreateCategory,
   useSession,
   useUndo,
 } from '../api/hooks';
@@ -158,6 +159,7 @@ function Detail({ id }: { id: string }) {
   const detail = useTransaction(id);
   const categories = useCategories();
   const recategorize = useRecategorize();
+  const createCategory = useCreateCategory();
   const undo = useUndo();
   const toast = useToast();
   const [remember, setRemember] = useState(false);
@@ -196,12 +198,21 @@ function Detail({ id }: { id: string }) {
     }
   };
 
-  const change = async (categoryId: string) => {
+  const createAndUse = async (name: string) => {
+    try {
+      const made = await createCategory.mutateAsync(name);
+      await change(made.id, made.name);
+    } catch (error) {
+      toast({ message: (error as Error).message, tone: 'negative' });
+    }
+  };
+
+  const change = async (categoryId: string, nameOverride?: string) => {
     if (categoryId === tx.category_id) return;
     try {
       const out = await recategorize.mutateAsync({ id: tx.id, categoryId, remember });
       toast({
-        message: T.corrected(names.get(categoryId) ?? categoryId),
+        message: T.corrected(nameOverride ?? names.get(categoryId) ?? categoryId),
         onUndo: () => runUndo(out.audit_event_id),
       });
     } catch (error) {
@@ -235,6 +246,8 @@ function Detail({ id }: { id: string }) {
               onChange={(id) => void change(id)}
               disabled={recategorize.isPending}
               searchLabel={T.search}
+              onCreate={(name) => void createAndUse(name)}
+              createLabel={copy.review.createNamed}
             />
           </div>
         </div>

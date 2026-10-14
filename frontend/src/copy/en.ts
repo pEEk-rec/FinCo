@@ -113,7 +113,11 @@ export const copy = {
     doneSummary: (count: string) => `You categorised ${count} transactions in this session.`,
     remember: 'Remember for this merchant',
     noSimilar: 'No earlier transactions from this merchant.',
-    noSuggestions: 'No suggestions for this one. Use the category list on the Transactions screen.',
+    noSuggestions: 'No suggestions for this one. Choose from all categories below.',
+    allCategories: 'Choose any category',
+    createPlaceholder: 'Or name a new category',
+    createAndUse: 'Add and use',
+    createNamed: (name: string) => `Create "${name}" and use it`,
   },
   connect: {
     title: 'Connect and import',

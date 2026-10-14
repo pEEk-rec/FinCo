@@ -99,6 +99,7 @@ def nightly_sync(conn: sqlite3.Connection, user_id: str, clock: datetime | None)
     now = now_utc(clock)
     base = from_utc_iso("2024-03-18T06:30:00Z")
     posted = skipped = 0
+    known = {r[0] for r in conn.execute("SELECT id FROM categories WHERE user_id = ?", (user_id,))}
     for minutes, paise, narration, direction in _STATEMENT:
         when = to_utc_iso(base + timedelta(hours=14, minutes=minutes))  # posted next morning
         # the statement carries the original payment time, not the posting time
@@ -106,6 +107,8 @@ def nightly_sync(conn: sqlite3.Connection, user_id: str, clock: datetime | None)
         key = f"a1|{occurred}|{paise}|{narration}"
         tid = "aa_sync_" + hashlib.sha256(key.encode()).hexdigest()[:20]
         category, source = categorize(narration, paise, direction)
+        if category not in known:  # this profile may not have the category a rule names
+            category, source = None, "none"
         cur = conn.execute(
             "INSERT OR IGNORE INTO transactions (id, user_id, account_id, occurred_at, amount_paise,"
             " direction, merchant_raw, description, category_id, category_confidence,"

@@ -13,6 +13,9 @@ billers:
 
 # Everyday merchants the base rules do not know yet.
 merchants:
+  - {match: '\batm\b|\bwdl\b|cash wdl|cash withdrawal', category_id: cash}
+  - {match: "hospital|clinic|pharmacy|medical|medicals|chemist|diagnostic|apollo|pathology|dental", category_id: health}
+  - {match: 'salon|barber|\bspa\b|grooming', category_id: personal}
   - {match: "dmart|d mart|bigbasket|blinkit|zepto|reliance fresh|more retail|jiomart", category_id: groceries}
   - {match: "amazon|flipkart|myntra|ajio|meesho", category_id: shopping}
 

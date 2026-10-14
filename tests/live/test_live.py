@@ -330,3 +330,107 @@ def test_the_demo_app_has_no_live_routes(tmp_path):
 
     app = create_app(ApiState(db_path=tmp_path / "demo.db"))
     assert not any(getattr(r, "path", "").startswith("/api/live") for r in app.routes)
+
+
+# ----------------------------------------------------------------------------- AI categorising
+
+UNKNOWN_CSV = (
+    "Date,Narration,Debit,Credit\n"
+    "02/03/2024,UPI-ZXQ VENTURES-zq@ybl,99.00,\n"
+    "03/03/2024,UPI-MYSTERY LAB-ml@ybl,150.00,\n"
+)
+
+
+def _reply(*decisions):
+    return json.dumps({"decisions": [
+        {"merchant_normalized": m, "category_id": c, "confidence": p} for m, c, p in decisions
+    ]})
+
+
+def _with_model(live, reply):
+    from copilot.llm.client import FakeLLMClient
+
+    client, state = live
+    state.llm = FakeLLMClient([reply])
+    return client, state, state.llm
+
+
+def test_model_labels_unknown_merchants_and_unsure_ones_stay_for_review(live):
+    client, state, fake = _with_model(
+        live, _reply(("zxq ventures zq", "shopping", 0.95), ("mystery lab ml", "education", 0.4))
+    )
+    out = client.post("/api/live/import/statement", headers=AUTH, json={"text": UNKNOWN_CSV}).json()
+    assert out["ai_used"] is True and out["ai_applied"] == 1
+    assert out["needs_review"] == 1  # only the unsure one is left
+    queue = client.get("/api/review-queue", headers=AUTH).json()["items"]
+    assert queue[0]["suggestions"][0]["reason"] == "ai_suggestion"
+    assert len(fake.prompts) == 1  # one call for both merchants
+
+
+def test_model_only_sees_redacted_merchant_text(live):
+    client, state, fake = _with_model(live, _reply(("zxq ventures zq", "shopping", 0.95)))
+    client.post("/api/live/import/statement", headers=AUTH, json={"text": UNKNOWN_CSV})
+    assert "1234" not in fake.prompts[0] and "99.00" not in fake.prompts[0]
+
+
+def test_an_unknown_category_from_the_model_is_ignored(live):
+    client, _, _ = _with_model(live, _reply(("zxq ventures zq", "not_a_category", 0.99)))
+    out = client.post("/api/live/import/statement", headers=AUTH, json={"text": UNKNOWN_CSV}).json()
+    assert out["ai_applied"] == 0 and out["needs_review"] == 2
+
+
+def test_a_failing_model_never_breaks_the_import(live):
+    from copilot.llm.client import FakeLLMClient
+
+    client, state = live
+    state.llm = FakeLLMClient([])  # raises on first use
+    out = client.post("/api/live/import/statement", headers=AUTH, json={"text": UNKNOWN_CSV})
+    assert out.status_code == 200 and out.json()["inserted"] == 2
+    assert out.json()["needs_review"] == 2 and out.json()["ai_note"]
+
+
+def test_no_model_means_everything_unknown_waits_for_review(live):
+    client, _ = live
+    out = client.post("/api/live/import/statement", headers=AUTH, json={"text": UNKNOWN_CSV}).json()
+    assert out["ai_used"] is False and out["needs_review"] == 2 and out["ai_note"]
+
+
+def test_remembered_choice_labels_the_same_merchant_next_time(live):
+    client, _ = live
+    client.post("/api/live/import/statement", headers=AUTH, json={"text": UNKNOWN_CSV})
+    item = client.get("/api/review-queue", headers=AUTH).json()["items"][0]["transaction"]
+    done = client.post(
+        f"/api/transactions/{item['id']}/category", headers=AUTH,
+        json={"category_id": "education", "remember": True},
+    )
+    assert done.status_code == 200
+    again = (
+        "Date,Narration,Debit,Credit\n"
+        "20/03/2024," + item["merchant_raw"] + ",75.00,\n"
+    )
+    out = client.post("/api/live/import/statement", headers=AUTH, json={"text": again}).json()
+    assert out["needs_review"] == 1  # the other unknown one; this merchant is remembered
+
+
+def test_everyday_life_categories_exist_and_rules_use_them(live):
+    client, _ = live
+    names = {c["id"] for c in client.get("/api/categories", headers=AUTH).json()}
+    assert {"health", "cash", "transfers", "personal"} <= names
+    text = (
+        "Date,Narration,Debit,Credit\n"
+        "02/03/2024,UPI-LOKMANYA HOSPITAL PUNE-lk@icici,1850.00,\n"
+        "03/03/2024,ATM-WDL/CASH/HDFC00012/KOTHRUD PUNE,2000.00,\n"
+    )
+    out = client.post("/api/live/import/statement", headers=AUTH, json={"text": text}).json()
+    assert out["needs_review"] == 0
+    cats = {t["merchant_raw"][:6]: t["category_id"] for t in
+            client.get("/api/transactions", headers=AUTH).json()["items"]}
+    assert cats["UPI-LO"] == "health" and cats["ATM-WD"] == "cash"
+
+
+def test_review_never_suggests_income_for_a_payment(live):
+    client, _ = live
+    client.post("/api/live/import/statement", headers=AUTH, json={"text": SINGLE_AMOUNT})
+    client.post("/api/live/import/statement", headers=AUTH, json={"text": UNKNOWN_CSV})
+    for item in client.get("/api/review-queue", headers=AUTH).json()["items"]:
+        assert "income" not in [s["category_id"] for s in item["suggestions"]]

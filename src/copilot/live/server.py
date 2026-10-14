@@ -53,9 +53,11 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=int(os.environ.get("LIVE_PORT", "8200")))
     parser.add_argument("--token", default=os.environ.get("LIVE_TOKEN"))
     parser.add_argument("--webhook-secret", default=os.environ.get("LIVE_WEBHOOK_SECRET"))
-    parser.add_argument("--llm", action="store_true", help="let the model plan and word answers")
+    parser.add_argument("--no-llm", action="store_true", help="keep the language model off")
     args = parser.parse_args()
-    app, state, secret = build_live(Path(args.db), args.token, args.webhook_secret, args.llm)
+    app, state, secret = build_live(
+        Path(args.db), args.token, args.webhook_secret, not args.no_llm
+    )
     print(f"FinCo LIVE API on http://127.0.0.1:{args.port}   (real data, database: {args.db})")
     print(f"Session token: {state.token}")
     print(

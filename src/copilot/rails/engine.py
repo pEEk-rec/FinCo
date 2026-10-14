@@ -219,6 +219,8 @@ def ingest_sms(
             outcome="duplicate", reason="already received", event=_out(existing, names)
         )
     category, source = categorize(parsed.merchant, parsed.amount_paise, parsed.direction)
+    if category not in names:  # a rule may name a category this profile does not have
+        category, source = None, "none"
     review = category is None or (parsed.is_p2p and source == "none")
     event_id = f"rail_{uuid.uuid4().hex[:12]}"
     conn.execute(
