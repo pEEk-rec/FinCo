@@ -215,3 +215,23 @@ tools:
     short_description: "List active or historical adaptive alerts for the user"
     intents: ["alerts_overview", "summarize_period"]
 
+  approve_consent:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Record the user's consent"
+    intents: []
+
+  revoke_consent:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Withdraw the user's consent"
+    intents: []
+
+  build_monthly_review:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Build the monthly review"
+    intents: []

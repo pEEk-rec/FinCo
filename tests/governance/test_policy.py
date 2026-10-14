@@ -97,3 +97,22 @@ def test_load_policy_rejects_typo(tmp_path):
     bad.write_text("default: deny\ntools:\n  get_balance: {decision: alow}\n", encoding="utf-8")
     with pytest.raises(ValidationError):
         load_policy(bad)
+
+
+USER_ONLY_TOOLS = ("decide_advice", "approve_consent", "revoke_consent", "build_monthly_review")
+
+
+def test_user_only_actions_are_denied_to_the_agent_by_the_real_policy():
+    """A rule that lists only `user: allow` would leave the agent on the needs-approval default."""
+    from copilot.api.services import register_all_tools
+    from copilot.tools.registry import get as get_tool
+
+    register_all_tools()
+    policy = load_policy(REPO_POLICY)
+    for name in USER_ONLY_TOOLS:
+        spec = get_tool(name)
+        assert spec is not None, name
+        assert decide(policy, spec, "agent").outcome == "deny", (
+            f"{name} must be denied to the agent"
+        )
+        assert decide(policy, spec, "user").outcome == "allow", f"{name} must work for the user"

@@ -20,7 +20,7 @@ tools:
   get_financial_state:         {agent: allow}
   undo:                        {agent: allow, user: allow}
   draft_advice:                {agent: allow}
-  decide_advice:               {user: allow}
+  decide_advice:               {agent: deny, user: allow}
   create_goal:                 {agent: needs_approval, user: allow}
   update_goal:                 {agent: needs_approval, user: allow}
   list_goals:                  {decision: allow}
@@ -35,6 +35,6 @@ tools:
   set_alert_preference:        {agent: needs_approval, user: allow}
   list_alerts:                 {decision: allow}
 
-  approve_consent:             {user: allow}
-  revoke_consent:              {user: allow}
-  build_monthly_review:        {user: allow}
+  approve_consent:             {agent: deny, user: allow}
+  revoke_consent:              {agent: deny, user: allow}
+  build_monthly_review:        {agent: deny, user: allow}
