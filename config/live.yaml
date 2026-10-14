@@ -1,0 +1,14 @@
+# Live mode: your own data, your own limits. Edit the budgets, restart `npm run live`.
+# Amounts are rupees per month. Category ids: food, groceries, travel, shopping, bills,
+# subscriptions, education, entertainment, housing.
+budgets:
+  food: 6000
+  groceries: 3000
+  travel: 2000
+  shopping: 3000
+  entertainment: 1500
+  bills: 2500
+
+account:
+  id: live_main
+  name: My bank account
