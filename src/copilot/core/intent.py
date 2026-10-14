@@ -562,7 +562,7 @@ def llm_classify_intent(
     )
 
     try:
-        candidate = structured_call(client, prompt, LLMIntentCandidate)
+        candidate = structured_call(client, prompt, LLMIntentCandidate, purpose="intent")
     except StructuredOutputError:
         return None, None
 
@@ -649,7 +649,7 @@ def generate_clarification(
         return "Which goal would you like to check?"
 
     # 4. Missing period for summarize_period, forecast, check_budget
-    if intent.type in ("summarize_period", "forecast", "check_budget") and not intent.period:
+    if intent.type == "summarize_period" and not intent.period:
         return (
             "Which period would you like me to check? "
             "Options: this month, last month, last 3 months."

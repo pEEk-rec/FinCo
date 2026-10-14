@@ -15,8 +15,10 @@ from pathlib import Path
 from typing import Literal
 
 from copilot.core.config import load_settings
+from copilot.api.llm import GuardedLLM, build_llm
 from copilot.db.connection import get_connection, init_db
 from copilot.governance.policy import PolicySettings, load_policy
+from copilot.llm.client import LLMClient
 from copilot.tools.executor import ExecutionContext
 
 DataSource = Literal["synthetic_demo", "connected"]
@@ -33,6 +35,14 @@ class ApiState:
     data_source: DataSource = "synthetic_demo"
     allowed_origins: tuple[str, ...] = ("http://localhost:5173", "http://127.0.0.1:5173")
     policy: PolicySettings | None = None
+    #: "auto" resolves from .env on first use; None disables the model; tests pass a fake client.
+    llm: "LLMClient | GuardedLLM | None | Literal['auto']" = "auto"
+
+    def get_llm(self) -> "LLMClient | GuardedLLM | None":
+        """The optional language-model client (built once, lazily)."""
+        if self.llm == "auto":
+            self.llm = build_llm()
+        return self.llm  # type: ignore[return-value]
 
     def get_policy(self) -> PolicySettings:
         """The governance policy from config/policy.yaml (loaded once)."""

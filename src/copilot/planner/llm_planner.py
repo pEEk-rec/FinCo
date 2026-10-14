@@ -64,6 +64,7 @@ class LLMPlanner:
                 self.client,
                 prompt=prompt,
                 output_model=LLMPlanProposal,
+                purpose="planning",
             )
         except (StructuredOutputError, Exception) as err:
             logger.warning("LLM planner proposal failed (%s); using deterministic plan", err)

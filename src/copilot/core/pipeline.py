@@ -147,6 +147,7 @@ def ask_llm(
                 output_model=LLMBatchOutput,
                 max_retries=max_retries,
                 temperature=0,
+                purpose="categorization",
             )
         except ToolFailure:
             failures += 1
