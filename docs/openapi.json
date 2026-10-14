@@ -320,6 +320,68 @@
         "title": "AnomalyOut",
         "type": "object"
       },
+      "AnswerOut": {
+        "properties": {
+          "causal_ok": {
+            "default": false,
+            "title": "Causal Ok",
+            "type": "boolean"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "facts": {
+            "default": [],
+            "items": {},
+            "title": "Facts",
+            "type": "array"
+          },
+          "followups": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Followups",
+            "type": "array"
+          },
+          "headline": {
+            "title": "Headline",
+            "type": "string"
+          },
+          "points": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Points",
+            "type": "array"
+          },
+          "written_by": {
+            "default": "rules",
+            "title": "Written By",
+            "type": "string"
+          }
+        },
+        "required": [
+          "causal_ok",
+          "confidence",
+          "facts",
+          "followups",
+          "headline",
+          "points",
+          "written_by"
+        ],
+        "title": "AnswerOut",
+        "type": "object"
+      },
       "ApiError": {
         "description": "Body of every non-2xx response.",
         "properties": {
@@ -364,6 +426,11 @@
             "minLength": 1,
             "title": "Text",
             "type": "string"
+          },
+          "use_llm": {
+            "default": true,
+            "title": "Use Llm",
+            "type": "boolean"
           }
         },
         "required": [
@@ -374,6 +441,16 @@
       },
       "AskOut": {
         "properties": {
+          "answer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnswerOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "intent": {
             "anyOf": [
               {
@@ -394,6 +471,16 @@
             "title": "Investigations",
             "type": "array"
           },
+          "llm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LlmUsedOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "observations": {
             "items": {
               "additionalProperties": true,
@@ -409,6 +496,17 @@
             },
             "title": "Pending Recommendations",
             "type": "array"
+          },
+          "plan": {
+            "items": {
+              "$ref": "#/components/schemas/PlanStepOut"
+            },
+            "title": "Plan",
+            "type": "array"
+          },
+          "planner_mode": {
+            "title": "Planner Mode",
+            "type": "string"
           },
           "question": {
             "anyOf": [
@@ -440,6 +538,10 @@
             ],
             "title": "Refusal Reason"
           },
+          "rounds": {
+            "title": "Rounds",
+            "type": "integer"
+          },
           "status": {
             "title": "Status",
             "type": "string"
@@ -465,19 +567,32 @@
               }
             ],
             "title": "Task Id"
+          },
+          "trace": {
+            "items": {
+              "$ref": "#/components/schemas/TraceNodeOut"
+            },
+            "title": "Trace",
+            "type": "array"
           }
         },
         "required": [
+          "answer",
           "intent",
           "investigations",
+          "llm",
           "observations",
           "pending_recommendations",
+          "plan",
+          "planner_mode",
           "question",
           "recommendations",
           "refusal_reason",
+          "rounds",
           "status",
           "stop_reason",
-          "task_id"
+          "task_id",
+          "trace"
         ],
         "title": "AskOut",
         "type": "object"
@@ -1792,6 +1907,49 @@
         "title": "InvestigationOut",
         "type": "object"
       },
+      "LlmUsedOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "calls": {
+            "default": 0,
+            "title": "Calls",
+            "type": "integer"
+          },
+          "failures": {
+            "default": 0,
+            "title": "Failures",
+            "type": "integer"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "planner": {
+            "default": "rules",
+            "title": "Planner",
+            "type": "string"
+          }
+        },
+        "required": [
+          "available",
+          "calls",
+          "failures",
+          "model",
+          "planner"
+        ],
+        "title": "LlmUsedOut",
+        "type": "object"
+      },
       "MonthlyReviewData": {
         "additionalProperties": false,
         "description": "The complete, structured monthly review document.",
@@ -2049,6 +2207,39 @@
           "year"
         ],
         "title": "Period",
+        "type": "object"
+      },
+      "PlanStepOut": {
+        "properties": {
+          "proposed_by": {
+            "title": "Proposed By",
+            "type": "string"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          },
+          "seq": {
+            "title": "Seq",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "tool_name": {
+            "title": "Tool Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "proposed_by",
+          "rationale",
+          "seq",
+          "status",
+          "tool_name"
+        ],
+        "title": "PlanStepOut",
         "type": "object"
       },
       "Projection": {
@@ -2611,6 +2802,11 @@
             "title": "Demo Clock",
             "type": "boolean"
           },
+          "llm_available": {
+            "default": false,
+            "title": "Llm Available",
+            "type": "boolean"
+          },
           "period": {
             "title": "Period",
             "type": "string"
@@ -2624,6 +2820,7 @@
           "as_of",
           "data_source",
           "demo_clock",
+          "llm_available",
           "period",
           "user_id"
         ],
@@ -2787,6 +2984,37 @@
           "ts"
         ],
         "title": "TimelineEntry",
+        "type": "object"
+      },
+      "TraceNodeOut": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Counts",
+            "type": "object"
+          },
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "number"
+          },
+          "node": {
+            "title": "Node",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "counts",
+          "duration_ms",
+          "node",
+          "status"
+        ],
+        "title": "TraceNodeOut",
         "type": "object"
       },
       "TransactionDetail": {
@@ -4419,6 +4647,56 @@
           }
         },
         "summary": "Investigation"
+      }
+    },
+    "/api/llm/status": {
+      "get": {
+        "operationId": "llm_status_api_llm_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Llm Status Api Llm Status Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Llm Status"
       }
     },
     "/api/monthly-reviews": {

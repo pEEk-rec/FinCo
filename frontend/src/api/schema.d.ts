@@ -330,6 +330,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/llm/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Llm Status */
+        get: operations["llm_status_api_llm_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/monthly-reviews": {
         parameters: {
             query?: never;
@@ -639,6 +656,38 @@ export interface components {
             /** Transaction Id */
             transaction_id: string;
         };
+        /** AnswerOut */
+        AnswerOut: {
+            /**
+             * Causal Ok
+             * @default false
+             */
+            causal_ok: boolean;
+            /** Confidence */
+            confidence: string | null;
+            /**
+             * Facts
+             * @default []
+             */
+            facts: unknown[];
+            /**
+             * Followups
+             * @default []
+             */
+            followups: string[];
+            /** Headline */
+            headline: string;
+            /**
+             * Points
+             * @default []
+             */
+            points: string[];
+            /**
+             * Written By
+             * @default rules
+             */
+            written_by: string;
+        };
         /**
          * ApiError
          * @description Body of every non-2xx response.
@@ -660,9 +709,15 @@ export interface components {
             clarification?: string | null;
             /** Text */
             text: string;
+            /**
+             * Use Llm
+             * @default true
+             */
+            use_llm: boolean;
         };
         /** AskOut */
         AskOut: {
+            answer: components["schemas"]["AnswerOut"] | null;
             /** Intent */
             intent: {
                 [key: string]: unknown;
@@ -671,6 +726,7 @@ export interface components {
             investigations: {
                 [key: string]: unknown;
             }[];
+            llm: components["schemas"]["LlmUsedOut"] | null;
             /** Observations */
             observations: {
                 [key: string]: unknown;
@@ -679,6 +735,10 @@ export interface components {
             pending_recommendations: {
                 [key: string]: unknown;
             }[];
+            /** Plan */
+            plan: components["schemas"]["PlanStepOut"][];
+            /** Planner Mode */
+            planner_mode: string;
             /** Question */
             question: string | null;
             /** Recommendations */
@@ -687,12 +747,16 @@ export interface components {
             }[];
             /** Refusal Reason */
             refusal_reason: string | null;
+            /** Rounds */
+            rounds: number;
             /** Status */
             status: string;
             /** Stop Reason */
             stop_reason: string | null;
             /** Task Id */
             task_id: string | null;
+            /** Trace */
+            trace: components["schemas"]["TraceNodeOut"][];
         };
         /**
          * BudgetPace
@@ -1171,6 +1235,28 @@ export interface components {
             };
             investigation: components["schemas"]["Investigation"];
         };
+        /** LlmUsedOut */
+        LlmUsedOut: {
+            /** Available */
+            available: boolean;
+            /**
+             * Calls
+             * @default 0
+             */
+            calls: number;
+            /**
+             * Failures
+             * @default 0
+             */
+            failures: number;
+            /** Model */
+            model: string | null;
+            /**
+             * Planner
+             * @default rules
+             */
+            planner: string;
+        };
         /**
          * MonthlyReviewData
          * @description The complete, structured monthly review document.
@@ -1257,6 +1343,19 @@ export interface components {
             month: number;
             /** Year */
             year: number;
+        };
+        /** PlanStepOut */
+        PlanStepOut: {
+            /** Proposed By */
+            proposed_by: string;
+            /** Rationale */
+            rationale: string;
+            /** Seq */
+            seq: number;
+            /** Status */
+            status: string;
+            /** Tool Name */
+            tool_name: string;
         };
         /** Projection */
         Projection: {
@@ -1494,6 +1593,11 @@ export interface components {
             data_source: "synthetic_demo" | "connected";
             /** Demo Clock */
             demo_clock: boolean;
+            /**
+             * Llm Available
+             * @default false
+             */
+            llm_available: boolean;
             /** Period */
             period: string;
             /** User Id */
@@ -1558,6 +1662,19 @@ export interface components {
             title: string;
             /** Ts */
             ts: string;
+        };
+        /** TraceNodeOut */
+        TraceNodeOut: {
+            /** Counts */
+            counts: {
+                [key: string]: number;
+            };
+            /** Duration Ms */
+            duration_ms: number;
+            /** Node */
+            node: string;
+            /** Status */
+            status: string;
         };
         /**
          * TransactionDetail
@@ -2760,6 +2877,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    llm_status_api_llm_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };

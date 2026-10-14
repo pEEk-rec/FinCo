@@ -17,6 +17,8 @@ export type ImportBatchView = S['ImportBatchView'];
 export type MonthlyReviewOut = S['MonthlyReviewOut'];
 export type AdviceExplanation = S['AdviceExplanation'];
 export type AskOut = S['AskOut'];
+export type LlmStatus = { available: boolean; router: Record<string, unknown> | null };
+export type InvestigationOut = S['InvestigationOut'];
 export type Session = S['Session'];
 export type CategoryOut = S['CategoryOut'];
 export type RecategorizeOut = S['RecategorizeOut'];
@@ -143,8 +145,9 @@ export const api = {
   advice: (id: string) => get<AdviceExplanation>(`/advice/${encodeURIComponent(id)}`),
   decideAdvice: (id: string, decision: 'approved' | 'rejected') =>
     post<S['AdviceDecisionOut']>(`/advice/${encodeURIComponent(id)}/decision`, { decision }),
-  ask: (text: string, clarification?: string) =>
-    post<AskOut>('/ask', { text, clarification: clarification ?? null }),
+  ask: (text: string, clarification?: string, useLlm = true) =>
+    post<AskOut>('/ask', { text, clarification: clarification ?? null, use_llm: useLlm }),
+  llmStatus: () => get<LlmStatus>('/llm/status'),
   timeline: () => get<Timeline>('/timeline'),
   alerts: () => get<S['AlertsOut']>('/alerts'),
   decideAlert: (id: string, body: AlertDecisionIn) =>

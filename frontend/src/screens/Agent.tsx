@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useLocation } from 'react-router';
 
-import { api, ApiError, type AskOut, type CompareOut } from '../api/client';
+import { api, ApiError, type AskOut, type CompareOut, type InvestigationOut } from '../api/client';
 import { useAlerts, useCategories, useGoals, useSession, useTimeline } from '../api/hooks';
 import { Badge, Chip } from '../components/Badge';
 import { Button } from '../components/Button';
@@ -15,6 +15,7 @@ import { copy } from '../copy/en';
 import { formatDay, formatPeriod, formatTime } from '../format/date';
 import { formatINR, parseRupeesToPaise } from '../format/money';
 import { Constellation } from '../constellation/Constellation';
+import { AgentProcess } from './AgentProcess';
 
 const T = copy.agent;
 type Tab = 'ask' | 'investigate' | 'whatif' | 'goals' | 'activity';
@@ -55,15 +56,23 @@ function AgentMark({ working = false }: { working?: boolean }) {
 // Ask
 // ------------------------------------------------------------------------------------------
 
-function ObservationData({ name, data }: { name: string; data: Record<string, unknown> | null }) {
+function ObservationData({
+  name,
+  data,
+  names,
+}: {
+  name: string;
+  data: Record<string, unknown> | null;
+  names: Map<string, string>;
+}) {
   if (!data) return null;
   if (name === 'aggregate_spend_by_category' && Array.isArray(data.totals)) {
     return (
       <ul className="mt-2 flex flex-col gap-1">
         {(data.totals as { category_id: string | null; total_spend_paise: number }[]).map((t) => (
           <li key={String(t.category_id)} className="flex justify-between text-small">
-            <span className="capitalize text-ink-2">
-              {t.category_id ?? copy.common.uncategorised}
+            <span className="text-ink-2">
+              {(t.category_id && names.get(t.category_id)) ?? copy.common.uncategorised}
             </span>
             <span className="tabular">{formatINR(t.total_spend_paise, { paise: 'never' })}</span>
           </li>
@@ -83,7 +92,7 @@ function ObservationData({ name, data }: { name: string; data: Record<string, un
           }[]
         ).map((s) => (
           <li key={s.category_id} className="flex justify-between gap-3 text-small">
-            <span className="capitalize text-ink-2">{s.category_id}</span>
+            <span className="text-ink-2">{names.get(s.category_id) ?? s.category_id}</span>
             <span className="tabular">
               {formatINR(s.spent_paise, { paise: 'never' })} /{' '}
               {formatINR(s.limit_paise, { paise: 'never' })}{' '}
@@ -104,6 +113,44 @@ function ObservationData({ name, data }: { name: string; data: Record<string, un
       </ul>
     );
   }
+  if (name === 'explain_change' && data.investigation) {
+    return (
+      <div className="mt-3">
+        <InvestigationView out={data as unknown as InvestigationOut} />
+      </div>
+    );
+  }
+  if (name === 'run_whatif' && data.projection) {
+    const projection = data.projection as {
+      monthly_surplus_paise: Record<string, number>;
+      goal_impacts: Record<string, string>;
+    };
+    const goalStates = Object.values(projection.goal_impacts);
+    return (
+      <div className="mt-3 flex flex-col gap-2">
+        <ul className="flex flex-col gap-1">
+          {Object.entries(projection.monthly_surplus_paise).map(([month, surplus]) => (
+            <li key={month} className="flex justify-between text-small">
+              <span className="text-ink-2">{formatPeriod(month)}</span>
+              <span className="tabular">{formatINR(surplus, { paise: 'never' })}</span>
+            </li>
+          ))}
+        </ul>
+        {goalStates.length ? (
+          <p className="text-small text-ink-2">
+            {T.goals}: {(goalStates[goalStates.length - 1] ?? '').replace(/_/g, ' ')}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+  if (name === 'detect_anomalies' && Array.isArray(data.anomalies)) {
+    return (
+      <p className="tabular mt-2 text-small text-ink-2">
+        {data.anomalies.length} unusual transaction(s) found. Use the Investigate tab to test why.
+      </p>
+    );
+  }
   if (name === 'forecast_month' && typeof data.projected_total === 'number') {
     return (
       <p className="tabular mt-2 text-small">
@@ -119,11 +166,16 @@ function AskPanel() {
   const [text, setText] = useState('');
   const [asked, setAsked] = useState('');
   const [answer, setAnswer] = useState('');
+  const session = useSession();
+  const [useLlm, setUseLlm] = useState(true);
   const ask = useMutation({
-    mutationFn: (v: { text: string; clarification?: string }) => api.ask(v.text, v.clarification),
+    mutationFn: (v: { text: string; clarification?: string; useLlm?: boolean }) =>
+      api.ask(v.text, v.clarification, v.useLlm ?? useLlm),
     onError: (e) => toast({ message: e.message, tone: 'negative' }),
   });
   const result: AskOut | undefined = ask.data;
+  const categories = useCategories();
+  const names = new Map((categories.data ?? []).map((c) => [c.id, c.name]));
 
   return (
     <div className="flex flex-col gap-5">
@@ -151,6 +203,34 @@ function AskPanel() {
           {T.ask}
         </Button>
       </form>
+      {session.data?.llm_available ? (
+        <label className="flex items-center gap-2 text-small text-ink-2">
+          <input type="checkbox" checked={useLlm} onChange={(e) => setUseLlm(e.target.checked)} />
+          Use AI to plan and word the answer (numbers always come from your data)
+        </label>
+      ) : null}
+
+      <div className="flex flex-col gap-3">
+        <p className="label-mono text-ink-3">Try asking</p>
+        <ul className="flex flex-wrap gap-2">
+          {T.examples.map((example) => (
+            <li key={example}>
+              <button
+                type="button"
+                onClick={() => {
+                  setText(example);
+                  setAsked(example);
+                  setAnswer('');
+                  ask.mutate({ text: example });
+                }}
+                className="rounded-control border border-hairline-strong bg-surface px-3 py-2 text-left text-[14px] text-ink-2 transition-colors duration-fast hover:border-agent hover:text-agent"
+              >
+                {example}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       {ask.isPending ? (
         <Card className="flex items-center gap-4 p-6">
@@ -164,7 +244,7 @@ function AskPanel() {
             <h2 id="ask-result" className="label-mono text-agent">
               {T.ask}
             </h2>
-            {result.intent ? (
+            {result.intent && (result.intent as { type?: string }).type !== 'unknown' ? (
               <Badge tone="agent">
                 {String((result.intent as { type?: string }).type ?? '').replace(/_/g, ' ')}
               </Badge>
@@ -173,14 +253,19 @@ function AskPanel() {
           <div className="flex flex-col gap-4 p-6">
             <p className="serif-light text-[22px] leading-snug">{asked}</p>
             {result.refusal_reason ? (
-              <div className="rounded-control bg-negative-tint p-4">
-                <p className="font-medium text-negative">{T.refused}</p>
-                <p className="mt-1 text-[14px] text-ink">{result.refusal_reason}</p>
-                <p className="label-mono mt-3 text-ink-3">{T.canInstead}</p>
-                <p className="mt-1 text-small text-ink-2">
-                  Explain a change, check budgets, forecast the month, or run a what-if.
-                </p>
-              </div>
+              <>
+                <div className="rounded-control bg-negative-tint p-4">
+                  <p className="font-medium text-negative">{T.refused}</p>
+                  <p className="mt-1 text-[14px] text-ink">{result.refusal_reason}</p>
+                  <p className="label-mono mt-3 text-ink-3">{T.canInstead}</p>
+                  <p className="mt-1 text-small text-ink-2">
+                    Explain a change, check budgets, forecast the month, or run a what-if.
+                  </p>
+                </div>
+                <div className="mt-5">
+                  <AgentProcess result={result} />
+                </div>
+              </>
             ) : result.question ? (
               <form
                 className="flex flex-col gap-3 rounded-control bg-agent-tint p-4"
@@ -205,62 +290,97 @@ function AskPanel() {
               </form>
             ) : (
               <>
-                {result.observations.length === 0 ? (
-                  <InsufficientDataState message="The agent did not need to look at any data for this." />
-                ) : (
-                  <ul className="flex flex-col divide-y divide-hairline">
-                    {result.observations.map((o) => (
-                      <li key={`${o.step_seq}-${String(o.tool_name)}`} className="py-3">
-                        <p className="flex items-center gap-2 text-[14px]">
-                          <Badge tone={o.ok ? 'positive' : 'negative'}>
-                            {o.ok ? 'ok' : 'failed'}
-                          </Badge>
-                          <span>{String(o.tool_name).replace(/_/g, ' ')}</span>
-                        </p>
-                        <ObservationData
-                          name={String(o.tool_name)}
-                          data={(o.data_summary as Record<string, unknown> | null) ?? null}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {result.recommendations.length > 0 ? (
-                  <p className="text-small text-ink-3">
-                    {T.confidence}: {String(result.recommendations[0]?.confidence_label ?? '–')} ·
-                    Tools:{' '}
-                    {(result.recommendations[0]?.tools_used as { tool: string }[] | undefined)
-                      ?.map((t) => t.tool.replace(/_/g, ' '))
-                      .join(', ')}
-                  </p>
+                {result.answer ? (
+                  <div className="flex flex-col gap-3" data-testid="ask-answer">
+                    <p className="serif-light text-[24px] leading-snug">{result.answer.headline}</p>
+                    {result.answer.points.length > 0 ? (
+                      <ul className="flex list-disc flex-col gap-1.5 pl-5 text-[15px] text-ink-2">
+                        {result.answer.points.map((point) => (
+                          <li key={point}>{point}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    <p className="flex flex-wrap items-center gap-2 text-small text-ink-3">
+                      <Badge tone={result.answer.written_by === 'ai' ? 'agent' : 'neutral'}>
+                        {result.answer.written_by === 'ai'
+                          ? 'Written by AI from your data'
+                          : 'Written from your data by rules'}
+                      </Badge>
+                      {result.answer.confidence ? (
+                        <span>
+                          {T.confidence}: {result.answer.confidence}
+                        </span>
+                      ) : null}
+                    </p>
+                    {result.answer.followups.length > 0 ? (
+                      <ul className="flex flex-wrap gap-2">
+                        {result.answer.followups.map((q) => (
+                          <li key={q}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setText(q);
+                                setAsked(q);
+                                setAnswer('');
+                                ask.mutate({ text: q, useLlm });
+                              }}
+                              className="rounded-control border border-hairline-strong bg-surface px-3 py-1.5 text-left text-small text-ink-2 hover:border-agent hover:text-agent"
+                            >
+                              {q}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
                 ) : null}
+                <details
+                  className="group rounded-control border border-hairline"
+                  data-testid="ask-process"
+                >
+                  <summary className="cursor-pointer select-none px-4 py-3 text-[14px] text-ink-2 hover:text-agent">
+                    Show how the agent worked
+                  </summary>
+                  <div className="flex flex-col gap-4 border-t border-hairline p-4">
+                    <AgentProcess result={result} />
+                    <h3 className="label-mono text-ink-2">What it found</h3>
+                    {result.observations.length === 0 ? (
+                      <InsufficientDataState message="The agent did not need to look at any data for this." />
+                    ) : (
+                      <ul className="flex flex-col divide-y divide-hairline">
+                        {result.observations.map((o) => (
+                          <li key={`${o.step_seq}-${String(o.tool_name)}`} className="py-3">
+                            <p className="flex items-center gap-2 text-[14px]">
+                              <Badge tone={o.ok ? 'positive' : 'negative'}>
+                                {o.ok ? 'ok' : 'failed'}
+                              </Badge>
+                              <span>{String(o.tool_name).replace(/_/g, ' ')}</span>
+                            </p>
+                            <ObservationData
+                              names={names}
+                              name={String(o.tool_name)}
+                              data={(o.data_summary as Record<string, unknown> | null) ?? null}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {result.recommendations.length > 0 ? (
+                      <p className="text-small text-ink-3">
+                        {T.confidence}: {String(result.recommendations[0]?.confidence_label ?? '–')}{' '}
+                        · Tools:{' '}
+                        {(result.recommendations[0]?.tools_used as { tool: string }[] | undefined)
+                          ?.map((t) => t.tool.replace(/_/g, ' '))
+                          .join(', ')}
+                      </p>
+                    ) : null}
+                  </div>
+                </details>
               </>
             )}
           </div>
         </Card>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <p className="label-mono text-ink-3">Try asking</p>
-          <ul className="flex flex-wrap gap-2">
-            {T.examples.map((example) => (
-              <li key={example}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setText(example);
-                    setAsked(example);
-                    setAnswer('');
-                    ask.mutate({ text: example });
-                  }}
-                  className="rounded-control border border-hairline-strong bg-surface px-3 py-2 text-left text-[14px] text-ink-2 transition-colors duration-fast hover:border-agent hover:text-agent"
-                >
-                  {example}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -275,13 +395,12 @@ const KIND_LABEL: Record<string, string> = {
   large_transaction: 'Large payment',
 };
 
-function InvestigationView({
-  out,
-}: {
-  out: NonNullable<ReturnType<typeof useInvestigation>['data']>;
-}) {
+function InvestigationView({ out }: { out: InvestigationOut }) {
   const inv = out.investigation;
-  const tested = inv.hypotheses.filter((h) => h.status !== 'untested');
+  const tested = inv.hypotheses.filter(
+    (h) => h.status === 'supported' || h.status === 'contradicted',
+  );
+  const ruledOut = inv.hypotheses.filter((h) => h.status === 'neutral');
   const inconclusive = inv.outcome === 'inconclusive';
   return (
     <Card className="border-agent/30" labelledBy="inv-title">
@@ -335,6 +454,22 @@ function InvestigationView({
               </li>
             ))}
           </ul>
+          {ruledOut.length > 0 ? (
+            <details className="mt-3 text-small text-ink-2">
+              <summary className="cursor-pointer text-ink-2 hover:text-ink">
+                {tested.length === 0
+                  ? `All ${ruledOut.length} explanations were tested; none had enough evidence`
+                  : `${ruledOut.length} other explanations had no supporting evidence`}
+              </summary>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {ruledOut.map((h) => (
+                  <li key={h.id}>
+                    <Badge>{h.code.replace(/_/g, ' ')}</Badge>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
         </div>
         {inv.evidence.some((e) => e.result !== 'neutral') ? (
           <div>
@@ -761,6 +896,39 @@ function GoalsAlertsPanel() {
   );
 }
 
+type RouterKey = {
+  id: string;
+  state: string;
+  calls: number;
+  rate_limited: number;
+  load_pct: number;
+};
+
+function RouterCard() {
+  const status = useQuery({ queryKey: ['llm-status'], queryFn: api.llmStatus, retry: false });
+  const providers = (status.data?.router?.providers ?? {}) as Record<string, { keys: RouterKey[] }>;
+  if (!status.data) return null;
+  return (
+    <Card labelledBy="router-title">
+      <CardHeader id="router-title" label="Model router" />
+      <div className="flex flex-col gap-2 p-6 text-small text-ink-2" data-testid="router-card">
+        {!status.data.available ? (
+          <p>No model is configured, so every answer is written from your data by rules.</p>
+        ) : (
+          Object.entries(providers).map(([name, p]) => (
+            <p key={name}>
+              <span className="font-medium text-ink">{name}</span>:{' '}
+              {p.keys.filter((k) => k.state === 'ready').length} of {p.keys.length} keys ready,{' '}
+              {p.keys.reduce((n, k) => n + k.calls, 0)} calls,{' '}
+              {p.keys.reduce((n, k) => n + k.rate_limited, 0)} rate limits absorbed
+            </p>
+          ))
+        )}
+      </div>
+    </Card>
+  );
+}
+
 function ActivityPanel() {
   const timeline = useTimeline();
   if (timeline.isPending)
@@ -782,6 +950,7 @@ function ActivityPanel() {
   const { entries, pending_approvals: pending } = timeline.data;
   return (
     <div className="flex flex-col gap-5">
+      <RouterCard />
       {pending.length > 0 ? (
         <Card labelledBy="pend-title" className="border-agent/30">
           <CardHeader id="pend-title" label={T.pendingApprovals} />

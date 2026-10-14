@@ -34,7 +34,7 @@ test('welcome page is restrained and links to the app', async ({ page }) => {
   await expect(page.getByText('It cannot move money.')).toBeVisible();
   await expectNoSeriousA11yIssues(page, 'welcome');
   await page.getByRole('link', { name: 'Open the dashboard' }).click();
-  await expect(page).toHaveURL(/127\.0\.0\.1:5173\/$/);
+  await expect(page).toHaveURL(/:\d+\/$/);
 });
 
 test('empty dashboard says what to do, with no invented numbers', async ({ page }) => {
@@ -134,11 +134,43 @@ test('monthly review: generate, explain, approve', async ({ page }) => {
   await expectNoSeriousA11yIssues(page, 'monthly');
 });
 
+test('agent process: understand, plan, act, with the investigation and what-if inline', async ({
+  page,
+}) => {
+  await page.goto('/agent');
+  await page.getByRole('button', { name: 'Why did my food spend change in February?' }).click();
+  await expect(page.getByTestId('ask-answer')).toBeVisible();
+  await expect(page.getByTestId('ask-process')).not.toHaveAttribute('open', '');
+  await page.getByText('Show how the agent worked').click();
+  await expect(page.getByText('How the agent worked', { exact: true })).toBeVisible();
+  await expect(page.getByText('2 steps, proposed by deterministic planner')).toBeVisible();
+  await expect(page.getByText('Ran 2 tools through the executor')).toBeVisible();
+  await expect(page.getByText('Hypotheses tested')).toBeVisible();
+  await page.screenshot({ path: '.shots/agent/ask-explain-1440x900.png', fullPage: true });
+
+  await page
+    .getByRole('textbox', { name: 'Ask', exact: true })
+    .fill('what if I spend ₹2,000 more on food each month for 3 months');
+  await page.getByRole('button', { name: 'Ask', exact: true }).click();
+  await expect(page.getByTestId('ask-answer')).toBeVisible();
+  await page.getByText('Show how the agent worked').click();
+  await expect(
+    page.getByText('Compare the scenario with your current trajectory, month by month'),
+  ).toBeVisible();
+  await expect(page.getByText('Drafted a recommendation and waits for you')).toBeVisible();
+  await page.screenshot({ path: '.shots/agent/ask-whatif-1440x900.png', fullPage: true });
+
+  await page.getByRole('button', { name: 'Should I invest in mutual funds?' }).click();
+  await expect(page.getByText('The agent cannot do that.')).toBeVisible();
+  await expect(page.getByText('Stopped at the gate')).toBeVisible();
+  await page.screenshot({ path: '.shots/agent/ask-refusal-1440x900.png', fullPage: true });
+});
+
 test('agent: refusal is plain, investigation shows evidence, what-if compares', async ({
   page,
 }) => {
   await page.goto('/agent');
-  await page.getByLabel('Ask', { exact: true }).fill('transfer 5000 to rahul');
+  await page.getByRole('textbox', { name: 'Ask', exact: true }).fill('transfer 5000 to rahul');
   await page.getByRole('button', { name: 'Ask', exact: true }).click();
   await expect(page.getByText('The agent cannot do that.')).toBeVisible();
 

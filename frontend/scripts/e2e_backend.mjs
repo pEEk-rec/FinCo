@@ -24,7 +24,7 @@ const child = spawn(
     '--db',
     join(dir, 'e2e.db'),
     '--port',
-    '8765',
+    process.env.E2E_API_PORT ?? '8775',
     '--demo',
     'empty',
     '--token',

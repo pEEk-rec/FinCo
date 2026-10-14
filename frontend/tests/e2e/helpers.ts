@@ -1,6 +1,6 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
 
-export const API = 'http://127.0.0.1:8765/api';
+export const API = `http://127.0.0.1:${process.env.E2E_API_PORT ?? '8775'}/api`;
 export const TOKEN = 'e2e-token';
 export const authHeaders = { Authorization: `Bearer ${TOKEN}` };
 

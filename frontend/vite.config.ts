@@ -9,7 +9,7 @@ const API_TARGET = process.env.FINCO_API_URL ?? 'http://127.0.0.1:8765';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    port: 5173,
+    port: Number(process.env.FINCO_WEB_PORT ?? 5173),
     strictPort: true,
     proxy: { '/api': { target: API_TARGET, changeOrigin: false } },
   },

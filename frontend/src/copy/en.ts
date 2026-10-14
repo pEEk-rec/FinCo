@@ -187,9 +187,10 @@ export const copy = {
     timeline: 'Activity',
     pendingApprovals: 'Waiting for your approval',
     examples: [
+      'Why did my food spend change in February?',
       'How is my budget doing this month?',
-      'Forecast my spending this month',
-      'What did I spend on food last month?',
+      'What if I spend ₹2,000 more on food each month for 3 months?', // figures-ok: sample question the user may send, not a displayed figure
+      'Should I invest in mutual funds?',
       'Send money to a friend',
     ] as readonly string[],
   },
