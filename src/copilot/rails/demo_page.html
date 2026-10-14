@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FinCo Rails</title>
+<style>
+:root{--bg:#f7f6f3;--surface:#fff;--ink:#1d1c22;--ink2:#5d5a68;--line:#e4e1da;--accent:#5b3fc6;--ok:#1b7f4b;--warn:#b26a00;--bad:#b3261e;--tint:#f1edff}
+@media (prefers-color-scheme:dark){:root{--bg:#141318;--surface:#1d1c22;--ink:#f1f0f4;--ink2:#a9a6b4;--line:#2e2c36;--accent:#a592f0;--ok:#5fcf93;--warn:#f0b04d;--bad:#ff8a80;--tint:#27233a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI",system-ui,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:24px 16px 64px}
+header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-end;margin-bottom:20px}
+h1{font:600 26px/1.2 Georgia,serif;margin:0}h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);margin:0 0 12px}
+p.sub{margin:4px 0 0;color:var(--ink2)}
+.grid{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:900px){.grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px}
+button:hover{border-color:var(--accent);color:var(--accent)}button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary:hover{color:#fff;opacity:.9}button:disabled{opacity:.5;cursor:default}
+textarea{width:100%;min-height:84px;font:13px/1.4 ui-monospace,Consolas,monospace;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.badge{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--line);color:var(--ink2)}
+.badge.provisional{color:var(--warn);border-color:var(--warn)}.badge.verified{color:var(--ok);border-color:var(--ok)}
+.badge.over,.badge.projected_over{color:var(--bad);border-color:var(--bad)}.badge.watch{color:var(--warn);border-color:var(--warn)}.badge.ok{color:var(--ok);border-color:var(--ok)}
+.pace{margin:0 0 14px}.pace .top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.bar{position:relative;height:12px;border-radius:99px;background:var(--bg);border:1px solid var(--line);overflow:hidden;margin:6px 0 4px}
+.bar i{position:absolute;top:0;bottom:0;display:block}.bar .s{background:var(--accent)}.bar .p{background:var(--warn);opacity:.85}
+.bar b{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink)}
+.muted{color:var(--ink2);font-size:13px}.num{font-variant-numeric:tabular-nums}
+table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;color:var(--ink2);font-weight:500;font-size:12px;padding:4px 6px}
+td{padding:6px;border-top:1px solid var(--line);vertical-align:top}td.r,th.r{text-align:right}
+.log{font-size:13px;color:var(--ink2);margin-top:8px;min-height:20px}.log div{margin:2px 0}
+.split{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
+.note{background:var(--tint);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:13px}
+.steps{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.steps span{font-size:12px;background:var(--tint);padding:2px 10px;border-radius:99px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>FinCo Rails</h1>
+    <p class="sub">Live alerts and receipts on top of the bank statement. The statement stays the source of truth.</p>
+  </div>
+  <div class="row"><span class="badge" id="clock">connecting</span><button id="reset">Start the day over</button></div>
+</header>
+<div class="steps"><span>1 Alerts arrive</span><span>2 Budgets react</span><span>3 Receipt splits a payment</span><span>4 Statement confirms</span></div>
+<p></p>
+<div class="grid">
+  <section class="card" aria-labelledby="h-pace">
+    <h2 id="h-pace">Budget pace this month</h2>
+    <p id="headline" style="margin:0 0 12px;font:600 18px Georgia,serif"></p>
+    <div id="pace"></div>
+    <p class="muted">Dark bar: from the statement. Amber: from alerts not yet in the statement. Black tick: the limit.</p>
+  </section>
+  <section class="card" aria-labelledby="h-sms">
+    <h2 id="h-sms">1. Bank alerts (SMS rail)</h2>
+    <div class="row" id="alerts"></div>
+    <div class="row"><button class="primary" id="sendAll">Send all alerts</button></div>
+    <textarea id="custom" placeholder="Paste any bank alert text here"></textarea>
+    <div class="row"><button id="sendCustom">Read this alert</button></div>
+    <div class="log" id="smsLog" aria-live="polite"></div>
+  </section>
+  <section class="card" aria-labelledby="h-rc">
+    <h2 id="h-rc">2. Receipt (email rail)</h2>
+    <textarea id="receipt" placeholder="Paste an order receipt"></textarea>
+    <div class="row"><button class="primary" id="sendReceipt">Read receipt</button></div>
+    <div id="splitBox"></div>
+  </section>
+  <section class="card" aria-labelledby="h-sync">
+    <h2 id="h-sync">3. Nightly statement (Account Aggregator)</h2>
+    <p class="muted" style="margin-top:0">Stand-in for the next-morning pull. Alerts that match a statement row become verified and are never counted twice.</p>
+    <div class="row"><button class="primary" id="sync">Run the nightly sync</button></div>
+    <div class="log" id="syncLog" aria-live="polite"></div>
+  </section>
+  <section class="card" style="grid-column:1/-1" aria-labelledby="h-ev">
+    <h2 id="h-ev">Payments seen by the alert rail</h2>
+    <div style="overflow-x:auto"><table><thead><tr><th>Merchant</th><th>Category</th><th class="r">Amount</th><th>Status</th><th>Note</th></tr></thead><tbody id="events"></tbody></table></div>
+  </section>
+  <section class="card" style="grid-column:1/-1" aria-labelledby="h-au">
+    <h2 id="h-au">Audit trail</h2>
+    <div class="log" id="audit"></div>
+  </section>
+</div>
+</div>
+<script>
+const token = new URLSearchParams(location.search).get('token') || '';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function call(path, body) {
+  const res = await fetch(path, {method: body === undefined ? 'GET' : 'POST', headers: {Authorization: 'Bearer ' + token, 'Content-Type': 'application/json'}, body: body === undefined ? undefined : JSON.stringify(body)});
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || res.statusText);
+  return data;
+}
+function line(el, text, cls) { const d = document.createElement('div'); d.textContent = text; if (cls) d.className = cls; el.prepend(d); }
+function paceRow(r) {
+  const limit = Number(r.limit_paise || 0);
+  const w = (x) => Math.min(100, x);
+  const s = r.percent_settled, p = r.percent_provisional;
+  return `<div class="pace"><div class="top"><strong>${esc(r.category_name)}</strong><span class="num">${esc(r.total)} of ${esc(r.limit)} <span class="badge ${esc(r.status)}">${esc(r.status.replace('_', ' '))}</span></span></div>
+  <div class="bar"><i class="s" style="left:0;width:${w(s)}%"></i><i class="p" style="left:${w(s)}%;width:${w(s + p) - w(s)}%"></i><b style="left:calc(100% - 2px)"></b></div>
+  <div class="muted">${esc(r.message)} <span class="num">Statement ${esc(r.settled)}${r.provisional !== '₹0' ? ' + alerts ' + esc(r.provisional) : ''}</span></div></div>`;
+}
+async function refresh() {
+  const [pace, events, audit] = await Promise.all([call('/rails/pacing'), call('/rails/events'), call('/rails/audit')]);
+  $('headline').textContent = pace.headline;
+  $('pace').innerHTML = pace.rows.map(paceRow).join('');
+  $('events').innerHTML = events.map((e) => `<tr><td>${esc(e.merchant)}</td><td>${esc(e.category_name || 'Unsorted')}</td><td class="r num">${e.direction === 'credit' ? '+' : ''}${esc(e.amount)}</td><td><span class="badge ${esc(e.status)}">${esc(e.status)}</span></td><td class="muted">${e.needs_review ? 'Needs your category' : e.status === 'verified' ? 'Matched to the statement' : 'Waiting for the statement'}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No alerts yet. Send one.</td></tr>';
+  $('audit').innerHTML = '';
+  audit.slice(0, 12).forEach((a) => line($('audit'), `${a.occurred_at.slice(11, 16)}  ${a.actor}: ${a.event_type.replace('rail_', '').replace(/_/g, ' ')}`));
+}
+function sendResult(r) {
+  if (r.outcome === 'provisional') return `Read ${r.event.merchant}: ${r.event.amount} ${r.event.category_name ? 'as ' + r.event.category_name : '(needs your category)'}. Budget updated now.`;
+  if (r.outcome === 'duplicate') return `Already received (${r.event.merchant} ${r.event.amount}); not counted twice.`;
+  return `Ignored: ${r.reason}`;
+}
+async function send(text) {
+  try { const r = await call('/rails/sms', {text}); line($('smsLog'), sendResult(r)); await refresh(); }
+  catch (e) { line($('smsLog'), e.message, 'bad'); }
+}
+function showSplit(r) {
+  const box = $('splitBox');
+  if (r.outcome !== 'suggested') { box.innerHTML = `<div class="note">${esc(r.reason || r.outcome)}</div>`; return; }
+  box.innerHTML = `<div class="note">Matched to ${esc(r.payment ? r.payment.merchant + ' ' + r.payment.amount : 'a payment')}. This is a draft: nothing changes until you approve.</div>` +
+    r.parts.map((p) => `<div class="split"><span>${esc(p.category_name || p.category_id)}</span><span class="num">${esc(p.amount)}</span></div>`).join('') +
+    `<div class="row"><button class="primary" data-d="approved">Approve split</button><button data-d="rejected">Reject</button></div>`;
+  box.querySelectorAll('button').forEach((b) => b.onclick = async () => {
+    await call(`/rails/splits/${r.receipt_id}/decision`, {decision: b.dataset.d});
+    box.innerHTML = `<div class="note">Split ${b.dataset.d}. Budgets updated.</div>`; await refresh();
+  });
+}
+async function init() {
+  if (!token) { $('clock').textContent = 'open with ?token=...'; return; }
+  const [script, session] = await Promise.all([call('/rails/demo/script'), call('/rails/session')]);
+  $('clock').textContent = 'Demo day: ' + session.as_of.slice(0, 10);
+  $('receipt').value = script.receipt;
+  const holder = $('alerts');
+  [...script.alerts, ...script.noise].forEach((a) => { const b = document.createElement('button'); b.textContent = a.label; b.onclick = () => send(a.text); holder.appendChild(b); });
+  $('sendAll').onclick = async () => { for (const a of script.alerts) await send(a.text); };
+  $('sendCustom').onclick = () => { const t = $('custom').value.trim(); if (t) send(t); };
+  $('sendReceipt').onclick = async () => { showSplit(await call('/rails/receipt', {text: $('receipt').value})); };
+  $('sync').onclick = async () => {
+    const r = await call('/rails/sync', {});
+    line($('syncLog'), `Statement posted ${r.posted} row(s), ${r.skipped_existing} already there. ${r.verified} alert(s) verified, ${r.still_provisional} still waiting.`);
+    await refresh();
+  };
+  $('reset').onclick = async () => { await call('/rails/demo/reset', {}); $('smsLog').innerHTML = $('syncLog').innerHTML = $('splitBox').innerHTML = ''; await refresh(); };
+  await refresh();
+}
+init().catch((e) => { $('clock').textContent = e.message; });
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+# Supplementary data rails (SMS alerts, e-mail receipts, bill-pay billers).
+# These add speed and detail on top of the Account Aggregator statement, which stays the
+# source of truth. Category ids must exist in the user's categories.
+
+# Bharat BillPay billers: a biller id tells us the category without guessing from text.
+billers:
+  - {match: "bescom|mseb|tata power|adani electricity|electricity", name: Electricity, category_id: bills, mcc: 4900}
+  - {match: "jio|airtel|vi prepaid|vodafone|bsnl|recharge", name: Mobile recharge, category_id: bills, mcc: 4814}
+  - {match: "act fibernet|broadband|hathway|excitel", name: Broadband, category_id: bills, mcc: 4899}
+  - {match: "fastag|nhai", name: FASTag, category_id: travel, mcc: 4784}
+  - {match: "mahanagar gas|indane|hp gas|bharat gas", name: Cooking gas, category_id: bills, mcc: 4900}
+  - {match: "irctc", name: Railways, category_id: travel, mcc: 4112}
+
+# Everyday merchants the base rules do not know yet.
+merchants:
+  - {match: "dmart|d mart|bigbasket|blinkit|zepto|reliance fresh|more retail|jiomart", category_id: groceries}
+  - {match: "amazon|flipkart|myntra|ajio|meesho", category_id: shopping}
+
+# Merchant category codes (card networks and merchant registries).
+mcc:
+  5411: groceries
+  5812: food
+  5814: food
+  5499: groceries
+  4121: travel
+  4111: travel
+  4112: travel
+  5311: shopping
+  5732: shopping
+  5942: education
+  8220: education
+  8299: education
+  7832: entertainment
+  7841: entertainment
+  4900: bills
+  4814: bills
+
+# Words on a receipt line that say what the item is.
+item_keywords:
+  education: [book, notebook, textbook, novel, stationery, pen, pencil, course, ebook, journal, exam]
+  food: [snack, chips, biscuit, chocolate, coffee, tea, burger, pizza, biryani, chicken, naan, paneer, thali, meal, combo, sandwich, juice, cake, roll, noodles, rice, dosa, idli]
+  groceries: [milk, bread, eggs, vegetable, fruit, atta, flour, oil, dal, sugar, salt, onion, potato, detergent, soap]
+  entertainment: [game, subscription, movie, ticket, gaming]
+  shopping: [cable, charger, headphone, earphone, shirt, shoes, bag, bottle, backpack, mouse, keyboard]
+
+# Receipt lines that are not items.
+fee_words: [delivery, handling, platform, packaging, gst, cgst, sgst, igst, tax, service charge, convenience, shipping, tip, surge]
+discount_words: [discount, coupon, promo, saved, cashback, offer]
+total_words: [grand total, order total, total, amount paid, bill total, paid]
+
+# How the matcher decides two records are the same payment.
+reconcile:
+  window_hours: 36        # SMS time and statement time may differ (bank posting delay)
+  split_window_days: 5    # receipt date to payment date
