@@ -809,7 +809,7 @@ function ActivityPanel() {
             {entries.slice(0, 60).map((e) => (
               <li
                 key={`${e.ts}-${e.kind}-${e.title}`}
-                className="grid grid-cols-[6rem_8rem_minmax(0,1fr)] gap-3 border-b border-hairline px-6 py-3 last:border-b-0"
+                className="grid grid-cols-[6rem_10rem_minmax(0,1fr)] gap-3 border-b border-hairline px-6 py-3 last:border-b-0"
               >
                 <span className="text-small text-ink-3">
                   {formatDay(e.ts)}

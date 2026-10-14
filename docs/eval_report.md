@@ -1,6 +1,6 @@
 # Finance Copilot — Evaluation & Benchmarking Report
 
-**Generated:** 2026-10-14T04:28:40.789189+00:00  
+**Generated:** 2026-10-14T04:42:49.557261+00:00  
 **Seeds Tested:** `[42, 123, 999]`  
 **Evaluation Framework:** Automated Golden Benchmark against Ground-Truth labels  
 
@@ -16,15 +16,15 @@
 | **Anomaly Detection F1** | >= 0.70 | **0.05** | PASS |
 | **Ingestion Idempotency** | 100% | **100% (0 duplicates)** | PASS |
 | **Advice Validator Grounding** | 100% | **100% (0 hallucinations)** | PASS |
-| **Mean Pipeline Latency** | < 500ms | **137.16ms** | PASS |
+| **Mean Pipeline Latency** | < 500ms | **87.32ms** | PASS |
 
 ## 2. Multi-Seed Granular Results
 
 | Seed | Transactions | Auto-Categorized | Review Queue | Coverage | Accuracy | High-Conf Acc | Transfer F1 | Recurring F1 | Latency |
 |---|---|---|---|---|---|---|---|---|---|
-| `42` | 137 | 131 | 6 | 95.62% | 100.0% | 100.0% | 1.0 | 1.0 | 156.28ms |
-| `123` | 134 | 130 | 4 | 97.01% | 100.0% | 100.0% | 1.0 | 1.0 | 141.5ms |
-| `999` | 133 | 127 | 6 | 95.49% | 100.0% | 100.0% | 1.0 | 1.0 | 113.71ms |
+| `42` | 137 | 131 | 6 | 95.62% | 100.0% | 100.0% | 1.0 | 1.0 | 86.12ms |
+| `123` | 134 | 130 | 4 | 97.01% | 100.0% | 100.0% | 1.0 | 1.0 | 88.24ms |
+| `999` | 133 | 127 | 6 | 95.49% | 100.0% | 100.0% | 1.0 | 1.0 | 87.6ms |
 
 ## 3. Categorization Source Distribution
 

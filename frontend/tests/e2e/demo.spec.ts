@@ -14,6 +14,7 @@ interface Detail {
 }
 
 async function expectNoSeriousA11yIssues(page: Page, label: string): Promise<void> {
+  await page.waitForTimeout(700); // let entrance animations finish: axe samples colours mid-fade
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
   const serious = results.violations.filter(
     (v) => v.impact === 'serious' || v.impact === 'critical',

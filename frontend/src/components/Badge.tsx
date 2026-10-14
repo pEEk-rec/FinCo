@@ -28,7 +28,7 @@ export function Badge({
   return (
     <span
       className={cx(
-        'label-mono inline-flex h-5 shrink-0 items-center rounded-[4px] px-1.5',
+        'label-mono inline-flex h-5 shrink-0 items-center rounded-[4px] px-1.5 whitespace-nowrap',
         TONES[tone],
         className,
       )}
