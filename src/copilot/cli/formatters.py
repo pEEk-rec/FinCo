@@ -229,3 +229,150 @@ def print_state_panel(state_data: dict[str, Any]) -> None:
         f"[bold]Tracked Categories:[/bold] {len(state_data.get('category_totals', {}))}",
     ]
     console.print(Panel("\n".join(lines), title="Financial State Snapshot", border_style="cyan"))
+
+
+def print_timeline(timeline: Any) -> None:
+    """Print the chronological activity timeline and pinned pending approvals."""
+    # 1. Pinned Pending Approvals
+    if timeline.pending_approvals:
+        approval_lines = []
+        for app in timeline.pending_approvals:
+            rec_id = app.ref.get("recommendation_id", "unknown")
+            approval_lines.append(
+                f"[bold cyan]ID:[/bold cyan] {rec_id} | [bold yellow]{app.title}[/bold yellow]\n"
+                f"[white]{app.detail}[/white]\n"
+            )
+        console.print(
+            Panel(
+                "\n".join(approval_lines),
+                title="[bold yellow]Needs Your Decision[/bold yellow]",
+                border_style="yellow",
+            )
+        )
+
+    # 2. Activity Timeline Table
+    table = Table(title="Agent Activity Timeline", box=box.ROUNDED)
+    table.add_column("Time", style="blue", no_wrap=True)
+    table.add_column("Kind", style="magenta")
+    table.add_column("Status", style="cyan")
+    table.add_column("Title", style="bold")
+    table.add_column("Details", style="white")
+
+    for e in timeline.entries:
+        ts = e.ts[:19].replace("T", " ") if e.ts else "-"
+        status_style = "green" if e.status in ("done", "completed", "on_track") else "yellow"
+        if e.status in ("failed", "rejected", "error", "refused"):
+            status_style = "red"
+
+        table.add_row(
+            ts,
+            str(e.kind),
+            f"[{status_style}]{e.status}[/{status_style}]",
+            str(e.title),
+            str(e.detail),
+        )
+
+    console.print(table)
+
+
+def print_goals_table(goals: list[dict[str, Any]]) -> None:
+    """Format goals in a Rich table."""
+    table = Table(title="Financial Goals", box=box.ROUNDED)
+    table.add_column("ID", style="cyan", no_wrap=True)
+    table.add_column("Name", style="bold", min_width=20, no_wrap=False)
+    table.add_column("Kind", style="magenta")
+    table.add_column("Target", justify="right")
+    table.add_column("Current", justify="right")
+    table.add_column("Status", style="green")
+    table.add_column("Deadline", style="blue")
+    table.add_column("Priority", justify="center")
+
+    for g in goals:
+        status_color = "green" if g.get("status") == "active" else "dim"
+        table.add_row(
+            str(g.get("id"))[:12],
+            str(g.get("name")),
+            str(g.get("kind")),
+            format_inr(g.get("target_paise", 0)),
+            format_inr(g.get("current_paise", 0)),
+            f"[{status_color}]{g.get('status')}[/{status_color}]",
+            str(g.get("deadline") or "-"),
+            str(g.get("priority", 1)),
+        )
+
+    console.print(table)
+
+
+def print_alerts_table(alerts: list[dict[str, Any]]) -> None:
+    """Format adaptive alerts in a Rich table."""
+    table = Table(title="Adaptive Alerts", box=box.ROUNDED)
+    table.add_column("ID", style="cyan", no_wrap=True)
+    table.add_column("Period", style="blue")
+    table.add_column("Severity", style="bold")
+    table.add_column("Kind", style="magenta")
+    table.add_column("Status", style="yellow")
+    table.add_column("Score", justify="right")
+    table.add_column("Why", style="white")
+
+    for a in alerts:
+        sev = a.get("severity", "info").upper()
+        sev_color = "red" if sev in ("CRITICAL", "WARNING") else "yellow"
+        table.add_row(
+            str(a.get("id"))[:8],
+            str(a.get("period")),
+            f"[{sev_color}]{sev}[/{sev_color}]",
+            str(a.get("kind")),
+            str(a.get("status")),
+            f"{a.get('score_bp', 0) / 100:.1f}%",
+            str(a.get("why_text", ""))[:70] + "...",
+        )
+
+    console.print(table)
+
+
+def print_investigation_result(inv: dict[str, Any]) -> None:
+    """Format investigation results in a Rich panel and table."""
+    outcome = inv.get("outcome", "unknown")
+    outcome_color = "green" if outcome == "explained" else "yellow"
+    share = inv.get("explained_share_bp", 0) / 100.0
+
+    lines = [
+        f"[bold]Subject:[/bold] {inv.get('subject_kind')} ({inv.get('id', '')})",
+        f"[bold]Outcome:[/bold] [{outcome_color}]{outcome}[/{outcome_color}] "
+        f"({share:.1f}% explained)",
+        f"[bold]Confidence:[/bold] {inv.get('confidence_label')}",
+        f"[bold]Unexplained Spend:[/bold] {format_inr(inv.get('unexplained_paise', 0))}",
+    ]
+    console.print(Panel("\n".join(lines), title="Investigation Result", border_style="cyan"))
+
+    hypotheses = inv.get("hypotheses", [])
+    if hypotheses:
+        table = Table(title="Evaluated Hypotheses", box=box.ROUNDED)
+        table.add_column("Hypothesis", style="bold")
+        table.add_column("Status", style="magenta")
+        table.add_column("Score", justify="right")
+        table.add_column("Contribution", justify="right")
+
+        for h in hypotheses:
+            table.add_row(
+                str(h.get("code")),
+                str(h.get("status")),
+                f"{h.get('score_bp', 0) / 100:.1f}%",
+                format_inr(h.get("contribution_paise", 0)),
+            )
+        console.print(table)
+
+
+def print_simulation_result(sim: dict[str, Any]) -> None:
+    """Format simulation projection in a Rich panel."""
+    scenario = sim.get("scenario", {})
+    kind = scenario.get("kind", "whatif")
+    amt = scenario.get("amount_paise", 0)
+
+    lines = [
+        f"[bold]Simulation ID:[/bold] {sim.get('id')}",
+        f"[bold]Scenario:[/bold] {kind} of {format_inr(amt)}",
+        f"[bold]Horizon:[/bold] {scenario.get('months', 6)} months",
+        f"[bold]Assumptions:[/bold] {', '.join(sim.get('assumptions', []))}",
+    ]
+    console.print(Panel("\n".join(lines), title="Simulation Summary", border_style="green"))

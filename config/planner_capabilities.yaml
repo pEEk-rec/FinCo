@@ -1,0 +1,217 @@
+# Tool Capability Matrix for Dynamic Planning (PLAN_PHASE2 Section 5.1)
+# RULE: Only 'read' and 'compute' tools may have planner_selectable: true.
+# Write-class tools are NEVER planner-selectable.
+
+tools:
+  # Phase 1 Read Tools (Planner Selectable)
+  get_transactions:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "List transactions for a user across a UTC time window or category"
+    intents: ["summarize_period", "explain_change", "investigate_anomaly"]
+
+  get_balance:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Get current total or per-account balance in integer paise"
+    intents: ["summarize_period", "goal_check"]
+
+  aggregate_spend_by_category:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Get aggregated net category spend for an IST calendar month in paise"
+    intents: ["summarize_period", "explain_change", "check_budget", "alerts_overview"]
+
+  check_budgets:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Check budget performance status (ok, warning, exceeded) for a month"
+    intents: ["check_budget", "alerts_overview", "whatif_add_spend"]
+
+  forecast_category_spend:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Compute run-rate forecast of month-end spend for a single category"
+    intents: ["forecast", "check_budget", "whatif_add_spend"]
+
+  forecast_month:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Forecast month-end total spend and category breakdown"
+    intents: ["forecast", "alerts_overview"]
+
+  detect_anomalies:
+    planner_selectable: true
+    tool_class: read
+    cost: medium
+    short_description: "Detect unusual spend transactions and velocity spikes"
+    intents: ["investigate_anomaly", "alerts_overview"]
+
+  get_financial_state:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Get a comprehensive snapshot of accounts, budgets, and spend"
+    intents: ["summarize_period", "goal_check", "alerts_overview"]
+
+  # Phase 1 Write Tools (Permanently NOT Planner Selectable)
+  recategorize_transaction:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: medium
+    short_description: "User or approved agent change of a transaction's category"
+    intents: []
+
+  categorize_batch:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: expensive
+    short_description: "Batch update of transactions by automated rule pipeline"
+    intents: []
+
+  undo_categorize_batch:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: expensive
+    short_description: "Revert a batch categorization run"
+    intents: []
+
+  ingest_statements:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: expensive
+    short_description: "Fetch and ingest statements under valid AA consent"
+    intents: []
+
+  detect_transfers:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: medium
+    short_description: "Identify own-account transfers and exclude them from spend"
+    intents: []
+
+  detect_recurring:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: medium
+    short_description: "Detect recurring subscription and bill payment series"
+    intents: ["list_recurring"]
+
+  undo:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: medium
+    short_description: "Revert a single audited state mutation"
+    intents: []
+
+  draft_advice:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: medium
+    short_description: "Generate draft financial advice for user review"
+    intents: []
+
+  decide_advice:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "User approve or reject decision on draft advice"
+    intents: []
+
+  create_goal:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Create a new financial savings or purchase goal"
+    intents: []
+
+  update_goal:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Update an existing financial goal's target, progress, or deadline"
+    intents: []
+
+  list_goals:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "List the user's active or paused financial goals"
+    intents: ["goal_check", "summarize_period"]
+
+  evaluate_goal_impact:
+    planner_selectable: true
+    tool_class: compute
+    cost: cheap
+    short_description: "Evaluate the impact of a spending decision on active goals"
+    intents: ["goal_check", "whatif_add_spend"]
+
+  run_whatif:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Simulate financial outcomes of spending or contribution scenarios"
+    intents: ["whatif_add_spend", "whatif_reduce_spend", "goal_check"]
+
+  compare_options:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Compare multiple what-if spending options side-by-side"
+    intents: ["whatif_add_spend", "whatif_reduce_spend"]
+
+  investigate_anomaly:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Investigate a detected financial anomaly using the hypothesis catalogue"
+    intents: ["investigate_anomaly", "alerts_overview"]
+
+  explain_change:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Explain period-over-period spend changes via deterministic decomposition"
+    intents: ["explain_change", "summarize_period"]
+
+  dismiss_anomaly:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "User tool to dismiss a detected anomaly as expected"
+    intents: []
+
+  evaluate_alerts:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: medium
+    short_description: "Evaluate spend and budget signals and generate adaptive alerts"
+    intents: []
+
+  decide_alert:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "User tool to acknowledge, dismiss, or snooze an alert"
+    intents: []
+
+  set_alert_preference:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "User tool to set alert preferences, silences, or limits"
+    intents: []
+
+  list_alerts:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "List active or historical adaptive alerts for the user"
+    intents: ["alerts_overview", "summarize_period"]
+

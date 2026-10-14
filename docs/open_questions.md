@@ -8,3 +8,8 @@
   2. *Write outside savepoint:* Pass a dedicated unmanaged connection or write after rollback. This breaks the single-savepoint unit-of-work principle.
   3. *Enhance executor auditing:* Allow `ToolFailure` to optionally carry an `event_type` override for `_fail`. This modifies the Phase 0 `executor.py` contract.
 - **Decision:** Option 1 chosen for Phase 1. The refusal is guaranteed to be audited with `error_code="STALE_DATA"`. Any change to `execute_tool` failure event naming is deferred.
+
+## 2. Property Testing Framework
+- **Context:** `PLAN_PHASE2.md` mentions property tests `(Hypothesis)` in Stage 2.3. However, `hypothesis` is not in `pyproject.toml` and Rule 0.1 establishes a hard gate: zero new dependencies allowed in Phase 2.
+- **Decision:** Built deterministic property-based test suites using Python's standard library `random` across pseudo-random iterations with fixed seeds. This rigorously validates all simulation invariants (pure functions, zero-delta identity, monotonicity, conservation of paise) without violating the zero-new-dependency rule.
+

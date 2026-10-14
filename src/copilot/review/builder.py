@@ -99,7 +99,10 @@ def build_monthly_review(
 
     # 4. Categories & Category Totals
     cats = {c.id: c.name for c in list_categories(conn, user_id)}
-    all_cat_ids = sorted(set(list(curr_spend.keys()) + list(prev_spend.keys())))
+    all_cat_ids = sorted(
+        set(list(curr_spend.keys()) + list(prev_spend.keys())),
+        key=lambda cat: (cat is None, cat or ""),
+    )
 
     category_totals: list[CategoryTotal] = []
     for cat_id in all_cat_ids:

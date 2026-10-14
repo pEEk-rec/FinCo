@@ -148,6 +148,7 @@ def make_exec_ctx(
     run_id: str | None = None,
     actor: str = "user",
     policy: PolicySettings | None = None,
+    clock: datetime | None = None,
 ) -> ExecutionContext:
     """Create ExecutionContext for CLI tool execution."""
     if policy is None:
@@ -160,4 +161,5 @@ def make_exec_ctx(
         policy=policy,
         actor=actor,  # type: ignore[arg-type]
         run_id=rid,
+        clock=clock,
     )

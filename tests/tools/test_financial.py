@@ -336,11 +336,13 @@ def test_recategorize_changes_totals_and_audits_before_after(ctx):
         "category_confidence": None,
         "category_id": None,
         "category_source": "none",
+        "needs_review": False,
     }
     assert event.after == {
         "category_confidence": 1.0,
         "category_id": "food",
         "category_source": "user",
+        "needs_review": False,
     }
 
     totals = run(ctx, "aggregate_spend_by_category", {"year": 2024, "month": 1}).data
@@ -369,3 +371,31 @@ def test_recategorize_to_uncategorised(ctx):
     args = {"transaction_id": "t1", "new_category_id": None}
     assert run(ctx, "recategorize_transaction", args, approved=True).ok
     assert get_transaction(ctx.conn, "u1", "t1").category_id is None
+
+
+def test_user_correction_resolves_review_flag_and_undo_restores_it(ctx):
+    from copilot.tools.undo import (
+        UNDO_TOOL,
+        UndoInput,  # noqa: F401  (registered by the executor path)
+    )
+
+    ctx.conn.execute("UPDATE transactions SET needs_review = 1 WHERE id = 't3'")
+    ctx.conn.commit()
+    out = run(
+        ctx,
+        "recategorize_transaction",
+        {"transaction_id": "t3", "new_category_id": "food"},
+        approved=True,
+    ).data
+    assert get_transaction(ctx.conn, "u1", "t3").needs_review is False
+
+    from copilot.tools.registry import get as get_tool
+    from copilot.tools.registry import register
+
+    if get_tool("undo") is None:
+        register(UNDO_TOOL)
+    ctx.policy = ctx.policy.model_copy(update={"tools": {**ctx.policy.tools, "undo": ctx.policy.tools.get("recategorize_transaction")}})
+    result = run(ctx, "undo", {"audit_event_id": out.audit_event_id}, approved=True)
+    assert result.ok, result.error
+    restored = get_transaction(ctx.conn, "u1", "t3")
+    assert (restored.category_id, restored.needs_review) == (None, True)

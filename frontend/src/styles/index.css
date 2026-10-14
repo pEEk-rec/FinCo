@@ -1,0 +1,80 @@
+@import 'tailwindcss';
+@import '../tokens/generated.css';
+
+@import '@fontsource-variable/newsreader/opsz.css';
+@import '@fontsource-variable/newsreader/opsz-italic.css';
+@import '@fontsource/geist-sans/300.css';
+@import '@fontsource/geist-sans/400.css';
+@import '@fontsource/geist-sans/500.css';
+@import '@fontsource/geist-mono/500.css';
+
+@layer base {
+  html {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    margin: 0;
+    min-height: 100vh;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection {
+    background: var(--color-surface-selected);
+  }
+  button {
+    cursor: pointer;
+  }
+  /* A grid without explicit columns is one column that may shrink (charts must not widen it). */
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings:
+    'tnum' 1,
+    'lnum' 1;
+}
+
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@utility serif-light {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-optical-sizing: auto;
+  letter-spacing: -0.01em;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  html {
+    background: white;
+  }
+}

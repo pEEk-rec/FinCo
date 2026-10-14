@@ -1,0 +1,5302 @@
+{
+  "components": {
+    "schemas": {
+      "AdviceDecisionIn": {
+        "properties": {
+          "decision": {
+            "enum": [
+              "approved",
+              "rejected"
+            ],
+            "title": "Decision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "AdviceDecisionIn",
+        "type": "object"
+      },
+      "AdviceDecisionOut": {
+        "properties": {
+          "advice_id": {
+            "title": "Advice Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "approved",
+              "rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "advice_id",
+          "status"
+        ],
+        "title": "AdviceDecisionOut",
+        "type": "object"
+      },
+      "AdviceExplanation": {
+        "properties": {
+          "assumptions": {
+            "items": {},
+            "title": "Assumptions",
+            "type": "array"
+          },
+          "calculations": {
+            "items": {},
+            "title": "Calculations",
+            "type": "array"
+          },
+          "confidence_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Label"
+          },
+          "evidence": {
+            "items": {},
+            "title": "Evidence",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "memories": {
+            "items": {},
+            "title": "Memories",
+            "type": "array"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
+          },
+          "simulation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simulation Id"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "tools_used": {
+            "items": {},
+            "title": "Tools Used",
+            "type": "array"
+          }
+        },
+        "required": [
+          "assumptions",
+          "calculations",
+          "confidence_label",
+          "evidence",
+          "id",
+          "memories",
+          "origin",
+          "simulation_id",
+          "status",
+          "text",
+          "tools_used"
+        ],
+        "title": "AdviceExplanation",
+        "type": "object"
+      },
+      "AlertDecisionIn": {
+        "properties": {
+          "action": {
+            "enum": [
+              "acknowledge",
+              "dismiss",
+              "snooze"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "snooze_days": {
+            "anyOf": [
+              {
+                "maximum": 90.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snooze Days"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "AlertDecisionIn",
+        "type": "object"
+      },
+      "AlertItem": {
+        "description": "An open alert with its one-line reason.",
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "notice",
+              "warning",
+              "critical"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "why_text": {
+            "title": "Why Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "id",
+          "kind",
+          "severity",
+          "status",
+          "why_text"
+        ],
+        "title": "AlertItem",
+        "type": "object"
+      },
+      "AlertPreferenceIn": {
+        "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "min_severity": {
+            "default": "info",
+            "enum": [
+              "info",
+              "notice",
+              "warning",
+              "critical"
+            ],
+            "title": "Min Severity",
+            "type": "string"
+          },
+          "muted": {
+            "default": false,
+            "title": "Muted",
+            "type": "boolean"
+          }
+        },
+        "title": "AlertPreferenceIn",
+        "type": "object"
+      },
+      "AlertsOut": {
+        "properties": {
+          "alerts": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Alerts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "alerts"
+        ],
+        "title": "AlertsOut",
+        "type": "object"
+      },
+      "AnomalyOut": {
+        "properties": {
+          "amount_paise": {
+            "title": "Amount Paise",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "merchant": {
+            "title": "Merchant",
+            "type": "string"
+          },
+          "occurred_at": {
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "transaction_id": {
+            "title": "Transaction Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_paise",
+          "id",
+          "kind",
+          "merchant",
+          "occurred_at",
+          "status",
+          "transaction_id"
+        ],
+        "title": "AnomalyOut",
+        "type": "object"
+      },
+      "ApiError": {
+        "description": "Body of every non-2xx response.",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "retryable": {
+            "default": false,
+            "title": "Retryable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable"
+        ],
+        "title": "ApiError",
+        "type": "object"
+      },
+      "AskIn": {
+        "properties": {
+          "clarification": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clarification"
+          },
+          "text": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "AskIn",
+        "type": "object"
+      },
+      "AskOut": {
+        "properties": {
+          "intent": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intent"
+          },
+          "investigations": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Investigations",
+            "type": "array"
+          },
+          "observations": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Observations",
+            "type": "array"
+          },
+          "pending_recommendations": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Pending Recommendations",
+            "type": "array"
+          },
+          "question": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question"
+          },
+          "recommendations": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Recommendations",
+            "type": "array"
+          },
+          "refusal_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refusal Reason"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "stop_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop Reason"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          }
+        },
+        "required": [
+          "intent",
+          "investigations",
+          "observations",
+          "pending_recommendations",
+          "question",
+          "recommendations",
+          "refusal_reason",
+          "status",
+          "stop_reason",
+          "task_id"
+        ],
+        "title": "AskOut",
+        "type": "object"
+      },
+      "BudgetPace": {
+        "description": "The budget pace card: hero figure, lines and callout.",
+        "properties": {
+          "actual": {
+            "items": {
+              "$ref": "#/components/schemas/PacePoint"
+            },
+            "title": "Actual",
+            "type": "array"
+          },
+          "forecast": {
+            "$ref": "#/components/schemas/ForecastBand"
+          },
+          "ideal": {
+            "items": {
+              "$ref": "#/components/schemas/PacePoint"
+            },
+            "title": "Ideal",
+            "type": "array"
+          },
+          "ideal_today_paise": {
+            "title": "Ideal Today Paise",
+            "type": "integer"
+          },
+          "left_to_spend_paise": {
+            "title": "Left To Spend Paise",
+            "type": "integer"
+          },
+          "over_budget": {
+            "title": "Over Budget",
+            "type": "boolean"
+          },
+          "pace": {
+            "enum": [
+              "under",
+              "on",
+              "over"
+            ],
+            "title": "Pace",
+            "type": "string"
+          },
+          "pace_delta_paise": {
+            "title": "Pace Delta Paise",
+            "type": "integer"
+          },
+          "spent_paise": {
+            "title": "Spent Paise",
+            "type": "integer"
+          },
+          "total_limit_paise": {
+            "title": "Total Limit Paise",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "actual",
+          "forecast",
+          "ideal",
+          "ideal_today_paise",
+          "left_to_spend_paise",
+          "over_budget",
+          "pace",
+          "pace_delta_paise",
+          "spent_paise",
+          "total_limit_paise"
+        ],
+        "title": "BudgetPace",
+        "type": "object"
+      },
+      "CategorisationEvent": {
+        "description": "How one imported transaction was categorised (drives the constellation).",
+        "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "category_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Name"
+          },
+          "needs_review": {
+            "title": "Needs Review",
+            "type": "boolean"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "transaction_id": {
+            "title": "Transaction Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "category_name",
+          "needs_review",
+          "source",
+          "transaction_id"
+        ],
+        "title": "CategorisationEvent",
+        "type": "object"
+      },
+      "CategoryOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CategoryOut",
+        "type": "object"
+      },
+      "CategoryRow": {
+        "description": "One category with spend and (if budgeted) its limit and status.",
+        "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "limit_paise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Paise"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "pct_used": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Used"
+          },
+          "spent_paise": {
+            "title": "Spent Paise",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "warning",
+              "exceeded",
+              "projected_exceed",
+              "none"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "limit_paise",
+          "name",
+          "pct_used",
+          "spent_paise",
+          "status"
+        ],
+        "title": "CategoryRow",
+        "type": "object"
+      },
+      "CategoryTotal": {
+        "additionalProperties": false,
+        "description": "Spend in one category with change vs previous month.",
+        "properties": {
+          "category_id": {
+            "title": "Category Id",
+            "type": "string"
+          },
+          "category_name": {
+            "title": "Category Name",
+            "type": "string"
+          },
+          "change_paise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Paise"
+          },
+          "change_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Pct"
+          },
+          "current_spend_paise": {
+            "title": "Current Spend Paise",
+            "type": "integer"
+          },
+          "previous_spend_paise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Spend Paise"
+          }
+        },
+        "required": [
+          "category_id",
+          "category_name",
+          "change_paise",
+          "change_pct",
+          "current_spend_paise",
+          "previous_spend_paise"
+        ],
+        "title": "CategoryTotal",
+        "type": "object"
+      },
+      "CompareIn": {
+        "properties": {
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/WhatIfIn"
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Scenarios",
+            "type": "array"
+          }
+        },
+        "required": [
+          "scenarios"
+        ],
+        "title": "CompareIn",
+        "type": "object"
+      },
+      "CompareOut": {
+        "properties": {
+          "comparison": {
+            "$ref": "#/components/schemas/ScenarioComparison"
+          },
+          "simulation_id": {
+            "title": "Simulation Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "comparison",
+          "simulation_id"
+        ],
+        "title": "CompareOut",
+        "type": "object"
+      },
+      "ConsentDecisionOut": {
+        "properties": {
+          "audit_event_id": {
+            "title": "Audit Event Id",
+            "type": "string"
+          },
+          "consent_id": {
+            "title": "Consent Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "active",
+              "expired",
+              "revoked"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "audit_event_id",
+          "consent_id",
+          "status"
+        ],
+        "title": "ConsentDecisionOut",
+        "type": "object"
+      },
+      "ConsentView": {
+        "description": "A consent as the user sees it (expiry applied at read time).",
+        "properties": {
+          "account_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Account Ids",
+            "type": "array"
+          },
+          "account_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Account Names",
+            "type": "array"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "range_from": {
+            "title": "Range From",
+            "type": "string"
+          },
+          "range_to": {
+            "title": "Range To",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "active",
+              "expired",
+              "revoked"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_ids",
+          "account_names",
+          "created_at",
+          "expires_at",
+          "id",
+          "purpose",
+          "range_from",
+          "range_to",
+          "status"
+        ],
+        "title": "ConsentView",
+        "type": "object"
+      },
+      "Dashboard": {
+        "description": "Everything on the dashboard.",
+        "properties": {
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/AlertItem"
+            },
+            "title": "Alerts",
+            "type": "array"
+          },
+          "as_of": {
+            "title": "As Of",
+            "type": "string"
+          },
+          "budget_pace": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BudgetPace"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "data_source": {
+            "enum": [
+              "synthetic_demo",
+              "connected"
+            ],
+            "title": "Data Source",
+            "type": "string"
+          },
+          "has_transactions": {
+            "title": "Has Transactions",
+            "type": "boolean"
+          },
+          "headline": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Headline"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "period": {
+            "$ref": "#/components/schemas/Period"
+          },
+          "review_count": {
+            "title": "Review Count",
+            "type": "integer"
+          },
+          "review_preview": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewPreviewItem"
+            },
+            "title": "Review Preview",
+            "type": "array"
+          },
+          "top_categories": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryRow"
+            },
+            "title": "Top Categories",
+            "type": "array"
+          },
+          "upcoming": {
+            "items": {
+              "$ref": "#/components/schemas/UpcomingItem"
+            },
+            "title": "Upcoming",
+            "type": "array"
+          }
+        },
+        "required": [
+          "alerts",
+          "as_of",
+          "budget_pace",
+          "data_source",
+          "has_transactions",
+          "headline",
+          "period",
+          "review_count",
+          "review_preview",
+          "top_categories",
+          "upcoming"
+        ],
+        "title": "Dashboard",
+        "type": "object"
+      },
+      "DataQualityNotes": {
+        "additionalProperties": false,
+        "description": "Audit and data health indicators for the period.",
+        "properties": {
+          "days_in_month": {
+            "default": 30,
+            "title": "Days In Month",
+            "type": "integer"
+          },
+          "days_recorded": {
+            "default": 0,
+            "title": "Days Recorded",
+            "type": "integer"
+          },
+          "duplicates_flagged": {
+            "default": 0,
+            "title": "Duplicates Flagged",
+            "type": "integer"
+          },
+          "is_partial_month": {
+            "default": false,
+            "title": "Is Partial Month",
+            "type": "boolean"
+          },
+          "missing_days": {
+            "default": 0,
+            "title": "Missing Days",
+            "type": "integer"
+          },
+          "review_queue_size": {
+            "default": 0,
+            "title": "Review Queue Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "days_in_month",
+          "days_recorded",
+          "duplicates_flagged",
+          "is_partial_month",
+          "missing_days",
+          "review_queue_size"
+        ],
+        "title": "DataQualityNotes",
+        "type": "object"
+      },
+      "EvidenceItem": {
+        "additionalProperties": false,
+        "properties": {
+          "hypothesis_code": {
+            "title": "Hypothesis Code",
+            "type": "string"
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "investigation_id": {
+            "minLength": 1,
+            "title": "Investigation Id",
+            "type": "string"
+          },
+          "numbers": {
+            "additionalProperties": true,
+            "title": "Numbers",
+            "type": "object"
+          },
+          "result": {
+            "enum": [
+              "supports",
+              "contradicts",
+              "neutral"
+            ],
+            "title": "Result",
+            "type": "string"
+          },
+          "strength_bp": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Strength Bp",
+            "type": "integer"
+          },
+          "test_code": {
+            "title": "Test Code",
+            "type": "string"
+          },
+          "txn_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Txn Ids",
+            "type": "array"
+          },
+          "user_id": {
+            "minLength": 1,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "hypothesis_code",
+          "id",
+          "investigation_id",
+          "numbers",
+          "result",
+          "strength_bp",
+          "test_code",
+          "txn_ids",
+          "user_id"
+        ],
+        "title": "EvidenceItem",
+        "type": "object"
+      },
+      "ForecastBand": {
+        "description": "Run-rate forecast of budgeted spend with a low/high range.",
+        "properties": {
+          "basis": {
+            "title": "Basis",
+            "type": "string"
+          },
+          "has_days": {
+            "title": "Has Days",
+            "type": "integer"
+          },
+          "high": {
+            "items": {
+              "$ref": "#/components/schemas/PacePoint"
+            },
+            "title": "High",
+            "type": "array"
+          },
+          "low": {
+            "items": {
+              "$ref": "#/components/schemas/PacePoint"
+            },
+            "title": "Low",
+            "type": "array"
+          },
+          "needs_days": {
+            "title": "Needs Days",
+            "type": "integer"
+          },
+          "projected_paise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projected Paise"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "insufficient_data"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "basis",
+          "has_days",
+          "high",
+          "low",
+          "needs_days",
+          "projected_paise",
+          "status"
+        ],
+        "title": "ForecastBand",
+        "type": "object"
+      },
+      "GenerateReviewIn": {
+        "properties": {
+          "period": {
+            "pattern": "^\\d{4}-\\d{2}$",
+            "title": "Period",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period"
+        ],
+        "title": "GenerateReviewIn",
+        "type": "object"
+      },
+      "Goal": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "current_paise": {
+            "minimum": 0.0,
+            "title": "Current Paise",
+            "type": "integer"
+          },
+          "deadline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "savings",
+              "purchase",
+              "emergency_fund",
+              "other"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "priority": {
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Priority",
+            "type": "integer"
+          },
+          "status": {
+            "default": "active",
+            "enum": [
+              "active",
+              "paused",
+              "done"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "target_paise": {
+            "exclusiveMinimum": 0.0,
+            "title": "Target Paise",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          },
+          "user_id": {
+            "minLength": 1,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "current_paise",
+          "deadline",
+          "id",
+          "kind",
+          "name",
+          "priority",
+          "status",
+          "target_paise",
+          "updated_at",
+          "user_id"
+        ],
+        "title": "Goal",
+        "type": "object"
+      },
+      "GoalsOut": {
+        "properties": {
+          "goals": {
+            "items": {
+              "$ref": "#/components/schemas/Goal"
+            },
+            "title": "Goals",
+            "type": "array"
+          }
+        },
+        "required": [
+          "goals"
+        ],
+        "title": "GoalsOut",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Headline": {
+        "description": "Number-free headline built from the pace finding; `emphasis` is italicised.",
+        "properties": {
+          "after": {
+            "title": "After",
+            "type": "string"
+          },
+          "before": {
+            "title": "Before",
+            "type": "string"
+          },
+          "emphasis": {
+            "title": "Emphasis",
+            "type": "string"
+          }
+        },
+        "required": [
+          "after",
+          "before",
+          "emphasis"
+        ],
+        "title": "Headline",
+        "type": "object"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "const": "ok",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "Health",
+        "type": "object"
+      },
+      "HistoryEntry": {
+        "description": "One audited change to a transaction.",
+        "properties": {
+          "actor": {
+            "title": "Actor",
+            "type": "string"
+          },
+          "after_category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After Category Id"
+          },
+          "audit_event_id": {
+            "title": "Audit Event Id",
+            "type": "string"
+          },
+          "before_category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before Category Id"
+          },
+          "event_type": {
+            "title": "Event Type",
+            "type": "string"
+          },
+          "occurred_at": {
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "undoable": {
+            "title": "Undoable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "actor",
+          "after_category_id",
+          "audit_event_id",
+          "before_category_id",
+          "event_type",
+          "occurred_at",
+          "summary",
+          "undoable"
+        ],
+        "title": "HistoryEntry",
+        "type": "object"
+      },
+      "Hypothesis": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "contribution_paise": {
+            "minimum": 0.0,
+            "title": "Contribution Paise",
+            "type": "integer"
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "investigation_id": {
+            "minLength": 1,
+            "title": "Investigation Id",
+            "type": "string"
+          },
+          "score_bp": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Score Bp",
+            "type": "integer"
+          },
+          "status": {
+            "default": "untested",
+            "enum": [
+              "supported",
+              "contradicted",
+              "untested",
+              "neutral"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "user_id": {
+            "minLength": 1,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "contribution_paise",
+          "id",
+          "investigation_id",
+          "score_bp",
+          "status",
+          "user_id"
+        ],
+        "title": "Hypothesis",
+        "type": "object"
+      },
+      "ImportBatchView": {
+        "description": "One ingestion batch.",
+        "properties": {
+          "consent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Id"
+          },
+          "duplicates": {
+            "title": "Duplicates",
+            "type": "integer"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "fetched": {
+            "title": "Fetched",
+            "type": "integer"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "inserted": {
+            "title": "Inserted",
+            "type": "integer"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "consent_id",
+          "duplicates",
+          "error_code",
+          "fetched",
+          "finished_at",
+          "id",
+          "inserted",
+          "started_at",
+          "status"
+        ],
+        "title": "ImportBatchView",
+        "type": "object"
+      },
+      "ImportResult": {
+        "description": "Outcome of one import: counts plus per-transaction categorisation events.",
+        "properties": {
+          "batch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batch Id"
+          },
+          "by_ai": {
+            "title": "By Ai",
+            "type": "integer"
+          },
+          "by_rule": {
+            "title": "By Rule",
+            "type": "integer"
+          },
+          "duplicates_flagged": {
+            "title": "Duplicates Flagged",
+            "type": "integer"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/CategorisationEvent"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "fetched": {
+            "title": "Fetched",
+            "type": "integer"
+          },
+          "inserted": {
+            "title": "Inserted",
+            "type": "integer"
+          },
+          "needs_review": {
+            "title": "Needs Review",
+            "type": "integer"
+          },
+          "other": {
+            "title": "Other",
+            "type": "integer"
+          },
+          "skipped_existing": {
+            "title": "Skipped Existing",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "batch_id",
+          "by_ai",
+          "by_rule",
+          "duplicates_flagged",
+          "events",
+          "fetched",
+          "inserted",
+          "needs_review",
+          "other",
+          "skipped_existing"
+        ],
+        "title": "ImportResult",
+        "type": "object"
+      },
+      "InvestigateAnomalyIn": {
+        "properties": {
+          "anomaly_id": {
+            "title": "Anomaly Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "anomaly_id"
+        ],
+        "title": "InvestigateAnomalyIn",
+        "type": "object"
+      },
+      "InvestigateChangeIn": {
+        "properties": {
+          "baseline_period": {
+            "anyOf": [
+              {
+                "pattern": "^\\d{4}-\\d{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Period"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "period": {
+            "pattern": "^\\d{4}-\\d{2}$",
+            "title": "Period",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period"
+        ],
+        "title": "InvestigateChangeIn",
+        "type": "object"
+      },
+      "Investigation": {
+        "additionalProperties": false,
+        "properties": {
+          "confidence_label": {
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Confidence Label",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceItem"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "explained_share_bp": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Explained Share Bp",
+            "type": "integer"
+          },
+          "hypotheses": {
+            "items": {
+              "$ref": "#/components/schemas/Hypothesis"
+            },
+            "title": "Hypotheses",
+            "type": "array"
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "explained",
+              "partially_explained",
+              "inconclusive",
+              "needs_clarification"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "rounds": {
+            "minimum": 1.0,
+            "title": "Rounds",
+            "type": "integer"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "subject_kind": {
+            "enum": [
+              "anomaly",
+              "category_change",
+              "merchant_change",
+              "period_change"
+            ],
+            "title": "Subject Kind",
+            "type": "string"
+          },
+          "subject_ref": {
+            "additionalProperties": true,
+            "title": "Subject Ref",
+            "type": "object"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "unexplained_paise": {
+            "minimum": 0.0,
+            "title": "Unexplained Paise",
+            "type": "integer"
+          },
+          "user_id": {
+            "minLength": 1,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "confidence_label",
+          "created_at",
+          "evidence",
+          "explained_share_bp",
+          "hypotheses",
+          "id",
+          "outcome",
+          "rounds",
+          "run_id",
+          "subject_kind",
+          "subject_ref",
+          "task_id",
+          "unexplained_paise",
+          "user_id"
+        ],
+        "title": "Investigation",
+        "type": "object"
+      },
+      "InvestigationOut": {
+        "properties": {
+          "decomposition": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Decomposition",
+            "type": "object"
+          },
+          "investigation": {
+            "$ref": "#/components/schemas/Investigation"
+          }
+        },
+        "required": [
+          "decomposition",
+          "investigation"
+        ],
+        "title": "InvestigationOut",
+        "type": "object"
+      },
+      "MonthlyReviewData": {
+        "additionalProperties": false,
+        "description": "The complete, structured monthly review document.",
+        "properties": {
+          "advice": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewAdviceItem"
+            },
+            "title": "Advice",
+            "type": "array"
+          },
+          "anomalies": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewAnomalyItem"
+            },
+            "title": "Anomalies",
+            "type": "array"
+          },
+          "budget_statuses": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewBudgetStatus"
+            },
+            "title": "Budget Statuses",
+            "type": "array"
+          },
+          "category_totals": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryTotal"
+            },
+            "title": "Category Totals",
+            "type": "array"
+          },
+          "data_quality": {
+            "$ref": "#/components/schemas/DataQualityNotes"
+          },
+          "forecast": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewForecast"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generated_at": {
+            "title": "Generated At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "income_paise": {
+            "title": "Income Paise",
+            "type": "integer"
+          },
+          "month": {
+            "title": "Month",
+            "type": "integer"
+          },
+          "net_paise": {
+            "title": "Net Paise",
+            "type": "integer"
+          },
+          "period": {
+            "title": "Period",
+            "type": "string"
+          },
+          "previous_income_paise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Income Paise"
+          },
+          "previous_net_paise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Net Paise"
+          },
+          "previous_period": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Period"
+          },
+          "previous_spend_paise": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Spend Paise"
+          },
+          "recurring_payments": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewRecurringItem"
+            },
+            "title": "Recurring Payments",
+            "type": "array"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "spend_paise": {
+            "title": "Spend Paise",
+            "type": "integer"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "advice",
+          "anomalies",
+          "budget_statuses",
+          "category_totals",
+          "data_quality",
+          "forecast",
+          "generated_at",
+          "id",
+          "income_paise",
+          "month",
+          "net_paise",
+          "period",
+          "previous_income_paise",
+          "previous_net_paise",
+          "previous_period",
+          "previous_spend_paise",
+          "recurring_payments",
+          "run_id",
+          "spend_paise",
+          "user_id",
+          "version",
+          "year"
+        ],
+        "title": "MonthlyReviewData",
+        "type": "object"
+      },
+      "MonthlyReviewOut": {
+        "properties": {
+          "period": {
+            "title": "Period",
+            "type": "string"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MonthlyReviewData"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewVersion"
+            },
+            "title": "Versions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "period",
+          "review",
+          "versions"
+        ],
+        "title": "MonthlyReviewOut",
+        "type": "object"
+      },
+      "PacePoint": {
+        "description": "Cumulative paise at the end of an IST day of the month.",
+        "properties": {
+          "day": {
+            "title": "Day",
+            "type": "integer"
+          },
+          "paise": {
+            "title": "Paise",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "paise"
+        ],
+        "title": "PacePoint",
+        "type": "object"
+      },
+      "Period": {
+        "description": "A calendar month in IST.",
+        "properties": {
+          "days_elapsed": {
+            "title": "Days Elapsed",
+            "type": "integer"
+          },
+          "days_in_month": {
+            "title": "Days In Month",
+            "type": "integer"
+          },
+          "is_current": {
+            "title": "Is Current",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "month": {
+            "title": "Month",
+            "type": "integer"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "days_elapsed",
+          "days_in_month",
+          "is_current",
+          "key",
+          "month",
+          "year"
+        ],
+        "title": "Period",
+        "type": "object"
+      },
+      "Projection": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Assumptions",
+            "type": "array"
+          },
+          "budget_statuses": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Budget Statuses",
+            "type": "object"
+          },
+          "goal_impacts": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Goal Impacts",
+            "type": "object"
+          },
+          "has_insufficient_data": {
+            "default": false,
+            "title": "Has Insufficient Data",
+            "type": "boolean"
+          },
+          "monthly_spend_paise": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Monthly Spend Paise",
+            "type": "object"
+          },
+          "monthly_surplus_paise": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Monthly Surplus Paise",
+            "type": "object"
+          },
+          "months_projected": {
+            "title": "Months Projected",
+            "type": "integer"
+          },
+          "scenario": {
+            "$ref": "#/components/schemas/Scenario"
+          }
+        },
+        "required": [
+          "assumptions",
+          "budget_statuses",
+          "goal_impacts",
+          "has_insufficient_data",
+          "monthly_spend_paise",
+          "monthly_surplus_paise",
+          "months_projected",
+          "scenario"
+        ],
+        "title": "Projection",
+        "type": "object"
+      },
+      "RecategorizeIn": {
+        "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "remember": {
+            "default": false,
+            "title": "Remember",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "category_id"
+        ],
+        "title": "RecategorizeIn",
+        "type": "object"
+      },
+      "RecategorizeOut": {
+        "properties": {
+          "audit_event_id": {
+            "title": "Audit Event Id",
+            "type": "string"
+          },
+          "detail": {
+            "$ref": "#/components/schemas/TransactionDetail"
+          },
+          "new_category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Category Id"
+          },
+          "previous_category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Category Id"
+          },
+          "transaction_id": {
+            "title": "Transaction Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "audit_event_id",
+          "detail",
+          "new_category_id",
+          "previous_category_id",
+          "transaction_id"
+        ],
+        "title": "RecategorizeOut",
+        "type": "object"
+      },
+      "ReviewAdviceItem": {
+        "additionalProperties": false,
+        "description": "Approved or draft advice associated with this month's findings.",
+        "properties": {
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Assumptions",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "approved",
+              "rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assumptions",
+          "id",
+          "status",
+          "text"
+        ],
+        "title": "ReviewAdviceItem",
+        "type": "object"
+      },
+      "ReviewAnomalyItem": {
+        "additionalProperties": false,
+        "description": "An outlier transaction flagged during the month.",
+        "properties": {
+          "amount_paise": {
+            "title": "Amount Paise",
+            "type": "integer"
+          },
+          "merchant": {
+            "title": "Merchant",
+            "type": "string"
+          },
+          "occurred_at": {
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "transaction_id": {
+            "title": "Transaction Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_paise",
+          "merchant",
+          "occurred_at",
+          "reason",
+          "transaction_id"
+        ],
+        "title": "ReviewAnomalyItem",
+        "type": "object"
+      },
+      "ReviewBudgetStatus": {
+        "additionalProperties": false,
+        "description": "Budget performance for one category.",
+        "properties": {
+          "category_id": {
+            "title": "Category Id",
+            "type": "string"
+          },
+          "category_name": {
+            "title": "Category Name",
+            "type": "string"
+          },
+          "limit_paise": {
+            "title": "Limit Paise",
+            "type": "integer"
+          },
+          "pct_used": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Used"
+          },
+          "spent_paise": {
+            "title": "Spent Paise",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "warning",
+              "exceeded",
+              "projected_exceed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "category_name",
+          "limit_paise",
+          "pct_used",
+          "spent_paise",
+          "status"
+        ],
+        "title": "ReviewBudgetStatus",
+        "type": "object"
+      },
+      "ReviewForecast": {
+        "additionalProperties": false,
+        "description": "Month-end projection for the ongoing/next period.",
+        "properties": {
+          "insufficient_data": {
+            "default": false,
+            "title": "Insufficient Data",
+            "type": "boolean"
+          },
+          "projected_range_paise": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Projected Range Paise",
+            "type": "array"
+          },
+          "projected_total_paise": {
+            "title": "Projected Total Paise",
+            "type": "integer"
+          },
+          "spent_so_far_paise": {
+            "title": "Spent So Far Paise",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "insufficient_data",
+          "projected_range_paise",
+          "projected_total_paise",
+          "spent_so_far_paise"
+        ],
+        "title": "ReviewForecast",
+        "type": "object"
+      },
+      "ReviewItem": {
+        "description": "One uncertain transaction with the context needed to decide.",
+        "properties": {
+          "similar": {
+            "items": {
+              "$ref": "#/components/schemas/SimilarItem"
+            },
+            "title": "Similar",
+            "type": "array"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/Suggestion"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          },
+          "transaction": {
+            "$ref": "#/components/schemas/TransactionRow"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "similar",
+          "suggestions",
+          "transaction",
+          "why"
+        ],
+        "title": "ReviewItem",
+        "type": "object"
+      },
+      "ReviewPreviewItem": {
+        "description": "A transaction waiting in the review queue.",
+        "properties": {
+          "amount_paise": {
+            "title": "Amount Paise",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "merchant": {
+            "title": "Merchant",
+            "type": "string"
+          },
+          "occurred_at": {
+            "title": "Occurred At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_paise",
+          "id",
+          "merchant",
+          "occurred_at"
+        ],
+        "title": "ReviewPreviewItem",
+        "type": "object"
+      },
+      "ReviewQueue": {
+        "description": "The whole queue.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ReviewQueue",
+        "type": "object"
+      },
+      "ReviewRecurringItem": {
+        "additionalProperties": false,
+        "description": "A recurring subscription or recurring expense active this month.",
+        "properties": {
+          "cadence_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cadence Days"
+          },
+          "confidence": {
+            "default": 1.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "merchant": {
+            "title": "Merchant",
+            "type": "string"
+          },
+          "typical_amount_paise": {
+            "title": "Typical Amount Paise",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cadence_days",
+          "confidence",
+          "merchant",
+          "typical_amount_paise"
+        ],
+        "title": "ReviewRecurringItem",
+        "type": "object"
+      },
+      "ReviewVersion": {
+        "properties": {
+          "generated_at": {
+            "title": "Generated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "generated_at",
+          "version"
+        ],
+        "title": "ReviewVersion",
+        "type": "object"
+      },
+      "Scenario": {
+        "additionalProperties": false,
+        "properties": {
+          "amount_paise": {
+            "minimum": 0.0,
+            "title": "Amount Paise",
+            "type": "integer"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "goal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goal Id"
+          },
+          "kind": {
+            "enum": [
+              "add_spend",
+              "reduce_spend",
+              "change_contribution"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "months": {
+            "default": 1,
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Months",
+            "type": "integer"
+          },
+          "recurring": {
+            "default": false,
+            "title": "Recurring",
+            "type": "boolean"
+          },
+          "start_month": {
+            "title": "Start Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_paise",
+          "category_id",
+          "goal_id",
+          "kind",
+          "months",
+          "recurring",
+          "start_month"
+        ],
+        "title": "Scenario",
+        "type": "object"
+      },
+      "ScenarioComparison": {
+        "additionalProperties": false,
+        "description": "Side-by-side comparison of up to 3 scenarios against the baseline.",
+        "properties": {
+          "baseline": {
+            "$ref": "#/components/schemas/Projection"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/Projection"
+            },
+            "title": "Scenarios",
+            "type": "array"
+          },
+          "side_by_side": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Side By Side",
+            "type": "array"
+          }
+        },
+        "required": [
+          "baseline",
+          "scenarios",
+          "side_by_side"
+        ],
+        "title": "ScenarioComparison",
+        "type": "object"
+      },
+      "Session": {
+        "properties": {
+          "as_of": {
+            "title": "As Of",
+            "type": "string"
+          },
+          "data_source": {
+            "enum": [
+              "synthetic_demo",
+              "connected"
+            ],
+            "title": "Data Source",
+            "type": "string"
+          },
+          "demo_clock": {
+            "title": "Demo Clock",
+            "type": "boolean"
+          },
+          "period": {
+            "title": "Period",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "as_of",
+          "data_source",
+          "demo_clock",
+          "period",
+          "user_id"
+        ],
+        "title": "Session",
+        "type": "object"
+      },
+      "SimilarItem": {
+        "description": "A past transaction from the same merchant and how it was categorised.",
+        "properties": {
+          "amount_paise": {
+            "title": "Amount Paise",
+            "type": "integer"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "category_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Name"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "occurred_at": {
+            "title": "Occurred At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_paise",
+          "category_id",
+          "category_name",
+          "id",
+          "occurred_at"
+        ],
+        "title": "SimilarItem",
+        "type": "object"
+      },
+      "Suggestion": {
+        "description": "A category the user can pick with one key.",
+        "properties": {
+          "category_id": {
+            "title": "Category Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "ai_suggestion",
+              "past_choice",
+              "frequent"
+            ],
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "name",
+          "reason"
+        ],
+        "title": "Suggestion",
+        "type": "object"
+      },
+      "Timeline": {
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineEntry"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "pending_approvals": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineEntry"
+            },
+            "title": "Pending Approvals",
+            "type": "array"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entries",
+          "pending_approvals",
+          "user_id"
+        ],
+        "title": "Timeline",
+        "type": "object"
+      },
+      "TimelineEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "observation",
+              "plan",
+              "tool_call",
+              "investigation",
+              "simulation",
+              "alert",
+              "decision",
+              "approval_pending",
+              "refusal",
+              "error"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "ref": {
+            "additionalProperties": true,
+            "title": "Ref",
+            "type": "object"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "ts": {
+            "title": "Ts",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail",
+          "kind",
+          "ref",
+          "status",
+          "title",
+          "ts"
+        ],
+        "title": "TimelineEntry",
+        "type": "object"
+      },
+      "TransactionDetail": {
+        "description": "Everything the detail panel shows.",
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "duplicate_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryEntry"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "recurring": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UpcomingItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transaction": {
+            "$ref": "#/components/schemas/TransactionRow"
+          }
+        },
+        "required": [
+          "description",
+          "duplicate_of",
+          "history",
+          "recurring",
+          "transaction"
+        ],
+        "title": "TransactionDetail",
+        "type": "object"
+      },
+      "TransactionPage": {
+        "description": "A page of transactions, newest first.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TransactionRow"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "limit",
+          "offset",
+          "total"
+        ],
+        "title": "TransactionPage",
+        "type": "object"
+      },
+      "TransactionRow": {
+        "description": "A transaction as listed.",
+        "properties": {
+          "account_id": {
+            "title": "Account Id",
+            "type": "string"
+          },
+          "account_name": {
+            "title": "Account Name",
+            "type": "string"
+          },
+          "amount_paise": {
+            "title": "Amount Paise",
+            "type": "integer"
+          },
+          "category_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Confidence"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "category_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Name"
+          },
+          "category_source": {
+            "title": "Category Source",
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "debit",
+              "credit"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_duplicate": {
+            "title": "Is Duplicate",
+            "type": "boolean"
+          },
+          "is_transfer": {
+            "title": "Is Transfer",
+            "type": "boolean"
+          },
+          "merchant": {
+            "title": "Merchant",
+            "type": "string"
+          },
+          "merchant_raw": {
+            "title": "Merchant Raw",
+            "type": "string"
+          },
+          "needs_review": {
+            "title": "Needs Review",
+            "type": "boolean"
+          },
+          "occurred_at": {
+            "title": "Occurred At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_id",
+          "account_name",
+          "amount_paise",
+          "category_confidence",
+          "category_id",
+          "category_name",
+          "category_source",
+          "direction",
+          "id",
+          "is_duplicate",
+          "is_transfer",
+          "merchant",
+          "merchant_raw",
+          "needs_review",
+          "occurred_at"
+        ],
+        "title": "TransactionRow",
+        "type": "object"
+      },
+      "UndoIn": {
+        "properties": {
+          "audit_event_id": {
+            "title": "Audit Event Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "audit_event_id"
+        ],
+        "title": "UndoIn",
+        "type": "object"
+      },
+      "UndoOut": {
+        "properties": {
+          "new_audit_event_id": {
+            "title": "New Audit Event Id",
+            "type": "string"
+          },
+          "undone_event_id": {
+            "title": "Undone Event Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "new_audit_event_id",
+          "undone_event_id"
+        ],
+        "title": "UndoOut",
+        "type": "object"
+      },
+      "UpcomingItem": {
+        "description": "An expected recurring payment.",
+        "properties": {
+          "amount_paise": {
+            "title": "Amount Paise",
+            "type": "integer"
+          },
+          "cadence_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cadence Days"
+          },
+          "expected_on": {
+            "title": "Expected On",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "merchant": {
+            "title": "Merchant",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_paise",
+          "cadence_days",
+          "expected_on",
+          "kind",
+          "merchant"
+        ],
+        "title": "UpcomingItem",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ctx",
+          "input",
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "WhatIfIn": {
+        "properties": {
+          "amount_paise": {
+            "minimum": 1.0,
+            "title": "Amount Paise",
+            "type": "integer"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "goal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goal Id"
+          },
+          "kind": {
+            "enum": [
+              "add_spend",
+              "reduce_spend",
+              "change_contribution"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "months": {
+            "default": 3,
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Months",
+            "type": "integer"
+          },
+          "recurring": {
+            "default": true,
+            "title": "Recurring",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "amount_paise"
+        ],
+        "title": "WhatIfIn",
+        "type": "object"
+      },
+      "WhatIfOut": {
+        "properties": {
+          "projection": {
+            "$ref": "#/components/schemas/Projection"
+          },
+          "simulation_id": {
+            "title": "Simulation Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "projection",
+          "simulation_id"
+        ],
+        "title": "WhatIfOut",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "FinCo API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/advice/{advice_id}": {
+      "get": {
+        "operationId": "advice_explanation_api_advice__advice_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "advice_id",
+            "required": true,
+            "schema": {
+              "title": "Advice Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdviceExplanation"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Advice Explanation"
+      }
+    },
+    "/api/advice/{advice_id}/decision": {
+      "post": {
+        "operationId": "decide_advice_api_advice__advice_id__decision_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "advice_id",
+            "required": true,
+            "schema": {
+              "title": "Advice Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdviceDecisionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdviceDecisionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Advice"
+      }
+    },
+    "/api/alert-preferences": {
+      "post": {
+        "operationId": "alert_preference_api_alert_preferences_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertPreferenceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Alert Preference Api Alert Preferences Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Alert Preference"
+      }
+    },
+    "/api/alerts": {
+      "get": {
+        "operationId": "alerts_api_alerts_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "open",
+                    "acknowledged",
+                    "dismissed",
+                    "snoozed"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Alerts"
+      }
+    },
+    "/api/alerts/{alert_id}/decision": {
+      "post": {
+        "operationId": "decide_alert_api_alerts__alert_id__decision_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "alert_id",
+            "required": true,
+            "schema": {
+              "title": "Alert Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertDecisionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Decide Alert Api Alerts  Alert Id  Decision Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Alert"
+      }
+    },
+    "/api/anomalies": {
+      "get": {
+        "description": "Unusual transactions from the deterministic detector (a read; nothing is stored).",
+        "operationId": "anomalies_api_anomalies_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AnomalyOut"
+                  },
+                  "title": "Response Anomalies Api Anomalies Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Anomalies"
+      }
+    },
+    "/api/ask": {
+      "post": {
+        "operationId": "ask_api_ask_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ask"
+      }
+    },
+    "/api/categories": {
+      "get": {
+        "operationId": "categories_api_categories_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryOut"
+                  },
+                  "title": "Response Categories Api Categories Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Categories"
+      }
+    },
+    "/api/consents": {
+      "get": {
+        "operationId": "consents_api_consents_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConsentView"
+                  },
+                  "title": "Response Consents Api Consents Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Consents"
+      }
+    },
+    "/api/consents/{consent_id}/approve": {
+      "post": {
+        "operationId": "approve_consent_api_consents__consent_id__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "consent_id",
+            "required": true,
+            "schema": {
+              "title": "Consent Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentDecisionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Approve Consent"
+      }
+    },
+    "/api/consents/{consent_id}/import": {
+      "post": {
+        "operationId": "import_statements_api_consents__consent_id__import_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "consent_id",
+            "required": true,
+            "schema": {
+              "title": "Consent Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Statements"
+      }
+    },
+    "/api/consents/{consent_id}/revoke": {
+      "post": {
+        "operationId": "revoke_consent_api_consents__consent_id__revoke_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "consent_id",
+            "required": true,
+            "schema": {
+              "title": "Consent Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentDecisionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revoke Consent"
+      }
+    },
+    "/api/dashboard": {
+      "get": {
+        "operationId": "dashboard_api_dashboard_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-\\d{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Dashboard"
+      }
+    },
+    "/api/goals": {
+      "get": {
+        "operationId": "goals_api_goals_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Goals"
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Health"
+      }
+    },
+    "/api/imports": {
+      "get": {
+        "operationId": "imports_api_imports_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ImportBatchView"
+                  },
+                  "title": "Response Imports Api Imports Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Imports"
+      }
+    },
+    "/api/investigate/anomaly": {
+      "post": {
+        "operationId": "investigate_anomaly_api_investigate_anomaly_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvestigateAnomalyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestigationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Investigate Anomaly"
+      }
+    },
+    "/api/investigate/change": {
+      "post": {
+        "operationId": "investigate_change_api_investigate_change_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvestigateChangeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestigationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Investigate Change"
+      }
+    },
+    "/api/investigations/{investigation_id}": {
+      "get": {
+        "operationId": "investigation_api_investigations__investigation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "investigation_id",
+            "required": true,
+            "schema": {
+              "title": "Investigation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Investigation Api Investigations  Investigation Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Investigation"
+      }
+    },
+    "/api/monthly-reviews": {
+      "post": {
+        "operationId": "generate_review_api_monthly_reviews_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateReviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthlyReviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generate Review"
+      }
+    },
+    "/api/monthly-reviews/{period}": {
+      "get": {
+        "operationId": "monthly_review_api_monthly_reviews__period__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "period",
+            "required": true,
+            "schema": {
+              "title": "Period",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthlyReviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Monthly Review"
+      }
+    },
+    "/api/review-queue": {
+      "get": {
+        "operationId": "review_queue_api_review_queue_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewQueue"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Review Queue"
+      }
+    },
+    "/api/session": {
+      "get": {
+        "operationId": "session_api_session_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Session"
+      }
+    },
+    "/api/timeline": {
+      "get": {
+        "operationId": "timeline_api_timeline_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "task_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Task Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "run_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Timeline"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Timeline"
+      }
+    },
+    "/api/transactions": {
+      "get": {
+        "operationId": "transactions_api_transactions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-\\d{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "uncategorised",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Uncategorised",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "needs_review",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Needs Review"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "user",
+                    "rule",
+                    "llm",
+                    "cache",
+                    "override",
+                    "none"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Transactions"
+      }
+    },
+    "/api/transactions/{tx_id}": {
+      "get": {
+        "operationId": "transaction_detail_api_transactions__tx_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tx_id",
+            "required": true,
+            "schema": {
+              "title": "Tx Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Transaction Detail"
+      }
+    },
+    "/api/transactions/{tx_id}/category": {
+      "post": {
+        "operationId": "recategorize_api_transactions__tx_id__category_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tx_id",
+            "required": true,
+            "schema": {
+              "title": "Tx Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecategorizeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecategorizeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Recategorize"
+      }
+    },
+    "/api/undo": {
+      "post": {
+        "operationId": "undo_api_undo_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UndoIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UndoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Undo"
+      }
+    },
+    "/api/whatif": {
+      "post": {
+        "operationId": "whatif_api_whatif_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WhatIfIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhatIfOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Whatif"
+      }
+    },
+    "/api/whatif/compare": {
+      "post": {
+        "operationId": "compare_api_whatif_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompareIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompareOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compare"
+      }
+    }
+  }
+}

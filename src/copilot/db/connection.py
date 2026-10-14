@@ -16,14 +16,19 @@ SCHEMA_VERSION = 1
 MIN_SQLITE_VERSION = (3, 37, 0)
 
 
-def get_connection(path: str = ":memory:") -> sqlite3.Connection:
-    """Open a SQLite connection with Row results and foreign keys enabled."""
+def get_connection(path: str = ":memory:", *, check_same_thread: bool = True) -> sqlite3.Connection:
+    """
+    Open a SQLite connection with Row results and foreign keys enabled.
+
+    The API passes check_same_thread=False: each request owns its connection and uses it from
+    one place at a time, but FastAPI may open and close it on different worker threads.
+    """
     if sqlite3.sqlite_version_info < MIN_SQLITE_VERSION:
         raise RuntimeError(
             f"SQLite {sqlite3.sqlite_version} is too old; need "
             f"{'.'.join(map(str, MIN_SQLITE_VERSION))}+ for STRICT tables."
         )
-    conn = sqlite3.connect(path)
+    conn = sqlite3.connect(path, check_same_thread=check_same_thread)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn

@@ -1,0 +1,83 @@
+# Intent Patterns and Input Gate Configuration (PLAN_PHASE2 Section 5.2)
+
+refusal_classes:
+  INVESTMENT_ADVICE:
+    - "(?i)\\b(which|what|should i buy|recommend)\\b.*\\b(stock|share|mutual fund|sip|crypto|bitcoin|etf|gold)\\b"
+    - "(?i)\\b(best|top)\\b.*\\b(stocks|funds|investments)\\b"
+  MONEY_MOVEMENT:
+    - "(?i)\\b(send|transfer|pay|wire|withdraw|deposit)\\b.*\\b(money|rupees|rs|inr|cash|to)\\b"
+    - "(?i)\\b(pay\\s+my\\s+bill|transfer\\s+funds)\\b"
+  MARKET_PREDICTION:
+    - "(?i)\\b(will\\s+nifty|will\\s+sensex|market\\s+crash|stock\\s+go\\s+up|price\\s+target)\\b"
+  SENSITIVE_DATA_SUBMISSION:
+    - "(?i)\\b(otp|cvv|pin|password|card\\s+number)\\b"
+    - "\\b\\d{4}[-\\s]?\\d{4}[-\\s]?\\d{4}[-\\s]?\\d{4}\\b"
+  OUT_OF_SCOPE:
+    - "(?i)\\b(weather|recipe|movie|joke|sports\\s+score)\\b"
+
+refusal_templates:
+  INVESTMENT_ADVICE: "I cannot provide specific investment advice, stock picks, or fund recommendations. I can, however, help you analyze your past savings rate, track budget allocations, or simulate how much monthly surplus you have available."
+  MONEY_MOVEMENT: "I am an analytical copilot and do not have permission to initiate payments, transfer money, or execute transactions. You can review your transaction history, check budgets, or simulate what-if purchase scenarios."
+  MARKET_PREDICTION: "I cannot predict financial market movements or macroeconomic indices. I can analyze your personal income, cashflow trends, and historical spending patterns."
+  SENSITIVE_DATA_SUBMISSION: "For your security, never enter OTPs, CVVs, passwords, or full debit card numbers. Financial analysis only requires historical transaction records and category limits."
+  OUT_OF_SCOPE: "I specialize strictly in personal finance, budget tracking, cashflow forecasting, and goal analysis."
+
+intent_keywords:
+  summarize_period:
+    - "summary"
+    - "summarize"
+    - "how much did i spend"
+    - "spending summary"
+    - "overview"
+    - "total spend"
+  explain_change:
+    - "why did"
+    - "why has"
+    - "jump"
+    - "increase"
+    - "spike"
+    - "explain change"
+  investigate_anomaly:
+    - "anomaly"
+    - "unusual"
+    - "weird"
+    - "suspicious"
+    - "irregular"
+  check_budget:
+    - "budget"
+    - "budget status"
+    - "am i over budget"
+    - "exceeded"
+    - "limit"
+  forecast:
+    - "forecast"
+    - "project"
+    - "month end"
+    - "how much will i spend"
+    - "run rate"
+  whatif_add_spend:
+    - "what if i buy"
+    - "what if i spend"
+    - "can i afford"
+    - "if i purchase"
+  whatif_reduce_spend:
+    - "what if i cut"
+    - "what if i reduce"
+    - "if i stop spending"
+    - "save more"
+  goal_check:
+    - "goal"
+    - "trip goal"
+    - "emergency fund"
+    - "savings target"
+    - "on track for"
+  list_recurring:
+    - "subscriptions"
+    - "recurring"
+    - "bills"
+    - "memberships"
+  alerts_overview:
+    - "alerts"
+    - "notifications"
+    - "warnings"
+    - "any issues"

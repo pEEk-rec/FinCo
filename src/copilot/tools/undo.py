@@ -64,7 +64,13 @@ def undo_handler(ctx: "ExecutionContext", audit_event_id: str) -> UndoOutput:
                 clock=ctx.clock,
             )
             raise ToolFailure(
-                ErrorCode.NOT_FOUND, f"Undo refused: transaction {tx_id} not found"
+                ErrorCode.NOT_FOUND,
+                f"Undo refused: transaction {tx_id} not found",
+                audit_event_type="undo_refused",
+                audit_metadata={
+                    "undone_event_id": audit_event_id,
+                    "refusal_reason": "entity_not_found",
+                },
             )
 
         current_state = {
@@ -101,6 +107,11 @@ def undo_handler(ctx: "ExecutionContext", audit_event_id: str) -> UndoOutput:
             raise ToolFailure(
                 ErrorCode.STALE_DATA,
                 f"Undo refused: transaction {tx_id} state has diverged from event after_data",
+                audit_event_type="undo_refused",
+                audit_metadata={
+                    "undone_event_id": audit_event_id,
+                    "refusal_reason": "state_diverged",
+                },
             )
 
         update_transaction_category(
@@ -110,6 +121,7 @@ def undo_handler(ctx: "ExecutionContext", audit_event_id: str) -> UndoOutput:
             before["category_id"],
             before["category_source"],
             before.get("category_confidence"),
+            needs_review=before.get("needs_review"),
         )
 
     elif event.entity_type == "transaction_batch":
@@ -165,6 +177,12 @@ def undo_handler(ctx: "ExecutionContext", audit_event_id: str) -> UndoOutput:
             raise ToolFailure(
                 ErrorCode.STALE_DATA,
                 f"Undo refused: batch item {diverged_tx_id} state has diverged from after_data",
+                audit_event_type="undo_refused",
+                audit_metadata={
+                    "undone_event_id": audit_event_id,
+                    "refusal_reason": "batch_item_diverged",
+                    "diverged_transaction_id": diverged_tx_id,
+                },
             )
 
         for tx_id, b_data in before.items():
@@ -175,6 +193,7 @@ def undo_handler(ctx: "ExecutionContext", audit_event_id: str) -> UndoOutput:
                 b_data["category_id"],
                 b_data["category_source"],
                 b_data.get("category_confidence"),
+                needs_review=b_data.get("needs_review"),
             )
 
     # Record the undo

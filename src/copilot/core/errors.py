@@ -33,6 +33,15 @@ class ToolFailure(Exception):
     from a handler becomes TOOL_FAILURE.
     """
 
-    def __init__(self, code: ErrorCode, message: str, retryable: bool = False) -> None:
+    def __init__(
+        self,
+        code: ErrorCode,
+        message: str,
+        retryable: bool = False,
+        audit_event_type: str | None = None,
+        audit_metadata: dict | None = None,
+    ) -> None:
         super().__init__(message)
         self.error = ToolError(code=code, message=message, retryable=retryable)
+        self.audit_event_type = audit_event_type
+        self.audit_metadata = audit_metadata

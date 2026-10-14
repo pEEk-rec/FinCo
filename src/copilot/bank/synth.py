@@ -288,3 +288,383 @@ def generate_transactions(
 
     result.transactions.sort(key=lambda t: (t.occurred_at, t.id))
     return result
+
+
+# -------------------------------------------------------------------------------------------------
+# Phase 2 Synthetic Data Generator v3 (PLAN_PHASE2 Section 5.4 & Stage 2.4)
+# -------------------------------------------------------------------------------------------------
+DEV_SEEDS: tuple[int, ...] = (42, 101, 202, 303, 404)
+HELD_OUT_SEEDS: tuple[int, ...] = (777, 888, 999)
+
+
+@dataclass(frozen=True)
+class InjectedCause:
+    """A planted cause for investigation testing with hidden ground truth."""
+
+    kind: str
+    category: str | None
+    month: str  # YYYY-MM
+    transaction_ids: tuple[str, ...]
+    expected_amount_paise: int
+    note: str
+
+
+@dataclass
+class SynthResultV3:
+    """Generated transactions for Phase 2 investigation with hidden ground truth."""
+
+    transactions: list[Transaction] = field(default_factory=list)
+    ground_truth_causes: list[InjectedCause] = field(default_factory=list)
+    tx_truth: dict[str, GroundTruthTxn] = field(default_factory=dict)
+    baseline_months: list[str] = field(default_factory=list)
+    target_month: str = ""
+    profile: str = "standard"
+
+
+def generate_transactions_v3(
+    seed: int,
+    months: int,
+    user_id: str,
+    account_ids: str | list[str],
+    *,
+    start_year: int = 2026,
+    start_month: int = 6,
+    target_cause: str | None = None,
+    profile: Literal["standard", "hard"] = "standard",
+) -> SynthResultV3:
+    """
+    Generate deterministic transactions for Phase 2 investigation engine evaluation.
+
+    Supports hidden ground-truth causes:
+    - one_off_large
+    - recurring_change
+    - more_frequent
+    - new_merchant
+    - miscategorization
+    - duplicate_or_refund
+    - seasonal_or_timing
+    - no_cause
+    - overlapping (hard profile)
+    """
+    if isinstance(account_ids, str):
+        account_ids = [account_ids]
+
+    if months < 2:
+        raise ValueError("months must be >= 2 for v3 (requires at least 1 baseline + target)")
+    if not account_ids:
+        raise ValueError("must provide at least one account_id")
+
+    b = _Builder(seed, user_id, account_ids)
+    result = SynthResultV3(profile=profile)
+    periods = _months(start_year, start_month, months)
+
+    target_year, target_m = periods[-1]
+    result.target_month = f"{target_year:04d}-{target_m:02d}"
+    result.baseline_months = [f"{y:04d}-{m:02d}" for y, m in periods[:-1]]
+
+    primary_acc = account_ids[0]
+
+    def add_truth(
+        tx: Transaction,
+        true_cat: str | None,
+        is_transfer: bool,
+        is_recurring: bool,
+        anomaly: str | None = None,
+    ) -> None:
+        result.tx_truth[tx.id] = GroundTruthTxn(
+            txn_id=tx.id,
+            true_category=true_cat,
+            is_transfer=is_transfer,
+            is_recurring=is_recurring,
+            is_anomaly=bool(anomaly),
+            anomaly_kind=anomaly,
+        )
+
+    hard_aliases = {
+        "SWIGGY": "BUNDLTECH-BANGALORE",
+        "ZOMATO": "ZOMATO-MEDIA-PVT-LTD",
+        "BLINKIT": "COMMERCE-BLINKIT-GURGAON",
+        "SPOTIFY": "SPOTIFY-INDIA-MUMBAI",
+    }
+
+    # Deterministic fixed expenses across months for realistic baseline
+    fixed_rent_rupees = b.rng.randint(8000, 12000)
+    fixed_mess_rupees = b.rng.randint(3200, 3600)
+
+    def _make_merch_tx(merch: Merchant, when: datetime) -> Transaction:
+        if merch.code == "RENT":
+            return b.make(
+                when,
+                fixed_rent_rupees * 100,
+                b.narration(merch.code),
+                merch.description,
+                primary_acc,
+            )
+        if merch.code == "HOSTELMESS":
+            return b.make(
+                when,
+                fixed_mess_rupees * 100,
+                b.narration(merch.code),
+                merch.description,
+                primary_acc,
+            )
+        return b.spend(merch, when, primary_acc)
+
+    # Generate baseline months
+    for y, m in periods[:-1]:
+        pocket = b.rng.randint(*POCKET_MONEY_RUPEES) * 100
+        inc_tx = b.make(
+            b.moment(y, m, day=1),
+            -pocket,
+            f"NEFT-CR-ALLOWANCE-REF{b.rng.randint(10**9, 10**10 - 1)}",
+            "Allowance",
+            primary_acc,
+        )
+        result.transactions.append(inc_tx)
+        add_truth(inc_tx, "income", False, True)
+
+        for merch in MERCHANTS:
+            for _ in range(b.rng.randint(*merch.per_month)):
+                tx = _make_merch_tx(merch, b.moment(y, m))
+                tx = tx.model_copy(
+                    update={
+                        "category_id": merch.category,
+                        "merchant_normalized": merch.code,
+                    }
+                )
+                if profile == "hard" and merch.code in hard_aliases and b.rng.random() < 0.5:
+                    tx = tx.model_copy(
+                        update={"merchant_raw": f"POS/DEBIT/{hard_aliases[merch.code]}"}
+                    )
+                result.transactions.append(tx)
+                add_truth(tx, merch.category, False, merch.recurring)
+
+    # Generate target month
+    y, m = periods[-1]
+    pocket = b.rng.randint(*POCKET_MONEY_RUPEES) * 100
+    inc_tx = b.make(
+        b.moment(y, m, day=1),
+        -pocket,
+        f"NEFT-CR-ALLOWANCE-REF{b.rng.randint(10**9, 10**10 - 1)}",
+        "Allowance",
+        primary_acc,
+    )
+    result.transactions.append(inc_tx)
+    add_truth(inc_tx, "income", False, True)
+
+    max_day = 10 if target_cause == "seasonal_or_timing" else None
+
+    # Base merchants for target month
+    for merch in MERCHANTS:
+        if target_cause in ("more_frequent", "overlapping") and merch.code == "SWIGGY":
+            count = b.rng.randint(16, 22)
+        elif target_cause == "recurring_change" and merch.code == "RENT":
+            continue
+        elif target_cause == "miscategorization" and merch.code == "BLINKIT":
+            continue
+        else:
+            count = b.rng.randint(*merch.per_month)
+
+        for _ in range(count):
+            moment = b.moment(y, m, day=b.rng.randint(1, max_day) if max_day else None)
+            tx = _make_merch_tx(merch, moment)
+            tx = tx.model_copy(
+                update={
+                    "category_id": merch.category,
+                    "merchant_normalized": merch.code,
+                }
+            )
+            if profile == "hard" and merch.code in hard_aliases and b.rng.random() < 0.6:
+                tx = tx.model_copy(
+                    update={"merchant_raw": f"POS/DEBIT/{hard_aliases[merch.code]}"}
+                )
+            result.transactions.append(tx)
+            add_truth(tx, merch.category, False, merch.recurring)
+
+    # Injected Causes execution
+    if target_cause == "one_off_large":
+        large_tx = b.spend(LARGE_MERCHANT, b.moment(y, m, day=15), primary_acc)
+        large_tx = large_tx.model_copy(
+            update={
+                "category_id": LARGE_MERCHANT.category,
+                "merchant_normalized": LARGE_MERCHANT.code,
+            }
+        )
+        result.transactions.append(large_tx)
+        add_truth(large_tx, LARGE_MERCHANT.category, False, False, "one_off_large")
+        result.ground_truth_causes.append(
+            InjectedCause(
+                kind="one_off_large",
+                category=LARGE_MERCHANT.category,
+                month=result.target_month,
+                transaction_ids=(large_tx.id,),
+                expected_amount_paise=large_tx.amount_paise,
+                note="Unusually large purchase at CROMA",
+            )
+        )
+    elif target_cause == "recurring_change":
+        rent_hike_paise = 2500_00
+        hike_tx = b.make(
+            b.moment(y, m, day=1),
+            fixed_rent_rupees * 100 + rent_hike_paise,
+            b.narration("RENT"),
+            "Flat rent (revised lease)",
+            primary_acc,
+        )
+        hike_tx = hike_tx.model_copy(
+            update={
+                "category_id": "housing",
+                "merchant_normalized": "RENT",
+            }
+        )
+        result.transactions.append(hike_tx)
+        add_truth(hike_tx, "housing", False, True, "recurring_change")
+        result.ground_truth_causes.append(
+            InjectedCause(
+                kind="recurring_change",
+                category="housing",
+                month=result.target_month,
+                transaction_ids=(hike_tx.id,),
+                expected_amount_paise=rent_hike_paise,
+                note="Monthly rent increase of ₹2,500 upon lease renewal",
+            )
+        )
+    elif target_cause in ("more_frequent", "overlapping"):
+        swiggy_txs = [
+            t.id
+            for t in result.transactions
+            if t.occurred_at.startswith(result.target_month) and "SWIGGY" in (t.merchant_raw or "")
+        ]
+        result.ground_truth_causes.append(
+            InjectedCause(
+                kind="more_frequent",
+                category="food",
+                month=result.target_month,
+                transaction_ids=tuple(swiggy_txs),
+                expected_amount_paise=sum(
+                    t.amount_paise for t in result.transactions if t.id in swiggy_txs
+                ),
+                note="Higher order frequency at Swiggy",
+            )
+        )
+    if target_cause in ("new_merchant", "overlapping"):
+        new_tx = b.spend(NEW_MERCHANT, b.moment(y, m, day=12), primary_acc)
+        new_tx = new_tx.model_copy(
+            update={
+                "category_id": NEW_MERCHANT.category,
+                "merchant_normalized": NEW_MERCHANT.code,
+            }
+        )
+        result.transactions.append(new_tx)
+        add_truth(new_tx, NEW_MERCHANT.category, False, False, "new_merchant")
+        result.ground_truth_causes.append(
+            InjectedCause(
+                kind="new_merchant",
+                category=NEW_MERCHANT.category,
+                month=result.target_month,
+                transaction_ids=(new_tx.id,),
+                expected_amount_paise=new_tx.amount_paise,
+                note=f"First spend at new merchant {NEW_MERCHANT.code}",
+            )
+        )
+    elif target_cause == "miscategorization":
+        misc_tx = b.make(
+            b.moment(y, m, day=18),
+            2450_00,
+            b.narration("BLINKIT"),
+            "Blinkit Quick Delivery",
+            primary_acc,
+        )
+        misc_tx = misc_tx.model_copy(
+            update={
+                "category_id": "travel",
+                "merchant_normalized": "BLINKIT",
+            }
+        )
+        result.transactions.append(misc_tx)
+        add_truth(misc_tx, "travel", False, False, "miscategorization")
+        result.ground_truth_causes.append(
+            InjectedCause(
+                kind="miscategorization",
+                category="travel",
+                month=result.target_month,
+                transaction_ids=(misc_tx.id,),
+                expected_amount_paise=2450_00,
+                note="Blinkit spend miscategorized under travel instead of shopping",
+            )
+        )
+    elif target_cause == "duplicate_or_refund":
+        first_at = b.moment(y, m, day=14)
+        orig = b.spend(MERCHANTS[1], first_at, primary_acc)
+        orig = orig.model_copy(
+            update={
+                "category_id": MERCHANTS[1].category,
+                "merchant_normalized": MERCHANTS[1].code,
+            }
+        )
+        dup = b.make(
+            first_at + timedelta(minutes=2),
+            orig.amount_paise,
+            orig.merchant_raw,
+            orig.description,
+            primary_acc,
+        )
+        dup = dup.model_copy(
+            update={
+                "category_id": MERCHANTS[1].category,
+                "merchant_normalized": MERCHANTS[1].code,
+                "is_duplicate_of": orig.id,
+            }
+        )
+        refund = b.make(
+            first_at + timedelta(days=2),
+            -orig.amount_paise,
+            f"REFUND-{orig.merchant_raw}",
+            "Refund for duplicate charge",
+            primary_acc,
+        )
+        refund = refund.model_copy(
+            update={
+                "category_id": MERCHANTS[1].category,
+                "merchant_normalized": MERCHANTS[1].code,
+            }
+        )
+        result.transactions.extend([orig, dup, refund])
+        add_truth(orig, MERCHANTS[1].category, False, False)
+        add_truth(dup, MERCHANTS[1].category, False, False, "duplicate_or_refund")
+        add_truth(refund, MERCHANTS[1].category, False, False)
+        result.ground_truth_causes.append(
+            InjectedCause(
+                kind="duplicate_or_refund",
+                category=MERCHANTS[1].category,
+                month=result.target_month,
+                transaction_ids=(orig.id, dup.id, refund.id),
+                expected_amount_paise=orig.amount_paise,
+                note="Duplicate charge with matching refund",
+            )
+        )
+    elif target_cause == "seasonal_or_timing":
+        result.ground_truth_causes.append(
+            InjectedCause(
+                kind="seasonal_or_timing",
+                category=None,
+                month=result.target_month,
+                transaction_ids=(),
+                expected_amount_paise=0,
+                note="Partial month effect (only 10 days)",
+            )
+        )
+    elif target_cause == "no_cause":
+        result.ground_truth_causes.append(
+            InjectedCause(
+                kind="no_cause",
+                category=None,
+                month=result.target_month,
+                transaction_ids=(),
+                expected_amount_paise=0,
+                note="Normal unstructured spending variance",
+            )
+        )
+
+    result.transactions.sort(key=lambda t: (t.occurred_at, t.id))
+    return result

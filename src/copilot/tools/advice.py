@@ -15,6 +15,7 @@ from pydantic import Field
 from copilot.audit.events import record_event
 from copilot.core.advice import load_templates, render_template, validate_advice
 from copilot.core.errors import ErrorCode, ToolFailure
+from copilot.core.timeutil import to_utc_iso
 from copilot.llm.client import StructuredOutputError, structured_call
 from copilot.models.findings import AdviceDraft, AdviceDraftBatch, Finding
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
@@ -94,7 +95,7 @@ def draft_advice_handler(ctx: "ExecutionContext", findings: list[Finding]) -> Dr
     items = []
     run_id = ctx.run_id or "run_0"
     clock_iso = (
-        ctx.clock.isoformat().replace("+00:00", "Z") if ctx.clock else "1970-01-01T00:00:00Z"
+        to_utc_iso(ctx.clock) if ctx.clock else "1970-01-01T00:00:00Z"
     )
 
     for finding in findings:
@@ -188,11 +189,11 @@ def decide_advice_handler(
     old_status = row[0]
     if old_status != "draft":
         raise ToolFailure(
-            ErrorCode.VALIDATION_ERROR, f"Advice '{advice_id}' is already {old_status}."
+            ErrorCode.INVALID_INPUT, f"Advice '{advice_id}' is already {old_status}."
         )
 
     clock_iso = (
-        ctx.clock.isoformat().replace("+00:00", "Z") if ctx.clock else "1970-01-01T00:00:00Z"
+        to_utc_iso(ctx.clock) if ctx.clock else "1970-01-01T00:00:00Z"
     )
 
     ctx.conn.execute(

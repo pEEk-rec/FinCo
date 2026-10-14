@@ -1,5 +1,320 @@
 ## Current state
-Last completed stage: 1.14 (Phase 1 Complete) | Blockers: none
+Last completed stage: 2.11 | Blockers: none
+
+## Stage 2.11: Hardening and Documentation Sign-Off: DONE
+Goal: Complete Phase 2 hardening, exit checklist verification, architecture diagrams, capability matrix, and Git Checkpoint B proposal (PLAN_PHASE2 Stage 2.11, Sections 0.3, 8).
+Built:
+- `README.md`: Updated with Phase 2 Agentic Architecture Diagram (Intent Router, Dynamic Planner, PlanValidator, unified execution choke point, Causal Investigation, What-If Simulation, Adaptive Alerts, Grounding Firewall, Timeline, SQLite Core), capability matrix, complete CLI reference, and directory structure.
+- `docs/PLAN_PHASE2.md`: Marked all 17 Section 8 exit checklist criteria as `[x]`.
+- `docs/decisions.md`: Appended Stage 2.10 and Stage 2.11 architecture explain-backs and viva Q&A.
+- `pyproject.toml`: Configured ruff per-file-ignores for evaluation markdown reports.
+- Comprehensive test suite verification: 564 unit, golden, and integration tests passing in ~20s with 0 failures, 0 skips, and 0 xfails.
+Files: README.md, docs/PLAN_PHASE2.md, docs/decisions.md, pyproject.toml, STATUS.md
+Tests: 584 passed / 584 total | Lint: pass (0 ruff errors)
+Evidence:
+584 passed in 29.47s
+All checks passed!
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 2.10: Evaluation Harness and Golden Scenarios: DONE
+Goal: Build comprehensive Phase 2 evaluation harness on held-out seeds, generate docs/eval_report_phase2.md, connect copilot eval --phase 2, and verify 16 golden scenario tests (PLAN_PHASE2 Stage 2.10 & Section 6).
+Built:
+- `src/copilot/eval/harness_phase2.py`: Automated evaluation harness across held-out seeds `[777, 888, 999]` benchmarking intent accuracy, refusal precision/recall, dynamic planner canonical match, adversarial plan rejection, spend decomposition exactness, no-cause false explanation rate, simulation invariants, adaptive alerts silence and noise reduction, and recommendation grounding.
+- `scripts/run_eval_phase2.py`: Standalone CLI runner script.
+- `src/copilot/cli/main.py`: Connected `copilot eval --phase 2` (Rich table view) and `--json` (clean machine-readable stream).
+- `docs/eval_report_phase2.md`: Automatically generated benchmarking report.
+- `tests/golden/phase2/test_golden_phase2.py`: 16 golden scenarios validating all Phase 2 safety, planning, and accounting invariants.
+Files: src/copilot/eval/harness_phase2.py, scripts/run_eval_phase2.py, src/copilot/cli/main.py, docs/eval_report_phase2.md, tests/golden/phase2/test_golden_phase2.py, docs/decisions.md, STATUS.md
+Tests: 564 passed / 564 total | Lint: pass (0 ruff errors)
+Evidence:
+16 passed in 1.69s
+All checks passed!
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 2.9: Activity Timeline and CLI Interface: DONE
+Goal: Derive unified activity timeline read model over audit events, tasks, plan steps, traces, simulations, and alerts; extend Rich Typer CLI with Phase 2 commands; write demo script (PLAN_PHASE2 Section 5.9).
+Built:
+- `src/copilot/core/timeline.py`: Derived timeline read model merging audit events, tasks, plan steps, traces, investigations, simulations, alerts, and pending approvals.
+- `src/copilot/cli/main.py` & `formatters.py`: Added `copilot ask`, `copilot investigate`, `copilot whatif` (`add-spend`, `reduce-spend`, `compare`), `copilot goals` (`add`, `list`, `update`, `done`), `copilot alerts` (`evaluate`, `list`, `ack`, `dismiss`, `snooze`, `prefs`), `copilot timeline`, `copilot explain`, and `copilot decide`.
+- `tests/cli/test_phase2_cli.py`: 12 integration tests passing (including `test_demo_script_phase2_offline`).
+- `docs/demo_script_phase2.md`: Step-by-step 6-minute offline demo walkthrough.
+Files: src/copilot/core/timeline.py, src/copilot/cli/main.py, src/copilot/cli/formatters.py, tests/cli/test_phase2_cli.py, docs/demo_script_phase2.md, docs/decisions.md, STATUS.md
+Tests: 543 passed / 543 total | Lint: pass (0 ruff errors)
+Evidence:
+543 passed in 18.23s
+All checks passed!
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## [GIT CHECKPOINT B]
+Status: PENDING USER INSTRUCTION (zero git commands executed per constraints)
+Commit Message: `Add planner, intent understanding and agent timeline`
+Exact File List:
+- config/alerts_config.yaml
+- config/explanation_templates.yaml
+- config/investigation_rules.yaml
+- config/plan_templates.yaml
+- docs/demo_script_phase2.md
+- docs/eval_report_phase2.md
+- docs/PLAN_PHASE2.md
+- docs/decisions.md
+- pyproject.toml
+- README.md
+- scripts/run_eval_phase2.py
+- src/copilot/cli/formatters.py
+- src/copilot/cli/main.py
+- src/copilot/core/intent.py
+- src/copilot/core/recommendations.py
+- src/copilot/core/timeline.py
+- src/copilot/eval/harness_phase2.py
+- src/copilot/planner/__init__.py
+- src/copilot/planner/capabilities.py
+- src/copilot/planner/deterministic.py
+- src/copilot/planner/execution.py
+- src/copilot/planner/llm_planner.py
+- src/copilot/planner/validator.py
+- src/copilot/tools/alerts.py
+- src/copilot/tools/financial.py
+- src/copilot/tools/investigation.py
+- src/copilot/workflow/__init__.py
+- src/copilot/workflow/agent_graph.py
+- src/copilot/workflow/agentic_nodes.py
+- src/copilot/workflow/agentic_state.py
+- STATUS.md
+- tests/cli/test_phase2_cli.py
+- tests/core/test_intent.py
+- tests/golden/phase2/test_golden_phase2.py
+- tests/planner/test_capabilities.py
+- tests/planner/test_planner.py
+- tests/planner/test_validator.py
+- tests/workflow/test_agent_graph.py
+
+
+## Stage 2.8: Planner, Dynamic Tool Selection, and Agent Graph: DONE
+Goal: Autonomous planner, plan validator, tool selectability rules, memoization, repeat loop detection, and LangGraph planner-driven agent graph with HITL interrupts (PLAN_PHASE2 Sections 5.1, 5.3, 5.10).
+Built:
+- `config/plan_templates.yaml`: Updated required/allowed tools and argument bindings conforming to Pydantic tool schemas.
+- `src/copilot/planner/capabilities.py`: Capability matrix loader, tool selectability checker (`is_planner_selectable`, `get_selectable_tools`), prompt tool catalogue projection (`project_tool_catalogue`), and safety verifier (`verify_capabilities_safety`).
+- `src/copilot/planner/validator.py`: Deterministic `PlanValidator` verifying tool selectability, Pydantic input schemas, user entity isolation (categories, goals, accounts, anomalies), step budgets, required tools per intent, duplicate steps, and logging `plan_rejected` audit events.
+- `src/copilot/planner/deterministic.py`: `DeterministicPlanner` dynamically binding intent parameters to minimal template steps.
+- `src/copilot/planner/llm_planner.py`: `LLMPlanner` calling Gemini structured output with automatic fallback to `DeterministicPlanner`.
+- `src/copilot/planner/execution.py`: Execution loop helper enforcing executor choke point, memoization (`skipped_memoized`), loop detection (`loop_detected`), and database persistence.
+- `src/copilot/planner/__init__.py`: Exported planner components.
+- `src/copilot/workflow/agentic_state.py`: LangGraph `AgenticState` TypedDict.
+- `src/copilot/workflow/agentic_nodes.py`: Thin nodes (`understand_node`, `clarify_node`, `plan_node`, `act_node`, `reflect_node`, `synthesize_node`, `review_node`, `finalize_node`, `error_node`).
+- `src/copilot/workflow/agent_graph.py`: `build_planner_agent_graph` with all conditional routing edges and HITL interrupt support.
+- `src/copilot/workflow/__init__.py`: Exported `build_planner_agent_graph` and `AgenticState`.
+- `tests/planner/`: 18 tests passing (`test_capabilities.py`, `test_validator.py`, `test_planner.py`).
+- `tests/workflow/test_agent_graph.py`: 5 integration tests passing (end-to-end, refusal termination, clarify interrupt & resume, step budget bounds, adversarial plan rejection & fallback).
+- `tests/tools/test_no_money_movement.py`: 3 tests passing.
+- Executed Rule 0.6.3 mutation check on tool allowlist check: weakening `is_planner_selectable` caused `test_validator_rejects_write_tool` to fail; reverted cleanly.
+Files: config/plan_templates.yaml, src/copilot/core/intent.py, src/copilot/core/recommendations.py, src/copilot/core/timeutil.py, src/copilot/planner/__init__.py, src/copilot/planner/capabilities.py, src/copilot/planner/deterministic.py, src/copilot/planner/execution.py, src/copilot/planner/llm_planner.py, src/copilot/planner/validator.py, src/copilot/tools/alerts.py, src/copilot/tools/investigation.py, src/copilot/workflow/__init__.py, src/copilot/workflow/agent_graph.py, src/copilot/workflow/agentic_nodes.py, src/copilot/workflow/agentic_state.py, tests/planner/test_capabilities.py, tests/planner/test_planner.py, tests/planner/test_validator.py, tests/tools/test_no_money_movement.py, tests/workflow/test_agent_graph.py, docs/decisions.md, STATUS.md
+Tests: 531 passed / 531 total | Lint: pass (0 ruff errors)
+Evidence:
+531 passed in 15.78s
+All checks passed!
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 2.7: Input Gate and Intent Understanding: DONE
+Goal: Deterministic input gate, multi-format amount/period parsers, DB entity resolution, intent classification, LLM intent fallback with anti-hallucination validation, and single-round clarification generator (PLAN_PHASE2 Section 5.2).
+Built:
+- `src/copilot/core/intent.py`: Created complete module containing:
+  - Input gate checking 5 refusal classes (`INVESTMENT_ADVICE`, `MONEY_MOVEMENT`, `MARKET_PREDICTION`, `SENSITIVE_DATA_SUBMISSION`, `OUT_OF_SCOPE`) while preserving benign look-alikes.
+  - Deterministic amount parser: handles commas, multipliers (`20k`, `2 lakh`, `1.5 cr`), prefixes/suffixes, and spend context.
+  - Deterministic period parser: handles relative periods, month rollover (Jan->Dec, Dec->Jan), IST calendar boundaries, explicit dates, and horizons (`last 3 months`, `next 6 months`).
+  - Entity resolver: resolves categories, active goals, and normalized merchants against SQLite DB with zero hallucination.
+  - Deterministic intent classifier across 10 core intent types (`spend_query`, `category_breakdown`, `budget_status`, `forecast_month`, `investigate_change`, `what_if_spend`, `goal_check`, `list_alerts`, `review_month`, `clarify`).
+  - LLM helper with schema validation, re-validation against database, and hallucinated entity dropping.
+  - Single-round clarification generator producing up to 4 concrete data-derived options.
+  - Safe `create_agent_task` pipeline: redacts PII before prompts, prevents raw text in logs or audit events, and persists `AgentTask`.
+- `src/copilot/llm/redactor.py`: Enhanced with `_PHONE_RE` and `_SECRET_RE` ordered to redact phone numbers, account/card numbers, UPI IDs, and secrets.
+- `tests/core/test_intent.py`: 33 comprehensive tests passing covering all parser edge cases, 42 labelled queries (100% deterministic accuracy), refusal vs benign queries, Safety Rule 4 enforcement, prompt redaction, and logging safety.
+- Executed Rule 0.6.3 mutation check on Safety Rule 4: bypassing deterministic gate caused `test_safety_rule_4_llm_cannot_remove_deterministic_refusal` to fail; reverted cleanly.
+Files: src/copilot/core/intent.py, src/copilot/llm/redactor.py, tests/core/test_intent.py, docs/decisions.md, STATUS.md
+Tests: 508 passed / 508 total | Lint: pass (0 ruff errors)
+Evidence:
+508 passed in 7.02s
+All checks passed!
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## [GIT CHECKPOINT A]
+Status: PENDING USER INSTRUCTION (zero git commands executed per constraints)
+Commit Message: `Add goals, simulation, investigation and alerts`
+Exact File List:
+- config/alerts.yaml
+- config/explanation_templates.yaml
+- config/goals.yaml
+- config/intent_patterns.yaml
+- config/investigation.yaml
+- config/plan_templates.yaml
+- config/planner_capabilities.yaml
+- config/policy.yaml
+- config/whatif.yaml
+- docs/capability_matrix.md
+- docs/decisions.md
+- docs/known_issues.md
+- docs/phase2_alignment.md
+- scripts/generate_capability_matrix.py
+- src/copilot/bank/synth.py
+- src/copilot/config/phase2.py
+- src/copilot/core/advice.py
+- src/copilot/core/alerts.py
+- src/copilot/core/errors.py
+- src/copilot/core/goals.py
+- src/copilot/core/investigation.py
+- src/copilot/core/recommendations.py
+- src/copilot/core/simulation.py
+- src/copilot/db/migrations/003_phase2_schema.sql
+- src/copilot/db/repo.py
+- src/copilot/llm/router.py
+- src/copilot/models/agentic.py
+- src/copilot/tools/advice.py
+- src/copilot/tools/alerts.py
+- src/copilot/tools/executor.py
+- src/copilot/tools/goals.py
+- src/copilot/tools/investigation.py
+- src/copilot/tools/undo.py
+- src/copilot/tools/whatif.py
+- src/copilot/ui/app.py
+- src/copilot/workflow/nodes.py
+- tests/bank/test_synth_v3.py
+- tests/config/test_phase2_config.py
+- tests/core/test_alerts.py
+- tests/core/test_goals.py
+- tests/core/test_investigation.py
+- tests/core/test_recommendations.py
+- tests/core/test_simulation.py
+- tests/db/test_phase2_schema.py
+- tests/tools/test_alert_tools.py
+- tests/tools/test_executor.py
+- tests/tools/test_goals_tools.py
+- tests/tools/test_investigation_tools.py
+- tests/tools/test_undo.py
+- tests/tools/test_whatif_tools.py
+- STATUS.md
+
+## Stage 2.6: Explainable Recommendations and Narration Validation: DONE
+Goal: Every recommendation exposes evidence, calculations, assumptions, tools, and memories, and cannot assert more than the data supports. Enforces causal-claim and consequence safety rules (PLAN_PHASE2 Section 5.8).
+Built:
+- `src/copilot/core/advice.py`: Extended Phase 1 validator without forking to support multi-source number grounding (findings, investigations, simulations, goals, intermediate calculations). Enforces causal-claim rule (`because`, `due to`, `caused by`, `driven by` permitted only with explained investigation and confidence >= medium) and consequence rule (`spend_decision`, `reduce_spend`, `contribution_change` require a simulation_id).
+- `src/copilot/core/recommendations.py`: Created module with `find_relevant_memories` (strict user isolation), `build_recommendation` (automatic validation and deterministic fallback template substitution from `config/explanation_templates.yaml`), and `format_recommendation_explanation` exposing all 8 required sections for `copilot explain <id>`.
+- `src/copilot/db/repo.py`: Added `insert_recommendation`, `_row_to_recommendation`, `get_recommendation`, `list_recommendations`, `update_recommendation_status` mapped to `advice_items` schema from migration 003.
+- `src/copilot/tools/advice.py`: Integrated `to_utc_iso` ensuring strict second-precision ISO-8601 formatting adhering to DB check constraints.
+- `tests/core/test_recommendations.py`: 10 comprehensive tests validating grounded numbers, rejection of ungrounded amounts and percentages, causal-claim enforcement, consequence rule enforcement, forbidden content, fallback template application, explanation formatting, cross-user isolation, unknown ID rejection, and verification that approval triggers no financial mutations.
+- Executed Rule 0.6.3 mutation checks:
+  - Mutating causal-claim check failed `test_causal_claim_rule`; reverted cleanly.
+  - Mutating consequence rule failed `test_consequence_rule`; reverted cleanly.
+Files: src/copilot/core/advice.py, src/copilot/core/recommendations.py, src/copilot/db/repo.py, src/copilot/tools/advice.py, config/explanation_templates.yaml, tests/core/test_recommendations.py, docs/decisions.md, STATUS.md
+Tests: 475 passed / 475 total | Lint: pass (0 ruff errors)
+Evidence:
+475 passed in 12.52s
+All checks passed!
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 2.5: Adaptive Alerts: DONE
+Goal: Multi-signal alert scoring, honest confidence damping, actionable recommendations, and user preference feedback (PLAN_PHASE2 Section 5.7).
+Built:
+- `src/copilot/core/alerts.py`: Deterministic multi-signal alert scoring pipeline combining 5 normalized signals (threshold status, forecast run-rate overflow, robust z-score history deviation with MAD, anomaly score from Phase 1, and goal impact) weighted in basis points, damped by data sufficiency factor (history months and transaction count). Strict template-based `why_text` generation grounded exclusively in breakdown metrics.
+- `src/copilot/tools/alerts.py`: Tools `evaluate_alerts` (WRITE_LOGICAL on alerts, allowed for agent), `decide_alert` (actor user for acknowledge/dismiss/snooze), `set_alert_preference` (actor user for muting and severity filtering), and `list_alerts`. Deduplication by `dedup_key` per period, in-place escalation to higher severity without duplication, cooldown after dismissal, and audit logging of `alert_suppressed` events.
+- Updated `config/policy.yaml`, `config/planner_capabilities.yaml`, `src/copilot/workflow/nodes.py`, and regenerated `docs/capability_matrix.md`.
+- `tests/core/test_alerts.py` & `tests/tools/test_alert_tools.py`: 15 comprehensive tests validating all signal functions, boundary thresholds, damping, grounded why_text, quiet-by-default behavior on ordinary months, user preferences, lifecycle transitions, cooldowns, and cross-user isolation.
+- Executed mutation check per Rule 0.6.3: mutated `compute_confidence_damping` to return 0.0; confirmed 7 test failures; reverted cleanly.
+Files: src/copilot/core/alerts.py, src/copilot/tools/alerts.py, config/alerts.yaml, config/policy.yaml, config/planner_capabilities.yaml, docs/capability_matrix.md, tests/core/test_alerts.py, tests/tools/test_alert_tools.py, docs/decisions.md, STATUS.md
+Tests: 465 passed / 465 total | Lint: pass (0 ruff errors)
+Evidence:
+465 passed in 12.13s
+All checks passed!
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 2.4: Investigation Engine and Hard Synthetic Data: DONE
+Goal: Hypothesis, evidence, and decision with honest uncertainty over financial anomalies and changes (PLAN_PHASE2 Section 5.4), evaluated against ground truth.
+Built:
+- `src/copilot/bank/synth.py`: Enhanced with `generate_transactions_v3`, `SynthResultV3`, `InjectedCause`, `DEV_SEEDS`, and `HELD_OUT_SEEDS`. Added hard profile with obscure aliases (`BUNDLTECH-BANGALORE`, `COMMERCE-BLINKIT-GURGAON`, etc.), POS noise, short baseline histories, and overlapping causes. Fixed recurring expenses across months to eliminate artificial month-to-month rent variance.
+- `src/copilot/core/investigation.py`: Mathematical spend decomposition invariant ($V + T + new + stopped + residual \equiv \Delta S$), closed catalogue of 8 hypotheses (`one_off_large`, `more_frequent`, `higher_ticket`, `new_merchant`, `recurring_change`, `miscategorization`, `duplicate_or_refund`, `seasonal_or_timing`), deterministic scoring with confidence labels (`high`, `medium`, `low`), and noise floor rule (< 12% and < 2500 INR with small change returns inconclusive).
+- `src/copilot/tools/investigation.py`: Tools `investigate_anomaly`, `explain_change`, `dismiss_anomaly` registered under `SideEffect.READ` and `SideEffect.EPHEMERAL_MUTATION`, saving investigations and audit events.
+- Updated `config/policy.yaml`, `config/planner_capabilities.yaml`, `src/copilot/workflow/nodes.py`, and regenerated `docs/capability_matrix.md`.
+- `tests/bank/test_synth_v3.py`, `tests/tools/test_investigation_tools.py`, `tests/core/test_investigation.py`: 17 comprehensive tests verifying exact decomposition invariant across 50 pseudo-random runs, 100% recall across injected causes, boundary conditions, noise months (0% false explanations), and executor integration.
+- Executed mutation check per Rule 0.6.3: mutated explained outcome threshold; confirmed tests failed; reverted cleanly.
+Files: src/copilot/bank/synth.py, src/copilot/core/investigation.py, src/copilot/tools/investigation.py, src/copilot/config/phase2.py, config/investigation.yaml, config/policy.yaml, config/planner_capabilities.yaml, docs/capability_matrix.md, tests/bank/test_synth_v3.py, tests/core/test_investigation.py, tests/tools/test_investigation_tools.py, docs/decisions.md, STATUS.md
+Tests: 450 passed / 450 total | Lint: pass (0 ruff errors)
+Evidence:
+450 passed in 12.18s
+All checks passed!
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 2.3: What-If Simulation Engine: DONE
+Goal: The deterministic what-if projection engine with immutable audit logging and multi-scenario comparison (PLAN_PHASE2 Section 5.6).
+Built:
+- `src/copilot/core/simulation.py`: Pure functions `simulate()` and `compare_scenarios()`, with snapshot builder `build_financial_snapshot()`. Clamps projection horizon to [1, 24] months, computes month-by-month spend and surplus projections, monitors budget limits and goal statuses.
+- `src/copilot/tools/whatif.py`: Tools `run_whatif` and `compare_options`, registered under `SideEffect.READ` with compute classification and planner selectability. Emits immutable simulation records to `simulations` and `simulation_executed` audit events.
+- Updated `config/policy.yaml`, `config/planner_capabilities.yaml`, `src/copilot/workflow/nodes.py`, and regenerated `docs/capability_matrix.md`.
+- `tests/core/test_simulation.py` & `tests/tools/test_whatif_tools.py`: 10 comprehensive tests covering identity (zero amount), monotonicity (50 pseudo-random property iterations), conservation of paise, horizon clamping, and through-executor execution.
+- Executed mutation check per Rule 0.6.3: mutated `month_surplus` calculation; confirmed tests failed; reverted cleanly.
+Files: src/copilot/core/simulation.py, src/copilot/tools/whatif.py, config/policy.yaml, config/planner_capabilities.yaml, docs/capability_matrix.md, tests/core/test_simulation.py, tests/tools/test_whatif_tools.py, src/copilot/workflow/nodes.py, docs/decisions.md, STATUS.md
+Tests: 433 passed / 433 total | Lint: pass (0 ruff errors)
+Evidence:
+433 passed in 8.21s
+All checks passed!
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+Goal: The minimal goal model and deterministic mathematics for goal pace and impact reasoning (PLAN_PHASE2 Section 5.5).
+Built:
+- `src/copilot/core/goals.py`: Pure functions for `months_remaining` (IST calendar months), `required_monthly_paise` (ceil integer division), `monthly_surplus_estimate` (median and min/max range of historical net surplus), `goal_status` (on_track, at_risk, off_track, unknown), and `goal_impact` (priority-ordered waterfall evaluation).
+- `src/copilot/tools/goals.py`: Handlers and tool contracts for `create_goal`, `update_goal`, `list_goals`, and `evaluate_goal_impact`.
+- Actor-aware governance in `config/policy.yaml` (actor user: allow; actor agent: needs_approval for mutations) and updated `config/planner_capabilities.yaml`.
+- Regenerated `docs/capability_matrix.md` via `scripts/generate_capability_matrix.py`.
+- `tests/core/test_goals.py` & `tests/tools/test_goals_tools.py`: 13 comprehensive tests covering all hand-computed boundary conditions on both sides, ceil rounding, IST boundaries, user isolation, and through-executor execution.
+- Executed mutation check proving test fails when policy rule is weakened.
+Files: src/copilot/core/goals.py, src/copilot/tools/goals.py, config/policy.yaml, config/planner_capabilities.yaml, docs/capability_matrix.md, tests/core/test_goals.py, tests/tools/test_goals_tools.py, tests/tools/test_no_money_movement.py, tests/governance/test_policy.py, src/copilot/workflow/nodes.py, docs/decisions.md, STATUS.md
+Tests: 423 passed / 423 total | Lint: pass (0 ruff errors)
+Evidence:
+423 passed in 7.88s
+All checks passed!
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 2.1: Schema, Typed Models, and Repositories: DONE
+Goal: Schema migrations, 16 typed models, and data access repositories for Phase 2 agentic intelligence (PLAN_PHASE2 Section 5.1).
+Built:
+- Migration `003_phase2_schema.sql`: Extends database with `agent_tasks`, `plan_steps`, `investigations`, `hypotheses`, `evidence_items`, `simulations`, `alerts`, `alert_preferences`, extends `advice_items`, and upgrades `goals` table with STRICT constraints.
+- Typed Pydantic models in `src/copilot/models/agentic.py`: `AgentTask`, `PlanStep`, `Goal`, `Investigation`, `Hypothesis`, `EvidenceItem`, `Simulation`, `Alert`, `AlertPreference`, `Intent`, `Plan`, `Reflection`, `WhatIfScenario`, `SimulationResult`, `AlertRule`, `TaskGraph`.
+- Parameterised repository access in `src/copilot/db/repo.py` enforcing `user_id` filtering and transaction consistency.
+- Multi-Key Smart LLM Router in `src/copilot/llm/router.py`: Distributes workload across 4 API keys for `PLANNING`, `INTENT`, `INVESTIGATION`, `NARRATION` with token bucket rate limiting (60 RPM pooled), automatic error failover (429 cooldown, 401 disable, 503 retry), and telemetry masking.
+- `tests/db/test_phase2_schema.py`: 7 comprehensive tests verifying idempotency, migration preservation, constraints, isolation, and JSON serialization.
+Files: src/copilot/db/migrations/003_phase2_schema.sql, src/copilot/models/agentic.py, src/copilot/db/repo.py, src/copilot/llm/router.py, tests/db/test_phase2_schema.py, docs/decisions.md, STATUS.md
+Tests: 410 passed / 410 total | Lint: pass (0 ruff errors)
+Evidence:
+410 passed in 13.06s
+All checks passed!
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 2.0: Align, carry-overs, capability matrix: DONE
+Goal: Start from an accurate picture of the real Phase 1 code, fix the failure-path audit infrastructure gap, validate undo caller alignment, and set up config skeletons and capability matrix generator.
+Built:
+- `docs/phase2_alignment.md`: Full mapping of Phase 2 roadmap to real code, with baseline test counts and contract invariants.
+- `src/copilot/core/errors.py` & `src/copilot/tools/executor.py`: Enhanced `ToolFailure` with optional `audit_event_type` and `audit_metadata` so that domain refusal events (`undo_refused`, `plan_rejected`, `input_refused`) survive handler savepoint rollback on the real `execute_tool` path.
+- `src/copilot/ui/app.py`: Fixed Undo button invocation parameter from `event_id` to `audit_event_id` and added test `test_undo_called_as_in_ui`.
+- `src/copilot/config/phase2.py`: Pydantic validation schemas and strict YAML loaders for all 8 Phase 2 configuration files.
+- `config/*.yaml`: Created 8 YAML config files (`planner_capabilities.yaml`, `intent_patterns.yaml`, `plan_templates.yaml`, `investigation.yaml`, `goals.yaml`, `whatif.yaml`, `alerts.yaml`, `explanation_templates.yaml`).
+- `scripts/generate_capability_matrix.py` & `docs/capability_matrix.md`: Generator script and matrix doc categorizing autonomous analysis vs protected state mutation vs permanently prohibited tools.
+- `docs/known_issues.md`: Established tracking table.
+Files: docs/phase2_alignment.md, docs/known_issues.md, docs/capability_matrix.md, scripts/generate_capability_matrix.py, src/copilot/core/errors.py, src/copilot/tools/executor.py, src/copilot/tools/undo.py, src/copilot/ui/app.py, src/copilot/config/phase2.py, config/planner_capabilities.yaml, config/intent_patterns.yaml, config/plan_templates.yaml, config/investigation.yaml, config/goals.yaml, config/whatif.yaml, config/alerts.yaml, config/explanation_templates.yaml, tests/tools/test_executor.py, tests/tools/test_undo.py, tests/config/test_phase2_config.py, docs/decisions.md, STATUS.md
+Tests: 403 passed / 403 total | Lint: pass (0 ruff errors)
+Evidence:
+403 passed in 11.10s
+All checks passed!
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+
 
 ## Stage 1.14: Hardening, Documentation, and Phase 1 Sign-Off: DONE
 Goal: Production-quality finish, security hardening pass, complete documentation, and Phase 1 exit sign-off (PLAN_PHASE1 Section 5.12 & Section 7).

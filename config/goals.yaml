@@ -1,0 +1,9 @@
+# Goal-Aware Reasoning Configuration (PLAN_PHASE2 Section 5.5)
+
+max_horizon_months: 60
+surplus_lookback_months: 3
+min_history_months_for_surplus: 2
+allowed_priorities:
+  - 1
+  - 2
+  - 3

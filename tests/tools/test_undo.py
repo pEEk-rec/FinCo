@@ -286,5 +286,45 @@ def test_undo_through_execute_tool_after_interleaved_edit(conn, exec_ctx):
     last_event = conn.execute(
         "SELECT * FROM audit_events WHERE user_id = 'u1' ORDER BY rowid DESC LIMIT 1"
     ).fetchone()
-    assert last_event["event_type"] == "tool_call"
+    assert last_event["event_type"] == "undo_refused"
     assert "STALE_DATA" in last_event["metadata_json"]
+    assert "state_diverged" in last_event["metadata_json"]
+
+
+def test_undo_called_as_in_ui(conn, exec_ctx):
+    """Verify that calling undo through execute_tool exactly as UI does works cleanly."""
+    T0 = "2026-09-01T10:00:00Z"
+    tx = Transaction(
+        id="tx_ui_1",
+        user_id="u1",
+        account_id="a1",
+        occurred_at=T0,
+        amount_paise=1500,
+        direction="debit",
+        merchant_raw="Swiggy",
+        description="food delivery",
+        category_id="food",
+        category_source="rule",
+        created_at=T0,
+    )
+    insert_transaction(conn, tx)
+
+    # Recategorize through execute_tool
+    re_res = execute_tool(
+        exec_ctx,
+        "recategorize_transaction",
+        {"transaction_id": "tx_ui_1", "new_category_id": "dining"},
+    )
+    assert re_res.ok
+    audit_evt_id = re_res.data.audit_event_id
+
+    # Call undo exactly as UI calls it: execute_tool(ctx, "undo", {"audit_event_id": eid})
+    undo_res = execute_tool(exec_ctx, "undo", {"audit_event_id": audit_evt_id})
+    assert undo_res.ok
+    assert undo_res.data.undone_event_id == audit_evt_id
+
+    # Verified transaction reverted to original food category
+    tx_after = get_transaction(conn, "u1", "tx_ui_1")
+    assert tx_after.category_id == "food"
+    assert tx_after.category_source == "rule"
+

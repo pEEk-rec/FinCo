@@ -1,0 +1,15 @@
+# Explanation Templates and Safety Fallbacks (PLAN_PHASE2 Section 5.8)
+
+recommendation_templates:
+  spend_decision: "Based on your current run-rate of {spent_inr} and simulated monthly surplus of {surplus_inr}, this purchase leaves {remaining_inr} in projected buffer."
+  reduce_spend: "Reducing spend in {category} by {target_reduction_inr} improves your projected surplus to {projected_surplus_inr} and keeps your {goal_name} on track."
+  budget_adjustment: "Your {category} budget of {limit_inr} is projected to be exceeded by {exceed_inr}. Consider adjusting your limit or pacing variable discretionary spend."
+
+fallback_templates:
+  general: "Analysis indicates current spend of {amount_inr} across recorded categories. Review your budgets to maintain cashflow buffer."
+  budget_warning: "Category {category} spend is at {spent_inr} against a budget of {limit_inr} ({percent}% utilized)."
+  investigation_fallback: "Spend in {category} changed by {amount_inr}. Investigation was inconclusive; unexplained change: {unexplained_inr}."
+
+hedged_sentences:
+  inconclusive_investigation: "Could not determine a definitive cause for this spend change; unexplained amount: {unexplained_inr}."
+  insufficient_history: "Insufficient historical baseline data to confirm spending trend or seasonal variation."

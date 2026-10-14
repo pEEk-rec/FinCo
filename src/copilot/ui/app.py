@@ -373,7 +373,7 @@ def render_audit_trail(conn: sqlite3.Connection, user_id: str) -> None:
                 if is_rev:
                     st.success("Reversible")
                     if st.button("Undo", key=f"undo_{eid}"):
-                        u_res = execute_tool(ctx, "undo", {"event_id": eid})
+                        u_res = execute_tool(ctx, "undo", {"audit_event_id": eid})
                         if u_res.ok:
                             st.success("Undone successfully!")
                             st.rerun()

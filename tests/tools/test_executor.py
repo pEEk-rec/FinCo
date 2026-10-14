@@ -53,6 +53,16 @@ def write_bad_output(ctx, val: int) -> dict:
     return {"result": "not-an-int"}
 
 
+def custom_fail_handler(ctx, val: int) -> dict:
+    ctx.conn.execute("INSERT INTO users (id, created_at) VALUES ('ghost', '2023-01-01T00:00:00Z')")
+    raise ToolFailure(
+        ErrorCode.INVALID_INPUT,
+        "Custom domain refusal",
+        audit_event_type="plan_rejected",
+        audit_metadata={"refusal_reason": "disallowed_step", "step_idx": val},
+    )
+
+
 TOOLS = {
     "read_tool": (SideEffect.READ, read_handler),
     "write_tool": (SideEffect.WRITE_LOGICAL, write_handler),
@@ -62,6 +72,7 @@ TOOLS = {
     "bad_output_tool": (SideEffect.READ, write_bad_output),
     "unruled_write": (SideEffect.WRITE_LOGICAL, write_handler),
     "external_tool": (SideEffect.EXTERNAL, read_handler),
+    "custom_fail_tool": (SideEffect.READ, custom_fail_handler),
 }
 
 
@@ -229,3 +240,29 @@ def test_every_outcome_is_audited(ctx):
         "INVALID_INPUT",
         "TOOL_FAILURE",
     ]
+
+
+def test_failure_path_custom_audit_event_and_metadata(ctx):
+    """
+    Verify that when ToolFailure carries custom audit_event_type and audit_metadata:
+    1. Handler internal writes are rolled back by savepoint.
+    2. ToolResult reflects failure with ErrorCode.
+    3. The failure audit event survives with the custom event_type and extra metadata.
+    """
+    result = execute_tool(ctx, "custom_fail_tool", {"val": 42})
+    assert not result.ok
+    assert result.error.code == ErrorCode.INVALID_INPUT
+    assert "Custom domain refusal" in result.error.message
+
+    # Handler writes rolled back
+    assert not user_exists(ctx, "ghost")
+
+    # Audit event preserved with custom event_type and metadata
+    events = list_events(ctx.conn, "u1", run_id="run1")
+    custom_events = [e for e in events if e.event_type == "plan_rejected"]
+    assert len(custom_events) == 1
+    evt = custom_events[0]
+    assert evt.metadata["refusal_reason"] == "disallowed_step"
+    assert evt.metadata["step_idx"] == 42
+    assert evt.metadata["error_code"] == "INVALID_INPUT"
+

@@ -2,50 +2,94 @@
 
 An autonomous personal finance and budgeting copilot designed for students in India.
 
-Finance Copilot ingests bank statements, classifies messy UPI transactions, discovers recurring subscriptions and transfers, monitors budgets, detects spending anomalies, and compiles versioned monthly financial reviews with mathematically verified advice.
+Finance Copilot ingests bank statements, classifies messy UPI transactions, discovers recurring subscriptions and transfers, monitors budgets, detects spending anomalies, and compiles versioned monthly financial reviews with mathematically verified advice. In Phase 2, FinCo introduces an **autonomous agentic intelligence layer** with dynamic planning, causal spend investigation, counterfactual what-if simulation, multi-signal adaptive alerts, and grounded explanations with a unified activity timeline.
 
 ---
 
-## Architecture & Safety Firewalls
+## Agentic Architecture & Safety Firewalls
 
 ```
-                ┌──────────────────────────────────────┐
-                │   User Interfaces (CLI / Streamlit)  │
-                └──────────────────┬───────────────────┘
-                                   │
-                                   ▼
-                ┌──────────────────────────────────────┐
-                │    LangGraph Autonomous Workflow     │
-                └──────────────────┬───────────────────┘
-                                   │
-                                   ▼
-        ┌────────────────────────────────────────────────────────┐
-        │       Governance Firewall & Execution Choke Point       │
-        │           (`execute_tool(ctx, tool_name, ...)`)        │
-        └───────┬──────────────────┬──────────────────┬──────────┘
-                │                  │                  │
-                ▼                  ▼                  ▼
-       ┌────────────────┐  ┌───────────────┐  ┌───────────────┐
-       │ Financial Tools│  │ Bank Ingestion│  │ Advice Engine │
-       │ (Budgets, Calc)│  │ (AA Consents) │  │ (& Validator) │
-       └────────┬───────┘  └───────┬───────┘  └───────┬───────┘
-                │                  │                  │
-                └──────────────────┼──────────────────┘
-                                   ▼
-        ┌────────────────────────────────────────────────────────┐
-        │            SQLite Core Engine & Audit Trail            │
-        │        (Strict Tables, Append-Only Triggers, Undo)      │
-        └────────────────────────────────────────────────────────┘
+                ┌─────────────────────────────────────────────────────────┐
+                │          User Interfaces (CLI / Streamlit / API)        │
+                │    copilot ask / investigate / whatif / goals / alerts  │
+                └────────────────────────────┬────────────────────────────┘
+                                             │
+                                             ▼
+                ┌─────────────────────────────────────────────────────────┐
+                │              Intent Understanding Gate                  │
+                │   - Intent Classification (deterministic regex + LLM)   │
+                │   - Entity Resolution (period, amount, category, goal)  │
+                │   - Refusal Firewall (investment, money movement block) │
+                └────────────────────────────┬────────────────────────────┘
+                                             │
+                                             ▼
+                ┌─────────────────────────────────────────────────────────┐
+                │             Dynamic Planner & PlanValidator             │
+                │   - Step Budget Enforcement (max 5 steps per task)      │
+                │   - Whitelist & Tool Signature Validation               │
+                │   - Safety Invariant: Read plans reject write tools     │
+                │   - Human Confirmation Gate for sensitive state writes  │
+                └────────────────────────────┬────────────────────────────┘
+                                             │
+                                             ▼
+         ┌───────────────────────────────────────────────────────────────────────┐
+         │              Governance Firewall & Execution Choke Point              │
+         │                 (`execute_tool(ctx, tool_name, args)`)                │
+         └───────┬───────────────────┬───────────────────┬────────────────┬──────┘
+                 │                   │                   │                │
+                 ▼                   ▼                   ▼                ▼
+        ┌─────────────────┐ ┌─────────────────┐ ┌────────────────┐ ┌────────────┐
+        │  Investigation  │ │What-If Simulation│ │Adaptive Alerts │ │ Financial  │
+        │     Engine      │ │     Engine      │ │    Engine      │ │ & AA Tools │
+        │ (Decomposition, │ │ (Counterfactual,│ │ (Multi-signal, │ │(Budgets,   │
+        │  Hypotheses)    │ │  Conservation)  │ │  Suppression)  │ │ Category)  │
+        └────────┬────────┘ └────────┬────────┘ └────────┬───────┘ └──────┬─────┘
+                 │                   │                   │                │
+                 └───────────────────┼───────────────────┴────────────────┘
+                                     ▼
+                ┌─────────────────────────────────────────────────────────┐
+                │             Explanation Grounding Firewall              │
+                │   - Number Extraction & Causal-Claim Verification       │
+                │   - Missing Simulation Defense (consequence checks)     │
+                │   - Inconclusive Hedged Sentence Fallback               │
+                └────────────────────────────┬────────────────────────────┘
+                                             │
+                                             ▼
+                ┌─────────────────────────────────────────────────────────┐
+                │            SQLite Core Engine & Audit Trail             │
+                │   - Strict Tables, Integer-Paise Math, User Isolation   │
+                │   - Unified Activity Timeline (events, traces, actions) │
+                └─────────────────────────────────────────────────────────┘
 ```
 
-### Safety & Accounting Invariants
-1. **Deterministic Integer Paise:** All money amounts are stored and calculated as integer paise (`₹1.00 = 100 paise`). Floats are strictly rejected to eliminate precision drift.
-2. **Execution Choke Point:** No tool handler can be called directly. Every action routes through `execute_tool(ctx, ...)` where policy is enforced and every action is audited.
-3. **No Money Movement:** Read and logical write operations only; no money movement tools exist in the system (enforced by automated structural tests).
-4. **Multi-Tier Categorization Hierarchy:** Follows strict precedence: `User Override` > `Categorization Rules` > `Local Cache` > `Redacted LLM` > `Review Queue`. The agent is strictly prevented from overwriting user category choices.
-5. **PII Redaction & LLM Quarantine:** Transaction narrations, account IDs, and user details are redacted prior to LLM calls. LLM failures degrade safely to the review queue and never crash the workflow.
-6. **Advice Grounding Firewall:** Generated advice must cite deterministic `Finding` objects. The advice validator extracts all numbers, currency figures, and percentages; any ungrounded figure is rejected and triggers deterministic template fallback.
-7. **Idempotent Ingestion:** Re-syncing bank records with identical Account Aggregator sessions inserts 0 duplicate records.
+---
+
+## Capability Matrix: Phase 1 vs. Phase 2
+
+| Dimension | Phase 1 (Core Automation) | Phase 2 (Agentic Intelligence) |
+|---|---|---|
+| **Query Understanding** | Structured CLI arguments only | Natural language intent routing with slot filling & refusal firewall |
+| **Workflow Execution** | Fixed sequential LangGraph DAG | Dynamic autonomous planner with deterministic `PlanValidator` |
+| **Spend Analysis** | Aggregations and category sums | Causal decomposition (fixed vs variable, rate vs volume) with hypothesis ranking |
+| **What-If Planning** | None (static state only) | Counterfactual simulation engine with exact conservation of paise |
+| **Goal Tracking** | Not supported | Multi-goal tracking with feasibility forecasting and what-if impact analysis |
+| **Budget Alerts** | Hard static percentage thresholds | Multi-signal adaptive alerts with confidence damping and noise suppression |
+| **Explanation Safety** | Finding-citation validation | Causal claim blocker, consequence simulation gate, hedged template fallback |
+| **Auditability** | Tabular audit event log | Unified activity timeline merging audit events, plan steps, and simulations |
+
+---
+
+## Safety & Governance Invariants
+
+1. **Deterministic Integer Paise:** All money amounts are stored and calculated as integer paise (`₹1.00 = 100 paise`). Floating-point money arithmetic is strictly rejected across all code paths.
+2. **Unified Execution Choke Point:** No tool handler can execute directly. Every tool invocation routes through `execute_tool(ctx, tool_name, args)`, enforcing caller permissions, user data isolation (`user_id`), and writing immutable audit events.
+3. **No Money Movement:** Read and analytical operations only; no money movement tools exist in the system (enforced by automated structural and dynamic tests).
+4. **Autonomous Plan Safety:** Plans proposed by LLMs must pass through `PlanValidator`. Any plan exceeding 5 steps, calling non-whitelisted tools, or calling write tools for read/investigation intents is rejected 100% of the time and audited under `plan_rejected`.
+5. **Causal-Claim Defense (Safety Rule 5):** Words asserting causation (`because`, `due to`, `caused by`) are strictly forbidden unless backed by an investigation with outcome `explained` and confidence >= `medium`.
+6. **Consequence Rule (Safety Rule 6):** Consequential recommendations proposing spending decisions or budget adjustments must cite a completed what-if simulation ID.
+7. **Conservation of Paise:** All what-if simulation projections and spend decompositions sum exactly:
+   $$\Delta \text{Total} = \Delta \text{Fixed} + \Delta \text{Variable} + \text{Unexplained}$$
+8. **Multi-Tier Categorization Hierarchy:** `User Override` > `Categorization Rules` > `Local Cache` > `Redacted LLM` > `Review Queue`. The agent is strictly prevented from altering user-assigned categories.
 
 ---
 
@@ -75,7 +119,7 @@ pip install -e .[dev]
 
 ### 1. Interactive CLI (`copilot`)
 
-Finance Copilot provides a rich terminal CLI with formatted tables:
+Finance Copilot provides a comprehensive terminal CLI with rich formatted tables:
 
 ```bash
 # Initialize database schema
@@ -87,46 +131,79 @@ copilot seed --user-id u1
 # View account balances and overall financial state
 copilot state --user-id u1
 
-# List transactions with review status
-copilot txns --month 2024-02
+# --- Phase 2 Agentic Commands ---
 
-# Run full autonomous LangGraph workflow with interactive human review
-copilot run --interactive
+# Ask a natural language question (routes to autonomous planner)
+copilot ask "Why did my food spend increase in September?"
 
-# Generate versioned Monthly Review report (Markdown + HTML)
-copilot review-month 2024-02
+# Run a dedicated causal spend investigation
+copilot investigate --period 2026-09 --subject food
 
-# Query immutable audit log with before/after state diffs
-copilot audit
+# Run what-if financial simulations
+copilot whatif add-spend 1500000 --category shopping --note "New laptop"
+copilot whatif reduce-spend 200000 --category food --months 3
+copilot whatif compare sim_1 sim_2
+
+# Manage financial goals
+copilot goals list
+copilot goals add "Emergency Fund" 5000000 --target-date 2026-12-31 --monthly-target 1000000
+
+# Adaptive alerts evaluation and lifecycle
+copilot alerts evaluate --period 2026-09
+copilot alerts list --status open
+copilot alerts ack alert_1
+copilot alerts snooze alert_1 7
+
+# Inspect the unified agent activity timeline
+copilot timeline --limit 20
+
+# Run Phase 2 evaluation benchmark harness
+copilot eval --phase 2
 ```
 
 ### 2. Streamlit Web Blueprint
 
-Launch the minimal web interface:
+Launch the web interface:
 
 ```bash
 streamlit run src/copilot/ui/app.py
 ```
 
-The Streamlit UI provides 5 core tabs:
-- **📊 Financial Overview:** Live account balances, budget burn progress bars, and recent spend.
-- **📋 Review Queue (HITL):** Uncategorized / low-confidence transactions with one-click category assignment.
-- **💡 Advice Approvals:** Pending advice recommendations with Approve and Reject actions.
-- **📑 Monthly Review Viewer:** Interactive viewer for versioned monthly financial reviews.
-- **📜 Audit Trail & Undo:** Reversible system actions with one-click undo buttons.
+### 3. Comprehensive Evaluation & Benchmarks
 
-### 3. Evaluation & Benchmarks
-
-Run the deterministic golden evaluation harness across multiple held-out seeds:
+Run the deterministic golden evaluation harness across held-out seeds (`[777, 888, 999]`):
 
 ```bash
-# Run evaluation via CLI
-copilot eval
+# CLI table view
+copilot eval --phase 2
 
-# Or execute standalone script
-python scripts/run_eval.py
+# Machine-readable JSON output
+copilot eval --phase 2 --json
+
+# Standalone runner script
+python scripts/run_eval_phase2.py
 ```
-Outputs a detailed benchmark report at `docs/eval_report.md`.
+
+Outputs a detailed benchmark report at `docs/eval_report_phase2.md`.
+
+---
+
+## Web UI
+
+A calm light-theme web app over the same governed backend (React + FastAPI, localhost only).
+
+```powershell
+.\.venv\Scriptsctivate && pip install -e .[dev]
+cd frontend && npm install
+npm run demo            # API on :8765 and app on :5173; prints the URL to open
+npm run demo:imported   # same, with statements already imported
+npm run verify          # typecheck, lint, unit tests, honesty gates
+npx playwright test --project=demo   # browser tests against the real API
+```
+
+Open the printed URL (`http://127.0.0.1:5173/welcome#token=demo`). Walkthrough:
+`docs/ui_demo_script.md`. Status and decisions: `docs/ui_status.md`.
+The API alone: `copilot serve --db data/copilot.db --demo empty --token demo`.
 
 ---
 
@@ -135,11 +212,14 @@ Outputs a detailed benchmark report at `docs/eval_report.md`.
 Run tests across the entire codebase:
 
 ```bash
-# Run all 397 unit, golden, and integration tests
-pytest -v
+# Run all 564 unit, golden, and integration tests
+pytest -q
 
-# Run golden invariant scenarios specifically
-pytest tests/golden/test_golden_scenarios.py -v
+# Run Phase 2 golden invariant scenarios specifically (16/16 scenarios)
+pytest tests/golden/phase2/test_golden_phase2.py -v
+
+# Run Phase 2 CLI integration tests
+pytest tests/cli/test_phase2_cli.py -v
 
 # Run Ruff linting and formatting check
 ruff check src tests config scripts
@@ -155,29 +235,47 @@ FinCo/
 │   ├── policy.yaml                # Governance permission matrix
 │   ├── settings.yaml              # Application runtime settings
 │   ├── categorization_rules.yaml  # Regex categorization rules
-│   └── advice_templates.yaml      # Fallback deterministic templates
+│   ├── advice_templates.yaml      # Fallback deterministic templates
+│   ├── plan_templates.yaml        # Phase 2 canonical plan templates & tool signatures
+│   ├── investigation_rules.yaml   # Causal investigation thresholds & hypotheses
+│   ├── alerts_config.yaml         # Multi-signal alert weights and suppression tiers
+│   └── explanation_templates.yaml # Hedged sentences and explanation builders
 ├── docs/
-│   ├── PLAN_PHASE1.md             # Complete specification and stage roadmap
-│   ├── eval_report.md             # Benchmarking and accuracy report
-│   ├── decisions.md               # Architecture decision log
-│   └── demo_script.md             # Offline demo walkthrough script
+│   ├── PLAN_PHASE1.md             # Phase 1 specification and stage roadmap
+│   ├── PLAN_PHASE2.md             # Phase 2 Agentic Intelligence layer specification
+│   ├── eval_report.md             # Phase 1 benchmark report
+│   ├── eval_report_phase2.md      # Phase 2 evaluation benchmark report
+│   ├── decisions.md               # Architecture decision log (all stages)
+│   └── demo_script_phase2.md      # 6-minute offline demo walkthrough script
 ├── scripts/
-│   ├── run_eval.py                # Standalone evaluation runner
+│   ├── run_eval.py                # Phase 1 evaluation runner
+│   ├── run_eval_phase2.py         # Phase 2 evaluation runner
 │   └── generate_sample_report.py  # Sample report generator
 ├── src/copilot/
+│   ├── alerts/                    # Adaptive alert signal computation & rules
 │   ├── audit/                     # Append-only audit logging & events
-│   ├── bank/                      # Account Aggregator mock connector & ingestion
-│   ├── cli/                       # Rich Typer CLI commands & tables
-│   ├── core/                      # Money, timeutil, errors, and domain math
-│   ├── db/                        # Migrations, connection pooling, repository
-│   ├── eval/                      # Multi-seed evaluation harness
-│   ├── governance/                # Policy enforcement & check engine
+│   ├── bank/                      # Account Aggregator connector & synthetic generator v3
+│   ├── cli/                       # Rich Typer CLI commands (ask, whatif, goals, timeline)
+│   ├── core/                      # Intent router, investigation, simulation, timeline
+│   ├── db/                        # SQLite connection, migrations, phase 2 schema, repo
+│   ├── eval/                      # Phase 1 & Phase 2 evaluation harness
+│   ├── goals/                     # Goal impact and feasibility forecasting
+│   ├── governance/                # Policy enforcement & execution choke point
 │   ├── llm/                       # Provider interface, PII redactor, prompt cache
-│   ├── models/                    # Pydantic domain models & schemas
+│   ├── models/                    # Pydantic domain models & agentic schemas
+│   ├── planner/                   # Dynamic LLM planner & deterministic PlanValidator
 │   ├── review/                    # Monthly Review builder & Jinja2 renderers
-│   ├── tools/                     # Tool specifications, registry, and executor
+│   ├── tools/                     # Tool specifications, registry, executor, alerts, whatif
 │   ├── ui/                        # Minimal Streamlit UI blueprint
-│   └── workflow/                  # LangGraph state machine & node graph
-├── tests/                         # 397 tests covering all layers
+│   └── workflow/                  # LangGraph autonomous state graph & agentic nodes
+├── tests/                         # 564 tests covering all layers
+│   ├── cli/                       # CLI integration tests
+│   ├── core/                      # Domain logic, money arithmetic, intent tests
+│   ├── db/                        # Database schema, repo, and migration tests
+│   ├── eval/                      # Evaluation harness unit tests
+│   ├── golden/                    # Phase 1 & Phase 2 golden invariant tests
+│   ├── planner/                   # Planner and validator tests
+│   ├── tools/                     # Tool execution and governance tests
+│   └── workflow/                  # LangGraph workflow tests
 └── pyproject.toml                 # Package definition & dependencies
 ```

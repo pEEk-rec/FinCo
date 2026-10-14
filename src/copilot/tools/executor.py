@@ -58,13 +58,22 @@ def _audit(
     approved: bool,
     output: BaseModel | None = None,
     error: ToolError | None = None,
+    event_type: str | None = None,
+    extra_metadata: dict[str, Any] | None = None,
 ) -> None:
     """Write the audit event for one tool call. Does not commit."""
+    meta: dict[str, Any] = {
+        "approved": approved,
+        "error_code": error.code.value if error is not None else None,
+    }
+    if extra_metadata:
+        meta.update(extra_metadata)
+
     record_event(
         ctx.conn,
         user_id=ctx.user_id,
         actor=ctx.actor,
-        event_type=EVENT_TYPE,
+        event_type=event_type or EVENT_TYPE,
         reason=reason,
         run_id=ctx.run_id,
         entity_type="tool",
@@ -72,10 +81,7 @@ def _audit(
         before_data=_json_safe(raw_input),
         after_data=output.model_dump(mode="json") if output is not None else None,
         policy_decision=decision.outcome if decision is not None else None,
-        metadata={
-            "approved": approved,
-            "error_code": error.code.value if error is not None else None,
-        },
+        metadata=meta,
         clock=ctx.clock,
     )
 
@@ -87,11 +93,23 @@ def _fail(
     decision: Decision | None,
     approved: bool,
     error: ToolError,
+    event_type: str | None = None,
+    extra_metadata: dict[str, Any] | None = None,
 ) -> ToolResult:
     """Audit a failed or blocked call in its own savepoint and return the failure result."""
     try:
         with savepoint(ctx.conn):
-            _audit(ctx, tool_name, raw_input, decision, error.message, approved, error=error)
+            _audit(
+                ctx,
+                tool_name,
+                raw_input,
+                decision,
+                error.message,
+                approved,
+                error=error,
+                event_type=event_type,
+                extra_metadata=extra_metadata,
+            )
     except Exception as exc:  # noqa: BLE001 - the executor must never raise
         error = ToolError(
             code=ErrorCode.INTERNAL,
@@ -119,7 +137,16 @@ def _run(
             output = spec.output_model.model_validate(raw_output)
             _audit(ctx, spec.name, raw_input, decision, decision.reason, approved, output=output)
     except ToolFailure as exc:
-        return _fail(ctx, spec.name, raw_input, decision, approved, exc.error)
+        return _fail(
+            ctx,
+            spec.name,
+            raw_input,
+            decision,
+            approved,
+            exc.error,
+            event_type=exc.audit_event_type,
+            extra_metadata=exc.audit_metadata,
+        )
     except Exception as exc:  # noqa: BLE001 - handler bugs become TOOL_FAILURE
         error = ToolError(code=ErrorCode.TOOL_FAILURE, message=f"{type(exc).__name__}: {exc}")
         return _fail(ctx, spec.name, raw_input, decision, approved, error)

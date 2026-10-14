@@ -11,13 +11,15 @@ from zoneinfo import ZoneInfo
 IST = ZoneInfo("Asia/Kolkata")
 
 
-def now_utc(clock: datetime | None = None) -> datetime:
+def now_utc(clock: datetime | str | None = None) -> datetime:
     """
     Get the current UTC time.
 
-    Pass `clock` (a timezone-aware datetime) to pin "now" in tests.
+    Pass `clock` (a timezone-aware datetime or ISO string) to pin "now" in tests.
     """
     if clock is not None:
+        if isinstance(clock, str):
+            return from_utc_iso(clock)
         if clock.tzinfo is None:
             raise ValueError("Injected clock must be timezone-aware.")
         return clock.astimezone(UTC)

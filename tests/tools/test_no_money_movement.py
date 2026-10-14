@@ -2,9 +2,13 @@
 
 import pytest
 
+from copilot.tools.alerts import register_alert_tools
 from copilot.tools.contracts import SideEffect
 from copilot.tools.financial import register_financial_tools
+from copilot.tools.goals import register_goals_tools
+from copilot.tools.investigation import register_investigation_tools
 from copilot.tools.registry import clear_registry, list_specs, register
+from copilot.tools.whatif import register_whatif_tools
 
 BANNED_WORDS = (
     "transfer",
@@ -27,6 +31,10 @@ def real_registry():
     """The registry exactly as the application builds it."""
     clear_registry()
     register_financial_tools(register)
+    register_goals_tools(register)
+    register_whatif_tools(register)
+    register_investigation_tools(register)
+    register_alert_tools(register)
     yield list_specs()
     clear_registry()
 

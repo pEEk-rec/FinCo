@@ -60,8 +60,8 @@
       "input": {"transaction_id": "xerox", "new_category_id": "stationery"},
       "approved": true,
       "months": {"2024-03": {"totals": {"food": "1200.00", "stationery": "80.00", "travel": "300.00"}, "grand_total": "1580.00"}},
-      "audit_before": {"category_id": null, "category_source": "none", "category_confidence": null},
-      "audit_after": {"category_id": "stationery", "category_source": "user", "category_confidence": 1.0}
+      "audit_before": {"category_id": null, "category_source": "none", "category_confidence": null, "needs_review": false},
+      "audit_after": {"category_id": "stationery", "category_source": "user", "category_confidence": 1.0, "needs_review": false}
     },
     {
       "id": "06_write_tool_blocked_without_approval",

@@ -75,6 +75,14 @@ def test_load_repo_policy():
     assert p.default == "deny"
     assert p.tools["recategorize_transaction"].get_outcome("agent") == "needs_approval"
     assert p.tools["recategorize_transaction"].get_outcome("user") == "allow"
+    assert p.tools["create_goal"].get_outcome("agent") == "needs_approval"
+    assert p.tools["create_goal"].get_outcome("user") == "allow"
+    assert p.tools["update_goal"].get_outcome("agent") == "needs_approval"
+    assert p.tools["update_goal"].get_outcome("user") == "allow"
+    assert p.tools["list_goals"].get_outcome("agent") == "allow"
+    assert p.tools["evaluate_goal_impact"].get_outcome("agent") == "allow"
+    assert p.tools["run_whatif"].get_outcome("agent") == "allow"
+    assert p.tools["compare_options"].get_outcome("agent") == "allow"
 
 
 def test_load_policy_rejects_empty_file(tmp_path):

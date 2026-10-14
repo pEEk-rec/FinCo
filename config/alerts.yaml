@@ -1,0 +1,18 @@
+# Adaptive Alerts Configuration (PLAN_PHASE2 Section 5.7)
+
+signal_weights_bp:
+  threshold: 2500
+  forecast: 2500
+  history_deviation: 2000
+  anomaly: 1500
+  goal_impact: 1500
+
+tier_thresholds_bp:
+  info: 2500
+  notice: 5000
+  warning: 7500
+  critical: 9000
+
+cooldown_days: 7
+default_max_open_alerts: 5
+quiet_mode: true

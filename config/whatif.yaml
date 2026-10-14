@@ -1,0 +1,5 @@
+# What-If Simulation Engine Configuration (PLAN_PHASE2 Section 5.6)
+
+max_horizon_months: 6
+max_scenarios_per_comparison: 3
+max_amount_paise: 10000000000

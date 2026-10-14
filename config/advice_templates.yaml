@@ -1,6 +1,18 @@
 default: "You had a {subject} finding in {period_label}."
 templates:
   category_spend: "Your net spend on {subject} in {period_label} was {spend}."
+  budget_status: "{subject} reached {percent_used}% of its budget in {period_label}: {spent} spent of {limit}."
+  forecast: "At the current pace, spending in {period_label} is projected to reach {projected_spend}."
+  anomaly: "A payment of {amount} at {subject} in {period_label} was much larger than usual. Check that it is yours."
+  recurring: "{subject} repeats regularly at about {amount} each time."
 assumptions:
   category_spend:
     - "Excludes transfers to your own accounts."
+  budget_status:
+    - "Spend is net of refunds in the same category."
+  forecast:
+    - "Assumes the rest of the month follows the current daily rate."
+  anomaly:
+    - "Compared with your usual payments at similar merchants."
+  recurring:
+    - "Based on the dates and amounts of earlier payments."

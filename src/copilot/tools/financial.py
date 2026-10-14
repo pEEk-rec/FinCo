@@ -401,9 +401,17 @@ def recategorize_transaction_handler(
         "category_id": tx.category_id,
         "category_source": tx.category_source,
         "category_confidence": tx.category_confidence,
+        "needs_review": tx.needs_review,
     }
-    after = {"category_id": new_category_id, "category_source": "user", "category_confidence": 1.0}
-    update_transaction_category(ctx.conn, ctx.user_id, transaction_id, new_category_id, "user", 1.0)
+    after = {
+        "category_id": new_category_id,
+        "category_source": "user",
+        "category_confidence": 1.0,
+        "needs_review": False,  # the user's choice settles it
+    }
+    update_transaction_category(
+        ctx.conn, ctx.user_id, transaction_id, new_category_id, "user", 1.0, needs_review=False
+    )
     event_id = record_event(
         ctx.conn,
         user_id=ctx.user_id,
@@ -443,7 +451,8 @@ def recategorize_transaction_handler(
 
         # Apply to past non-user transactions
         past_txs = ctx.conn.execute(
-            "SELECT id, category_id, category_source, category_confidence FROM transactions "
+            "SELECT id, category_id, category_source, category_confidence, needs_review "
+            "FROM transactions "
             "WHERE user_id = ? AND merchant_normalized = ? "
             "AND category_source != 'user' AND id != ?",
             (ctx.user_id, tx.merchant_normalized, transaction_id),
@@ -458,14 +467,22 @@ def recategorize_transaction_handler(
                     "category_id": p_tx[1],
                     "category_source": p_tx[2],
                     "category_confidence": p_tx[3],
+                    "needs_review": bool(p_tx[4]),
                 }
                 after_batch[p_id] = {
                     "category_id": new_category_id,
                     "category_source": "override",
                     "category_confidence": 1.0,
+                    "needs_review": False,
                 }
                 update_transaction_category(
-                    ctx.conn, ctx.user_id, p_id, new_category_id, "override", 1.0
+                    ctx.conn,
+                    ctx.user_id,
+                    p_id,
+                    new_category_id,
+                    "override",
+                    1.0,
+                    needs_review=False,
                 )
 
             record_event(

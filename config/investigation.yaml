@@ -1,0 +1,34 @@
+# Investigation Engine Configuration (PLAN_PHASE2 Section 5.4)
+
+lookback_months: 3
+min_history_months: 2
+max_rounds: 2
+explained_share_threshold_bp: 6000
+
+confidence_thresholds_bp:
+  high: 7500
+  medium: 5000
+  low: 2500
+
+catalogue_hypotheses:
+  - one_off_large
+  - more_frequent
+  - higher_ticket
+  - new_merchant
+  - recurring_change
+  - miscategorization
+  - duplicate_or_refund
+  - seasonal_or_timing
+
+dev_seeds:
+  - 42
+  - 101
+  - 202
+  - 303
+  - 404
+
+held_out_seeds:
+  - 777
+  - 888
+  - 999
+

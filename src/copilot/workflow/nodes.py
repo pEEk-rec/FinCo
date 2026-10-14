@@ -36,6 +36,26 @@ def ensure_tools_registered() -> None:
 
         register_financial_tools()
 
+    if get_tool("create_goal") is None:
+        from copilot.tools.goals import register_goals_tools
+
+        register_goals_tools()
+
+    if get_tool("run_whatif") is None:
+        from copilot.tools.whatif import register_whatif_tools
+
+        register_whatif_tools()
+
+    if get_tool("investigate_anomaly") is None:
+        from copilot.tools.investigation import register_investigation_tools
+
+        register_investigation_tools()
+
+    if get_tool("evaluate_alerts") is None:
+        from copilot.tools.alerts import register_alert_tools
+
+        register_alert_tools()
+
 
 def _get_exec_ctx(
     state: AgentState,

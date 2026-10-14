@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
 from string import Formatter
-from typing import Literal
+from typing import Any, Literal
 
 import yaml
 
@@ -133,11 +133,23 @@ def matches(written: Decimal, true_value: Decimal, quantum: Decimal) -> bool:
     return abs(w - t) <= tolerance
 
 
-def _allowed_values(findings: list[Finding]) -> dict[str, list[Decimal]]:
+_CAUSAL_CLAIM = re.compile(r"\b(because|due to|caused by|driven by)\b", re.IGNORECASE)
+_CONSEQUENTIAL_KINDS = {"spend_decision", "reduce_spend", "contribution_change"}
+
+
+def _allowed_values(
+    findings: list[Finding],
+    investigations: list[Any] | None = None,
+    simulations: list[Any] | None = None,
+    goals: list[Any] | None = None,
+    calculations: list[Any] | None = None,
+) -> dict[str, list[Decimal]]:
     """Comparable values by mention kind; paise are converted to rupees."""
     amounts: list[Decimal] = []
     percents: list[Decimal] = []
     others: list[Decimal] = []
+
+    # 1. Findings
     for f in findings:
         for n in f.numbers:
             if n.unit == "paise":
@@ -146,6 +158,106 @@ def _allowed_values(findings: list[Finding]) -> dict[str, list[Decimal]]:
                 percents.append(Decimal(n.value))
             else:
                 others.append(Decimal(n.value))
+
+    # 2. Investigations
+    if investigations:
+        for inv in investigations:
+            decomp = getattr(inv, "decomposition", None)
+            if decomp:
+                keys = [
+                    "volume_paise",
+                    "ticket_paise",
+                    "new_merchant_paise",
+                    "stopped_merchant_paise",
+                    "residual_paise",
+                    "delta_spend_paise",
+                    "unexplained_paise",
+                ]
+                for k in keys:
+                    v = getattr(decomp, k, None) if not isinstance(decomp, dict) else decomp.get(k)
+                    if v is not None and isinstance(v, (int, float, Decimal)):
+                        amounts.append(Decimal(abs(int(v))) / 100)
+
+            evidence_items = getattr(inv, "evidence", [])
+            for ev in evidence_items:
+                val = (
+                    getattr(ev, "metric_value", None)
+                    if not isinstance(ev, dict)
+                    else ev.get("metric_value")
+                )
+                if isinstance(val, (int, float, Decimal)):
+                    if abs(val) >= 100:
+                        amounts.append(Decimal(abs(int(val))) / 100)
+                    others.append(Decimal(val))
+
+    # 3. Simulations
+    if simulations:
+        for sim in simulations:
+            scen = getattr(sim, "scenario", None)
+            if scen:
+                amt = (
+                    getattr(scen, "amount_paise", None)
+                    if not isinstance(scen, dict)
+                    else scen.get("amount_paise")
+                )
+                if amt is not None and isinstance(amt, (int, float, Decimal)):
+                    amounts.append(Decimal(abs(int(amt))) / 100)
+                m_cnt = (
+                    getattr(scen, "months", None)
+                    if not isinstance(scen, dict)
+                    else scen.get("months")
+                )
+                if m_cnt is not None and isinstance(m_cnt, (int, float, Decimal)):
+                    others.append(Decimal(m_cnt))
+
+            proj = getattr(sim, "projection", None)
+            if proj:
+                m_projs = (
+                    getattr(proj, "monthly_projections", [])
+                    if not isinstance(proj, dict)
+                    else proj.get("monthly_projections", [])
+                )
+                for mp in m_projs:
+                    for field_name in ["spend_expected_paise", "surplus_expected_paise"]:
+                        v = (
+                            getattr(mp, field_name, None)
+                            if not isinstance(mp, dict)
+                            else mp.get(field_name)
+                        )
+                        if v is not None and isinstance(v, (int, float, Decimal)):
+                            amounts.append(Decimal(abs(int(v))) / 100)
+
+    # 4. Goals
+    if goals:
+        for g in goals:
+            for field_name in ["target_paise", "current_paise", "required_monthly_paise"]:
+                v = getattr(g, field_name, None) if not isinstance(g, dict) else g.get(field_name)
+                if v is not None and isinstance(v, (int, float, Decimal)):
+                    amounts.append(Decimal(abs(int(v))) / 100)
+            m_rem = (
+                getattr(g, "months_remaining", None)
+                if not isinstance(g, dict)
+                else g.get("months_remaining")
+            )
+            if m_rem is not None and isinstance(m_rem, (int, float, Decimal)):
+                others.append(Decimal(m_rem))
+
+    # 5. Calculations
+    if calculations:
+        for c in calculations:
+            inputs = getattr(c, "inputs", {}) if not isinstance(c, dict) else c.get("inputs", {})
+            if isinstance(inputs, dict):
+                for val in inputs.values():
+                    if isinstance(val, (int, float, Decimal)):
+                        if abs(val) >= 100:
+                            amounts.append(Decimal(abs(int(val))) / 100)
+                        others.append(Decimal(val))
+            res = getattr(c, "result", None) if not isinstance(c, dict) else c.get("result")
+            if isinstance(res, (int, float, Decimal)):
+                if abs(res) >= 100:
+                    amounts.append(Decimal(abs(int(res))) / 100)
+                others.append(Decimal(res))
+
     return {
         "amount": amounts,
         "percent": percents,
@@ -153,41 +265,170 @@ def _allowed_values(findings: list[Finding]) -> dict[str, list[Decimal]]:
     }
 
 
-def _context_numbers(findings: list[Finding]) -> set[Decimal]:
-    """Years, months and subject digits that may appear as bare numbers."""
-    allowed: set[Decimal] = set()
+def _context_numbers(
+    findings: list[Finding],
+    investigations: list[Any] | None = None,
+    simulations: list[Any] | None = None,
+    goals: list[Any] | None = None,
+) -> set[Decimal]:
+    """Years, months, horizon counts, day numbers and subject digits allowed as plain numbers."""
+    allowed: set[Decimal] = {Decimal(100), Decimal(0)}
+    # Allow calendar days
+    for d in range(1, 32):
+        allowed.add(Decimal(d))
+
     for f in findings:
-        year, month = f.period.split("-")
-        allowed |= {Decimal(year), Decimal(int(month))}
+        if f.period and "-" in f.period:
+            year, month = f.period.split("-")
+            allowed |= {Decimal(year), Decimal(int(month))}
         for digits in re.findall(r"\d+", f.subject or ""):
             allowed.add(Decimal(digits))
+
+    if investigations:
+        for inv in investigations:
+            for attr in ["target_month", "baseline_month"]:
+                val = getattr(inv, attr, None) if not isinstance(inv, dict) else inv.get(attr)
+                if val and "-" in val:
+                    y, m = val.split("-")
+                    allowed |= {Decimal(y), Decimal(int(m))}
+
+    if simulations:
+        for sim in simulations:
+            scen = getattr(sim, "scenario", None)
+            if scen:
+                m_cnt = (
+                    getattr(scen, "months", None)
+                    if not isinstance(scen, dict)
+                    else scen.get("months")
+                )
+                if m_cnt is not None:
+                    allowed.add(Decimal(m_cnt))
+
+    if goals:
+        for g in goals:
+            m_rem = (
+                getattr(g, "months_remaining", None)
+                if not isinstance(g, dict)
+                else g.get("months_remaining")
+            )
+            if m_rem is not None:
+                allowed.add(Decimal(m_rem))
+
     return allowed
 
 
-def validate_advice(draft: AdviceDraft, findings_by_id: dict[str, Finding]) -> AdviceValidation:
-    """Check one draft against the findings it cites. Never raises on bad text."""
+def validate_advice(
+    draft: AdviceDraft | Any,
+    findings_by_id: dict[str, Finding],
+    *,
+    investigations_by_id: dict[str, Any] | None = None,
+    simulations_by_id: dict[str, Any] | None = None,
+    goals_by_id: dict[str, Any] | None = None,
+    calculations: list[Any] | None = None,
+    recommendation_kind: str | None = None,
+    simulation_id: str | None = None,
+    investigation_id: str | None = None,
+) -> AdviceValidation:
+    """
+    Check one draft / recommendation against findings and evidence sources
+    (PLAN_PHASE2 Section 5.8).
+    Never raises on bad text; returns AdviceValidation(ok=bool, violations=list[str]).
+    """
     violations = []
-    unknown = [fid for fid in draft.finding_ids if fid not in findings_by_id]
+    text = getattr(draft, "text", str(draft))
+
+    # 1. Finding IDs validation
+    finding_ids = getattr(draft, "finding_ids", [])
+    unknown = [fid for fid in finding_ids if fid not in findings_by_id]
     if unknown:
         violations.append(f"unknown finding id(s): {', '.join(unknown)}")
-    cited = [findings_by_id[fid] for fid in draft.finding_ids if fid in findings_by_id]
+    cited = [findings_by_id[fid] for fid in finding_ids if fid in findings_by_id]
 
+    # 2. Forbidden phrases check
     for reason, pattern in _FORBIDDEN:
-        hit = pattern.search(draft.text)
+        hit = pattern.search(text)
         if hit:
             violations.append(f"{reason}: '{hit.group(0)}'")
-    if not any(f.kind in _PREDICTION_KINDS for f in cited):
-        hit = _PREDICTION.search(draft.text)
+
+    # 3. Causal-claim rule (PLAN_PHASE2 Section 5.8)
+    # Words asserting cause ('because', 'due to', 'caused by', 'driven by') are permitted
+    # ONLY when the cited investigation's outcome is 'explained' with confidence >= 'medium'.
+    hit_causal = _CAUSAL_CLAIM.search(text)
+    if hit_causal:
+        inv = None
+        target_inv_id = investigation_id or getattr(draft, "investigation_id", None)
+        if target_inv_id and investigations_by_id:
+            inv = investigations_by_id.get(target_inv_id)
+        elif investigations_by_id:
+            evidence_list = getattr(draft, "evidence", [])
+            for cand_id, cand_inv in investigations_by_id.items():
+                if cand_id in finding_ids or cand_id in evidence_list:
+                    inv = cand_inv
+                    break
+        if not inv:
+            violations.append(
+                f"causal claim '{hit_causal.group(0)}' "
+                "requires a cited investigation with explained outcome"
+            )
+        else:
+            outcome = getattr(inv, "outcome", None)
+            confidence = getattr(inv, "confidence", None)
+            if outcome != "explained" or confidence not in ("medium", "high"):
+                violations.append(
+                    f"causal claim '{hit_causal.group(0)}' not supported: "
+                    f"investigation outcome must be 'explained' with >= medium confidence "
+                    f"(got outcome='{outcome}', confidence='{confidence}')"
+                )
+
+    # 4. Consequence rule (PLAN_PHASE2 Section 5.8)
+    # A recommendation of kind spend_decision, reduce_spend or contribution_change
+    # requires a simulation_id.
+    rec_kind = recommendation_kind or getattr(draft, "kind", None) or getattr(draft, "origin", None)
+    if rec_kind in _CONSEQUENTIAL_KINDS:
+        effective_sim_id = simulation_id or getattr(draft, "simulation_id", None)
+        if not effective_sim_id:
+            violations.append(
+                f"consequential recommendation of kind '{rec_kind}' requires a simulation_id"
+            )
+        elif simulations_by_id is not None and effective_sim_id not in simulations_by_id:
+            violations.append(
+                f"unknown simulation id: '{effective_sim_id}'"
+            )
+
+    # 5. Prediction check
+    has_simulation = bool(simulation_id or getattr(draft, "simulation_id", None))
+    if not any(f.kind in _PREDICTION_KINDS for f in cited) and not has_simulation:
+        hit = _PREDICTION.search(text)
         if hit:
             violations.append(f"predicts beyond the given findings: '{hit.group(0)}'")
 
-    allowed = _allowed_values(cited)
-    context = _context_numbers(cited)
-    for mention in extract_numbers(draft.text):
+    # 6. Multi-source number grounding
+    inv_list = list(investigations_by_id.values()) if investigations_by_id else None
+    sim_list = list(simulations_by_id.values()) if simulations_by_id else None
+    goal_list = list(goals_by_id.values()) if goals_by_id else None
+    calc_list = calculations or getattr(draft, "calculations", None)
+
+    allowed = _allowed_values(
+        cited,
+        investigations=inv_list,
+        simulations=sim_list,
+        goals=goal_list,
+        calculations=calc_list,
+    )
+    context = _context_numbers(
+        cited,
+        investigations=inv_list,
+        simulations=sim_list,
+        goals=goal_list,
+    )
+
+    for mention in extract_numbers(text):
         if mention.kind == "plain" and mention.value in context:
             continue
         if not any(matches(mention.value, v, mention.quantum) for v in allowed[mention.kind]):
-            violations.append(f"{mention.kind} '{mention.raw}' is not in the cited findings")
+            violations.append(
+                f"{mention.kind} '{mention.raw}' is not in the cited findings or evidence"
+            )
 
     return AdviceValidation(ok=not violations, violations=violations)
 

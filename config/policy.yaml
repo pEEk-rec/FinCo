@@ -21,3 +21,20 @@ tools:
   undo:                        {agent: allow, user: allow}
   draft_advice:                {agent: allow}
   decide_advice:               {user: allow}
+  create_goal:                 {agent: needs_approval, user: allow}
+  update_goal:                 {agent: needs_approval, user: allow}
+  list_goals:                  {decision: allow}
+  evaluate_goal_impact:        {decision: allow}
+  run_whatif:                  {decision: allow}
+  compare_options:             {decision: allow}
+  investigate_anomaly:         {decision: allow}
+  explain_change:              {decision: allow}
+  dismiss_anomaly:             {agent: needs_approval, user: allow}
+  evaluate_alerts:             {agent: allow, user: allow}
+  decide_alert:                {agent: needs_approval, user: allow}
+  set_alert_preference:        {agent: needs_approval, user: allow}
+  list_alerts:                 {decision: allow}
+
+  approve_consent:             {user: allow}
+  revoke_consent:              {user: allow}
+  build_monthly_review:        {user: allow}
