@@ -336,3 +336,75 @@ def test_generated_typescript_types_cover_every_schema():
     committed = json.loads((ROOT / "docs" / "openapi.json").read_text(encoding="utf-8"))
     missing = [n for n in committed["components"]["schemas"] if f"    {n}: " not in types]
     assert missing == [], "run: npm run gen:api (frontend)"
+
+
+def test_ask_returns_the_validated_plan_and_the_node_trace(client):
+    out = client.post(
+        "/api/ask", headers=AUTH, json={"text": "why did my food spend change in February"}
+    ).json()
+    assert [p["tool_name"] for p in out["plan"]] == [
+        "aggregate_spend_by_category",
+        "explain_change",
+    ]
+    assert all(p["proposed_by"] == "deterministic" and p["rationale"] for p in out["plan"])
+    nodes = [t["node"] for t in out["trace"]]
+    assert (
+        nodes[:2] == ["understand", "plan"] and nodes.count("act") == 2 and nodes[-1] == "finalize"
+    )
+    investigation = next(o for o in out["observations"] if o["tool_name"] == "explain_change")
+    assert investigation["ok"] and investigation["data_summary"]["investigation"]["hypotheses"]
+    assert out["intent"]["category_id"] == "food" and out["intent"]["period"] == "2024-02"
+
+
+def test_ask_whatif_plans_a_simulation_and_leaves_the_draft_for_the_user(client, state):
+    out = client.post(
+        "/api/ask",
+        headers=AUTH,
+        json={"text": "what if I spend ₹2,000 more on food each month for 3 months"},
+    ).json()
+    assert [p["tool_name"] for p in out["plan"]] == ["check_budgets", "compare_options"]
+    sim = next(o for o in out["observations"] if o["tool_name"] == "compare_options")
+    assert sim["ok"]
+    assert out["answer"] and out["answer"]["headline"] and out["answer"]["written_by"] == "rules"
+    assert out["llm"]["available"] is False
+    assert out["pending_recommendations"], "agent drafts must wait for a human decision"
+    assert not any(e.event_type == "recommendation_decided" for e in audit(state))
+
+
+@pytest.mark.parametrize(
+    "text, fragment",
+    [
+        ("should I invest in mutual funds", "investment advice"),
+        ("transfer 5000 to rahul", "payments"),
+        ("my otp is 123456", "OTP"),
+        ("will the market crash", "market"),
+    ],
+)
+def test_the_input_gate_refuses_before_any_planning(client, text, fragment):
+    out = client.post("/api/ask", headers=AUTH, json={"text": text}).json()
+    assert fragment.lower() in out["refusal_reason"].lower()
+    assert out["plan"] == [] and out["observations"] == []
+    assert [t["node"] for t in out["trace"]][:1] == ["understand"]
+    assert "act" not in [t["node"] for t in out["trace"]]
+
+
+def test_the_planner_is_only_offered_read_and_compute_tools():
+    from copilot.planner.capabilities import get_selectable_tools
+
+    selectable = set(get_selectable_tools())
+    writes = {
+        "recategorize_transaction",
+        "approve_consent",
+        "revoke_consent",
+        "decide_advice",
+        "decide_alert",
+        "create_goal",
+        "update_goal",
+        "ingest_statements",
+        "undo",
+        "categorize_batch",
+        "draft_advice",
+        "set_alert_preference",
+        "dismiss_anomaly",
+    }
+    assert selectable and selectable.isdisjoint(writes)

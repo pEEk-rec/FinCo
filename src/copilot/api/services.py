@@ -46,15 +46,15 @@ DEMO_CLOCK = datetime(2024, 3, 18, 12, 0, tzinfo=IST)
 T0 = "2024-01-01T00:00:00Z"
 
 DEMO_CATEGORIES = (
-    ("food", "Food and dining"),
+    ("food", "Dining"),
     ("groceries", "Groceries"),
     ("travel", "Travel"),
     ("shopping", "Shopping"),
-    ("bills", "Bills and recharge"),
+    ("bills", "Utilities"),
     ("subscriptions", "Subscriptions"),
     ("education", "Education"),
     ("entertainment", "Entertainment"),
-    ("housing", "Housing"),
+    ("housing", "Rent"),
     ("income", "Income"),
 )
 DEMO_BUDGETS = (("food", 700000), ("travel", 150000), ("shopping", 250000), ("groceries", 150000))
@@ -268,10 +268,13 @@ def run_import(state: ApiState, conn: sqlite3.Connection, consent_id: str) -> Im
     conn.commit()
 
     now = now_utc(state.clock).astimezone(IST)
+    prev_year, prev_month = (now.year - 1, 12) if now.month == 1 else (now.year, now.month - 1)
     for tool, args in (
         ("detect_transfers", {}),
         ("detect_recurring", {}),
         ("detect_anomalies", {}),
+        # The month in progress and the one just closed: closed months are where budgets broke.
+        ("evaluate_alerts", {"period": f"{prev_year:04d}-{prev_month:02d}"}),
         ("evaluate_alerts", {"period": f"{now.year:04d}-{now.month:02d}"}),
     ):
         execute_tool(agent, tool, args)  # best effort: failures are audited, not fatal

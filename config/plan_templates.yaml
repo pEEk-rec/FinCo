@@ -46,30 +46,42 @@ templates:
       - tool_name: aggregate_spend_by_category
         arg_bindings: {"year": "{year}", "month": "{month}"}
         rationale: "Fetch category spend to evaluate historical difference"
+      - tool_name: explain_change
+        arg_bindings: {"period": "{period}", "category_id": "{category_id}"}
+        rationale: "Decompose the change and test hypotheses for its cause"
 
   whatif_add_spend:
     intent_type: whatif_add_spend
     required_tools: ["check_budgets"]
-    allowed_tools: ["check_budgets", "forecast_month", "run_whatif", "evaluate_goal_impact"]
+    allowed_tools: ["check_budgets", "forecast_month", "run_whatif", "compare_options", "evaluate_goal_impact"]
     default_steps:
       - tool_name: check_budgets
         arg_bindings: {"year": "{year}", "month": "{month}"}
         rationale: "Fetch current budgets to simulate impact of additional spend"
+      - tool_name: compare_options
+        arg_bindings: {"scenarios": "{scenarios}"}
+        rationale: "Compare the scenario with your current trajectory, month by month"
 
   whatif_reduce_spend:
     intent_type: whatif_reduce_spend
     required_tools: ["check_budgets"]
-    allowed_tools: ["check_budgets", "aggregate_spend_by_category", "run_whatif"]
+    allowed_tools: ["check_budgets", "aggregate_spend_by_category", "run_whatif", "compare_options"]
     default_steps:
       - tool_name: check_budgets
         arg_bindings: {"year": "{year}", "month": "{month}"}
         rationale: "Fetch current budgets to simulate impact of spend reduction"
+      - tool_name: compare_options
+        arg_bindings: {"scenarios": "{scenarios}"}
+        rationale: "Compare the scenario with your current trajectory, month by month"
 
   goal_check:
     intent_type: goal_check
-    required_tools: ["get_balance"]
+    required_tools: ["list_goals", "get_balance"]
     allowed_tools: ["get_balance", "get_financial_state", "list_goals", "evaluate_goal_impact"]
     default_steps:
+      - tool_name: list_goals
+        arg_bindings: {}
+        rationale: "Read your active goals: target, progress and deadline"
       - tool_name: get_balance
         arg_bindings: {}
         rationale: "Check current available balance to compare against goals"

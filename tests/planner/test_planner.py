@@ -55,7 +55,7 @@ def user_ctx(conn):
 
 
 def test_deterministic_planner_minimality_across_all_intents():
-    """Minimality requirement: Deterministic planner produces minimal tool sets for each canonical intent."""
+    """Each intent gets the smallest ordered tool set that answers it (explain_change = context + investigation; what-if without an amount and category stays a budget check)."""
     planner = DeterministicPlanner()
 
     canonical_cases = [
@@ -63,10 +63,10 @@ def test_deterministic_planner_minimality_across_all_intents():
         ("check_budget", ["check_budgets"]),
         ("forecast", ["forecast_month"]),
         ("investigate_anomaly", ["detect_anomalies"]),
-        ("explain_change", ["aggregate_spend_by_category"]),
+        ("explain_change", ["aggregate_spend_by_category", "explain_change"]),
         ("whatif_add_spend", ["check_budgets"]),
         ("whatif_reduce_spend", ["check_budgets"]),
-        ("goal_check", ["get_balance"]),
+        ("goal_check", ["list_goals", "get_balance"]),
         ("list_recurring", ["get_transactions"]),
         ("alerts_overview", ["check_budgets"]),
     ]
@@ -81,7 +81,9 @@ def test_deterministic_planner_minimality_across_all_intents():
         )
         plan = planner.propose("task_1", "user_test", intent)
         tools = [s.tool_name for s in plan.steps]
-        assert tools == expected_tools, f"Intent {intent_type} planned {tools}, expected {expected_tools}"
+        assert tools == expected_tools, (
+            f"Intent {intent_type} planned {tools}, expected {expected_tools}"
+        )
         assert all(s.proposed_by == "deterministic" for s in plan.steps)
 
 
@@ -230,3 +232,65 @@ def test_execution_loop_loop_detection(user_ctx):
     assert should_stop is True
     assert stop_reason == "loop_detected"
     assert "Loop detected" in obs4.error
+
+
+def test_planned_arguments_validate_against_the_real_tool_schemas():
+    """The planner's bindings must satisfy each tool's own input model (the validator enforces it)."""
+    from copilot.tools.investigation import ExplainChangeInput
+    from copilot.tools.whatif import CompareOptionsInput
+
+    planner = DeterministicPlanner()
+    explain = planner.propose(
+        "t",
+        "u",
+        Intent(type="explain_change", period="2024-02", year=2024, month=2, category_id="food"),
+    )
+    assert [s.tool_name for s in explain.steps] == ["aggregate_spend_by_category", "explain_change"]
+    parsed = ExplainChangeInput(**explain.steps[1].args)
+    assert (parsed.period, parsed.category_id) == ("2024-02", "food")
+    assert [s.seq for s in explain.steps] == [0, 1]
+
+    whatif = planner.propose(
+        "t",
+        "u",
+        Intent(
+            type="whatif_add_spend",
+            period="2024-03",
+            year=2024,
+            month=3,
+            category_id="food",
+            amount_paise=200000,
+            horizon_months=3,
+        ),
+    )
+    assert [s.tool_name for s in whatif.steps] == ["check_budgets", "compare_options"]
+    run = CompareOptionsInput(**whatif.steps[1].args)
+    scenario = run.scenarios[0]
+    assert scenario.start_month == "2024-04"  # the month after the one being looked at
+    assert (scenario.amount_paise, scenario.months, run.horizon_months) == (200000, 3, 3)
+
+
+def test_whatif_never_invents_a_missing_amount_or_category():
+    planner = DeterministicPlanner()
+    for missing in (
+        {"category_id": None, "amount_paise": 100000},
+        {"category_id": "food", "amount_paise": None},
+    ):
+        intent = Intent(type="whatif_add_spend", period="2024-03", year=2024, month=3, **missing)
+        assert [s.tool_name for s in planner.propose("t", "u", intent).steps] == ["check_budgets"]
+
+
+def test_december_whatif_starts_in_january_of_next_year():
+    plan = DeterministicPlanner().propose(
+        "t",
+        "u",
+        Intent(
+            type="whatif_reduce_spend",
+            period="2024-12",
+            year=2024,
+            month=12,
+            category_id="food",
+            amount_paise=50000,
+        ),
+    )
+    assert plan.steps[1].args["scenarios"][0]["start_month"] == "2025-01"

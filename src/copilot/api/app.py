@@ -53,6 +53,7 @@ class Session(BaseModel):
     period: str
     data_source: Literal["synthetic_demo", "connected"]
     demo_clock: bool
+    llm_available: bool = False
 
 
 class CategoryOut(BaseModel):
@@ -129,9 +130,45 @@ class AdviceExplanation(BaseModel):
 class AskIn(BaseModel):
     text: str = Field(min_length=1, max_length=500)
     clarification: str | None = Field(default=None, max_length=300)
+    use_llm: bool = True
+
+
+class PlanStepOut(BaseModel):
+    seq: int
+    tool_name: str
+    rationale: str
+    proposed_by: str
+    status: str
+
+
+class TraceNodeOut(BaseModel):
+    node: str
+    status: str
+    duration_ms: float
+    counts: dict[str, int]
+
+
+class AnswerOut(BaseModel):
+    headline: str
+    points: list[str] = []
+    followups: list[str] = []
+    confidence: str | None = None
+    written_by: str = "rules"
+    causal_ok: bool = False
+    facts: list[Any] = []
+
+
+class LlmUsedOut(BaseModel):
+    available: bool
+    model: str | None = None
+    calls: int = 0
+    failures: int = 0
+    planner: str = "rules"
 
 
 class AskOut(BaseModel):
+    answer: AnswerOut | None = None
+    llm: LlmUsedOut | None = None
     task_id: str | None
     status: str
     stop_reason: str | None
@@ -142,6 +179,10 @@ class AskOut(BaseModel):
     pending_recommendations: list[dict[str, Any]]
     observations: list[dict[str, Any]]
     investigations: list[dict[str, Any]]
+    plan: list[PlanStepOut]
+    trace: list[TraceNodeOut]
+    rounds: int
+    planner_mode: str
 
 
 class AnomalyOut(BaseModel):
@@ -292,6 +333,7 @@ def create_app(state: ApiState) -> FastAPI:
             period=f"{ist.year:04d}-{ist.month:02d}",
             data_source=state.data_source,
             demo_clock=state.clock is not None,
+            llm_available=state.get_llm() is not None,
         )
 
     # -- reads -------------------------------------------------------------------------------
@@ -489,7 +531,13 @@ def create_app(state: ApiState) -> FastAPI:
         from copilot.api.agent import run_ask
 
         text = body.text if not body.clarification else f"{body.text} ({body.clarification})"
-        return AskOut.model_validate(run_ask(state, conn, text))
+        return AskOut.model_validate(run_ask(state, conn, text, use_llm=body.use_llm))
+
+    @app.get("/api/llm/status", dependencies=auth)
+    def llm_status() -> dict[str, Any]:
+        llm = state.get_llm()
+        status = getattr(llm, "status", lambda: None)() if llm is not None else None
+        return {"available": llm is not None, "router": status}
 
     @app.get("/api/timeline", response_model=Timeline, dependencies=auth)
     def timeline(conn: Conn, task_id: str | None = None, run_id: str | None = None) -> Timeline:

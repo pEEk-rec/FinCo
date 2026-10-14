@@ -62,7 +62,7 @@ class DeterministicPlanner:
 
         steps: list[PlanStep] = []
         if template:
-            for idx, step_tpl in enumerate(template.default_steps):
+            for step_tpl in template.default_steps:
                 tool_name = step_tpl.tool_name
                 args: dict[str, Any] = {}
 
@@ -109,40 +109,41 @@ class DeterministicPlanner:
                     if intent.category_id:
                         args["category_id"] = intent.category_id
 
-                elif tool_name == "run_whatif":
+                elif tool_name in ("run_whatif", "compare_options"):
+                    if not intent.amount_paise or not intent.category_id:
+                        # A scenario needs both an amount and a category; never invent either.
+                        continue
+                    next_year, next_month = (year + 1, 1) if month == 12 else (year, month + 1)
                     scenario = {
                         "kind": "reduce_spend"
                         if intent.type == "whatif_reduce_spend"
                         else "add_spend",
                         "category_id": intent.category_id,
                         "amount_paise": intent.amount_paise or 0,
-                        "start_month": period_str,
-                        "recurring": False,
-                        "months": intent.horizon_months or 1,
+                        "start_month": f"{next_year:04d}-{next_month:02d}",
+                        "recurring": True,
+                        "months": min(intent.horizon_months or 3, 6),
                         "goal_id": intent.goal_id,
                     }
-                    args = {"scenario": scenario}
+                    if tool_name == "compare_options":
+                        args = {"scenarios": [scenario], "horizon_months": scenario["months"]}
+                    else:
+                        args = {"scenario": scenario, "horizon_months": scenario["months"]}
 
                 elif tool_name == "investigate_anomaly":
                     anom_id = projection.get("anomaly_id") or "anom_001"
                     args = {"anomaly_id": anom_id}
 
                 elif tool_name == "explain_change":
-                    args = {
-                        "subject_kind": "category_change"
-                        if intent.category_id
-                        else "period_change",
-                        "subject_ref": {"category_id": intent.category_id}
-                        if intent.category_id
-                        else {},
-                        "period": period_str,
-                    }
+                    args = {"period": period_str}
+                    if intent.category_id:
+                        args["category_id"] = intent.category_id
 
                 step = PlanStep(
                     id=f"step_{uuid.uuid4().hex[:8]}",
                     task_id=task_id,
                     user_id=user_id,
-                    seq=idx,
+                    seq=len(steps),
                     tool_name=tool_name,
                     args=args,
                     rationale=step_tpl.rationale or f"Deterministic step for {intent.type}",
