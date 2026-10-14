@@ -1,0 +1,81 @@
+# Model router configuration (no secrets: keys live in the git-ignored .env).
+#
+# Candidates are PRIORS, listed best first. The router re-ranks them live from observed
+# success rate, latency and quota headroom, so an overloaded or retired model drops out by
+# itself and a recovered one comes back.
+#
+# Limits are the free-tier numbers observed on 2026-10-14, used at `safety` of their value.
+# Groq also reports its real remaining quota in response headers, which the router follows.
+
+providers:
+  groq:
+    rpm: 25            # requests per minute per key
+    tpm: 7000          # tokens per minute per key (Groq free tier reports 8000)
+    rpd: 950           # requests per day per key (Groq free tier reports 1000)
+    timeout_s: 12
+    safety: 0.85
+  gemini:
+    rpm: 8             # requests per minute per key (conservative)
+    tpm: 200000
+    rpd: 200
+    timeout_s: 14
+    safety: 0.85
+
+tasks:
+  # Reading the question: tiny, latency-critical.
+  intent:
+    max_tokens: 700
+    deadline_s: 12
+    candidates:
+      - {provider: groq, model: openai/gpt-oss-20b}
+      - {provider: groq, model: qwen/qwen3.8-27b}
+      - {provider: gemini, model: gemini-3.5-flash-lite}
+      - {provider: gemini, model: gemini-3.1-flash-lite}
+
+  # Choosing tools and arguments: needs reasoning, output is validated downstream.
+  planning:
+    max_tokens: 1400
+    deadline_s: 20
+    candidates:
+      - {provider: groq, model: openai/gpt-oss-120b}
+      - {provider: gemini, model: gemini-3.6-flash}
+      - {provider: groq, model: openai/gpt-oss-20b}
+      - {provider: gemini, model: gemini-3.5-flash-lite}
+
+  # Testing hypotheses about spending changes.
+  investigation:
+    max_tokens: 1400
+    deadline_s: 20
+    candidates:
+      - {provider: groq, model: openai/gpt-oss-120b}
+      - {provider: gemini, model: gemini-3.6-flash}
+      - {provider: groq, model: qwen/qwen3.8-27b}
+
+  # Writing the answer: language quality matters most, so Gemini goes first
+  # (this also keeps Groq's tight per-minute token budget for the reasoning tasks).
+  narration:
+    max_tokens: 900
+    deadline_s: 18
+    candidates:
+      - {provider: gemini, model: gemini-3.6-flash}
+      - {provider: gemini, model: gemini-3.5-flash-lite}
+      - {provider: groq, model: qwen/qwen3.8-27b}
+      - {provider: groq, model: openai/gpt-oss-20b}
+
+  # Bulk merchant labelling: many calls, so the most generous quota first.
+  categorization:
+    max_tokens: 1600
+    deadline_s: 70
+    max_wait_s: 45   # batch work may wait for quota instead of giving up
+    candidates:
+      - {provider: gemini, model: gemini-3.1-flash-lite}
+      - {provider: gemini, model: gemini-3.5-flash-lite}
+      - {provider: groq, model: openai/gpt-oss-20b}
+
+  general:
+    max_tokens: 800
+    deadline_s: 15
+    candidates:
+      - {provider: gemini, model: gemini-3.5-flash-lite}
+      - {provider: groq, model: openai/gpt-oss-20b}
+      - {provider: gemini, model: gemini-3.6-flash}
