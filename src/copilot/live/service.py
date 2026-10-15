@@ -15,17 +15,6 @@ import yaml
 from pydantic import BaseModel
 
 from copilot.api.services import DEMO_CATEGORIES, T0, register_all_tools
-
-# Real life needs more than a student demo does. Users can add their own on top of these.
-LIVE_CATEGORIES = (
-    *DEMO_CATEGORIES,
-    ("health", "Healthcare"),
-    ("cash", "Cash withdrawal"),
-    ("transfers", "Friends and family"),
-    ("personal", "Personal care"),
-    ("gifts", "Gifts and donations"),
-    ("fees", "Bank fees and charges"),
-)
 from copilot.api.state import ApiState
 from copilot.audit.events import record_event
 from copilot.core.categorisation import load_aliases, load_rules, normalize_merchant
@@ -47,6 +36,17 @@ from copilot.db.repo import (
 from copilot.live.statement import ParsedStatement, StatementRow
 from copilot.models.domain import Account, Budget, Category, Transaction, User
 from copilot.rails.engine import categorize, ensure_schema, reconcile
+
+# Real life needs more than a student demo does. Users can add their own on top of these.
+LIVE_CATEGORIES = (
+    *DEMO_CATEGORIES,
+    ("health", "Healthcare"),
+    ("cash", "Cash withdrawal"),
+    ("transfers", "Friends and family"),
+    ("personal", "Personal care"),
+    ("gifts", "Gifts and donations"),
+    ("fees", "Bank fees and charges"),
+)
 
 LIVE_CONFIG = Path(__file__).resolve().parents[3] / "config" / "live.yaml"
 
@@ -242,7 +242,9 @@ def _applied_by_ai(conn: sqlite3.Connection, user_id: str) -> int:
     ).fetchone()[0]
 
 
-def ai_categorize(state: ApiState, conn: sqlite3.Connection, summary: ImportSummary) -> ImportSummary:
+def ai_categorize(
+    state: ApiState, conn: sqlite3.Connection, summary: ImportSummary
+) -> ImportSummary:
     """
     Let the model label merchants the rules did not know, then report what is left for the user.
 
@@ -255,7 +257,9 @@ def ai_categorize(state: ApiState, conn: sqlite3.Connection, summary: ImportSumm
     llm = state.get_llm()
     if llm is None:
         summary.needs_review = queue_size(conn, state.user_id)
-        summary.ai_note = "No AI model is configured, so unknown merchants wait in the review queue."
+        summary.ai_note = (
+            "No AI model is configured, so unknown merchants wait in the review queue."
+        )
         return summary
     if hasattr(llm, "begin_request"):
         llm.begin_request(AI_BUDGET_S)

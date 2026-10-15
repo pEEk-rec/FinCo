@@ -168,7 +168,7 @@ def create_rails_app(state: ApiState) -> FastAPI:
     @app.get("/rails/audit", dependencies=auth)
     def audit(conn: Conn) -> list[dict[str, Any]]:
         rows = conn.execute(
-            "SELECT occurred_at, actor, event_type, entity_type, entity_id, reason FROM audit_events"
+            "SELECT occurred_at, actor, event_type, entity_type, entity_id, reason FROM audit_events"  # noqa: E501
             " WHERE user_id = ? AND event_type LIKE 'rail_%' ORDER BY occurred_at DESC, rowid DESC"
             " LIMIT 60",
             (uid,),

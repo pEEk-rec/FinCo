@@ -1,0 +1,16 @@
+# How a challenge template finds the user's own categories and merchants.
+#
+# Templates name categories as hints (for example "dining_out"). A user's real categories have
+# their own ids and names ("food" shown as "Dining", or one the user created), so a hint matches a
+# user category when its id or any word of its name equals the hint or one of these synonyms.
+# Essential categories are never returned, whatever they are called (core/essentials.py).
+category_synonyms:
+  dining_out: [dining, restaurant, restaurants, eating, food, meal, meals, cafe, cafes]
+  food_delivery: [delivery, takeaway, food, dining]
+  shopping: [shopping, retail, clothes, clothing, apparel, fashion, online]
+  entertainment: [entertainment, movies, cinema, leisure, fun, games, gaming]
+  subscriptions: [subscription, subscriptions, streaming, membership, memberships]
+
+# Merchant groups a template can target: words that appear in the user's merchant names.
+merchant_groups:
+  food_delivery: [swiggy, zomato, dunzo, eatsure, magicpin, box8, faasos]

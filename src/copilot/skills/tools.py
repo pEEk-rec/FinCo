@@ -144,6 +144,60 @@ def run_skill_handler(ctx: "ExecutionContext", **kwargs) -> SkillToolOutput:
     )
 
 
+# 6. design_experiment_from_goal
+class DesignExperimentFromGoalInput(ToolInput):
+    goal_id: str
+
+
+def design_experiment_from_goal_handler(ctx: "ExecutionContext", **kwargs) -> SkillToolOutput:
+    params = DesignExperimentFromGoalInput.model_validate(kwargs)
+    res = run_skill(ctx, "design_experiment_from_goal", params.model_dump())
+    return SkillToolOutput(
+        status=res.status,
+        skill_name=res.skill_name,
+        skill_run_id=res.skill_run_id,
+        outputs=res.outputs,
+        reason=res.reason,
+        duration_ms=res.duration_ms,
+    )
+
+
+# 7. weekly_checkin
+class WeeklyCheckinSkillInput(ToolInput):
+    experiment_id: str
+
+
+def weekly_checkin_skill_handler(ctx: "ExecutionContext", **kwargs) -> SkillToolOutput:
+    params = WeeklyCheckinSkillInput.model_validate(kwargs)
+    res = run_skill(ctx, "weekly_checkin", params.model_dump())
+    return SkillToolOutput(
+        status=res.status,
+        skill_name=res.skill_name,
+        skill_run_id=res.skill_run_id,
+        outputs=res.outputs,
+        reason=res.reason,
+        duration_ms=res.duration_ms,
+    )
+
+
+# 8. review_experiment
+class ReviewExperimentSkillInput(ToolInput):
+    experiment_id: str
+
+
+def review_experiment_skill_handler(ctx: "ExecutionContext", **kwargs) -> SkillToolOutput:
+    params = ReviewExperimentSkillInput.model_validate(kwargs)
+    res = run_skill(ctx, "review_experiment", params.model_dump())
+    return SkillToolOutput(
+        status=res.status,
+        skill_name=res.skill_name,
+        skill_run_id=res.skill_run_id,
+        outputs=res.outputs,
+        reason=res.reason,
+        duration_ms=res.duration_ms,
+    )
+
+
 SKILL_TOOLS: tuple[ToolSpec, ...] = (
     ToolSpec(
         name="affordability_check",
@@ -207,6 +261,30 @@ SKILL_TOOLS: tuple[ToolSpec, ...] = (
         output_model=SkillToolOutput,
         side_effect=SideEffect.READ,
         handler=run_skill_handler,
+    ),
+    ToolSpec(
+        name="design_experiment_from_goal",
+        description="Run goal-to-experiment decomposition skill.",
+        input_model=DesignExperimentFromGoalInput,
+        output_model=SkillToolOutput,
+        side_effect=SideEffect.READ,
+        handler=design_experiment_from_goal_handler,
+    ),
+    ToolSpec(
+        name="weekly_checkin",
+        description="Run weekly experiment checkin skill.",
+        input_model=WeeklyCheckinSkillInput,
+        output_model=SkillToolOutput,
+        side_effect=SideEffect.READ,
+        handler=weekly_checkin_skill_handler,
+    ),
+    ToolSpec(
+        name="review_experiment",
+        description="Run completed experiment review skill.",
+        input_model=ReviewExperimentSkillInput,
+        output_model=SkillToolOutput,
+        side_effect=SideEffect.READ,
+        handler=review_experiment_skill_handler,
     ),
 )
 

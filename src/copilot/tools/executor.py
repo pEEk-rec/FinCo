@@ -16,6 +16,7 @@ fails, the handler's writes are rolled back, so nothing changes without an audit
 
 import json
 import sqlite3
+import threading
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -43,6 +44,9 @@ class ExecutionContext:
     policy: PolicySettings
     clock: datetime | None = None
     actor: Actor = "agent"
+    #: Optional language-model client (through the router). Tools that can use a model for
+    #: composing text or proposals take it from here; None means rules only.
+    llm_client: Any = None
 
 
 def _json_safe(value: Any) -> Any:
@@ -154,10 +158,34 @@ def _run(
     return ToolResult(ok=True, data=output)
 
 
+_CONNECTION_LOCKS: dict[int, threading.RLock] = {}
+_LOCKS_GUARD = threading.Lock()
+
+
+def _connection_lock(conn: sqlite3.Connection) -> threading.RLock:
+    """One re-entrant lock per database connection."""
+    with _LOCKS_GUARD:
+        return _CONNECTION_LOCKS.setdefault(id(conn), threading.RLock())
+
+
 def execute_tool(
     ctx: ExecutionContext, tool_name: str, raw_input: Any, approved: bool = False
 ) -> ToolResult:
-    """Execute a tool by name through governance, validation and audit. Never raises."""
+    """
+    Execute a tool by name through governance, validation and audit. Never raises.
+
+    Calls on one connection run one at a time. Parallel specialists share a connection, and
+    each call opens and releases a savepoint on it; interleaved calls broke each other with
+    "no such savepoint", so a specialist intermittently lost its findings.
+    """
+    with _connection_lock(ctx.conn):
+        return _execute_tool_locked(ctx, tool_name, raw_input, approved)
+
+
+def _execute_tool_locked(
+    ctx: ExecutionContext, tool_name: str, raw_input: Any, approved: bool = False
+) -> ToolResult:
+    """The body of `execute_tool`, called with the connection lock held."""
     with span(
         kind="tool",
         name=str(tool_name),

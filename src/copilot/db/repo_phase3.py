@@ -1652,7 +1652,7 @@ def list_feedback_stats(
     """List all feedback statistics for a tenant, optionally filtered by subject_kind."""
     if subject_kind is not None:
         rows = conn.execute(
-            "SELECT * FROM feedback_stats WHERE user_id = ? AND subject_kind = ? ORDER BY subject_key ASC",
+            "SELECT * FROM feedback_stats WHERE user_id = ? AND subject_kind = ? ORDER BY subject_key ASC",  # noqa: E501
             (user_id, subject_kind),
         ).fetchall()
     else:

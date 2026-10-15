@@ -107,6 +107,30 @@ alerts_app = typer.Typer(
 )
 app.add_typer(alerts_app, name="alerts")
 
+from copilot.cli.experiments import (  # noqa: E402
+    adjustments_app,
+    challenges_app,
+    experiments_app,
+    render_progress_cmd,
+)
+from copilot.cli.sim import sim_app  # noqa: E402
+
+app.add_typer(sim_app, name="sim")
+app.add_typer(experiments_app, name="experiments")
+app.add_typer(challenges_app, name="challenges")
+app.add_typer(adjustments_app, name="adjustments")
+
+
+@app.command("progress")
+def progress_cmd(
+    user: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Display user level, XP, unlocked badges, streaks, and personal bests (PLAN_PHASE4)."""
+    render_progress_cmd(user=user, db=db, json_output=json_output)
+
+
 
 def parse_cli_amount(amt_str: str) -> int:
     """Parse monetary amount string into integer paise.
@@ -520,6 +544,7 @@ def run_cmd(
 
     trace_entries = result.get("trace", [])
     save_trace(run_id, trace_entries)
+    conn.commit()  # the graph's writes stay uncommitted until here
     conn.close()
 
     if as_json:
@@ -1186,11 +1211,43 @@ def trace_cmd(
 @app.command("eval")
 def eval_cmd(
     db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
-    phase: Annotated[int, typer.Option("--phase", help="Evaluation phase (1, 2, or 3)")] = 1,
+    phase: Annotated[int, typer.Option("--phase", help="Evaluation phase (1, 2, 3, or 4)")] = 1,
     as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+    trials: Annotated[
+        int, typer.Option("--trials", help="Phase 4: trials per seed per persona")
+    ] = 40,
 ) -> None:
     from rich import box
     from rich.table import Table
+
+    if phase == 4:
+        from dataclasses import asdict
+
+        from copilot.eval.harness_phase4 import run_phase4_evaluation, write_report
+
+        if not as_json:
+            console.print(
+                "[bold cyan]Running Phase 4 evaluation on held-out seeds "
+                "(999, 12345, 88888)...[/bold cyan]"
+            )
+        p4 = run_phase4_evaluation(trials=trials)
+        out_path = write_report(p4)
+        if as_json:
+            print_json(asdict(p4))
+        else:
+            tbl = Table(title="Phase 4 Evaluation", box=box.ROUNDED)
+            tbl.add_column("Check", style="bold")
+            tbl.add_column("Measured")
+            tbl.add_column("Target")
+            tbl.add_column("Result", justify="center")
+            for c in p4.checks:
+                mark = "[green]PASS[/green]" if c.passed else "[red]FAIL[/red]"
+                tbl.add_row(c.name, c.measured, c.target, mark)
+            console.print(tbl)
+            for weak in p4.weak_spots[:6]:
+                console.print(f"[yellow]weak spot:[/yellow] {weak}")
+            print_success(f"Evaluation report written to [cyan]{out_path}[/cyan]")
+        return
 
     if phase == 3:
         from copilot.eval.harness_phase3 import run_phase3_evaluation
@@ -1784,6 +1841,71 @@ def goals_progress_cmd(
 ) -> None:
     """Evaluate progress and feasibility for a goal."""
     goals_show_cmd(goal_id=goal_id, db=db, user_id=user_id, as_json=as_json)
+
+
+@goals_app.command("decompose")
+def goals_decompose_cmd(
+    goal_id: Annotated[str, typer.Argument(help="Goal ID to decompose")],
+    user: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    clock: Annotated[str | None, typer.Option("--clock", help="Simulated clock ISO string")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Decompose a goal deficit into candidate behavioral experiments (PLAN_PHASE4)."""
+    from copilot.core.challenges import decompose_goal_gap
+    from copilot.core.timeutil import from_utc_iso
+
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        clock_dt = None
+        if clock:
+            try:
+                clock_dt = from_utc_iso(clock)
+            except Exception:
+                clock_dt = datetime.fromisoformat(clock).replace(tzinfo=UTC)
+
+        decomp = decompose_goal_gap(conn, user_id=user, goal_id=goal_id, clock=clock_dt)
+        data = decomp.model_dump(mode="json")
+        if as_json:
+            print_json(data)
+            return
+
+        table = Table(
+            title=f"Goal Gap Decomposition for Goal '{decomp.goal_name}' ({goal_id})",
+            box=box.ROUNDED,
+        )
+        table.add_column("Template", style="cyan")
+        table.add_column("Title", style="bold")
+        table.add_column("Difficulty", style="magenta")
+        table.add_column("Expected Savings", justify="right", style="green")
+        table.add_column("Goal Gap Share", justify="right")
+
+        for c in decomp.candidate_experiments:
+            table.add_row(
+                c.template_code,
+                c.title,
+                c.difficulty,
+                format_inr(c.expected_effect_paise),
+                f"{c.gap_share_pct}%",
+            )
+
+        monthly_str = format_inr(decomp.required_monthly_paise) if decomp.required_monthly_paise else "N/A"  # noqa: E501
+        console.print(
+            Panel(
+                f"[bold cyan]Deficit:[/bold cyan] {format_inr(decomp.deficit_paise)} | "
+                f"[bold cyan]Monthly Gap:[/bold cyan] {monthly_str}\n"
+                "[italic dim]Candidate experiments provide observational options without promising goal completion.[/italic dim]",  # noqa: E501
+                title="Goal Gap Summary",
+                box=box.ROUNDED,
+            )
+        )
+        console.print(table)
+        if not decomp.candidate_experiments:
+            console.print("[dim]No candidate experiments could be fitted for this goal deficit.[/dim]")  # noqa: E501
+    finally:
+        conn.close()
+
 
 
 # =================================================================================================
@@ -3822,6 +3944,34 @@ def memory_explain_cmd(
         conn.close()
 
 
+@memory_app.command("exception")
+def memory_exception_cmd(
+    category: Annotated[str, typer.Option("--category", help="Category name or id")],
+    reason: Annotated[str, typer.Option("--reason", help="festival, travel, medical, ...")],
+    from_date: Annotated[str | None, typer.Option("--from", help="First day, YYYY-MM-DD")] = None,
+    to_date: Annotated[str | None, typer.Option("--to", help="Last day, YYYY-MM-DD")] = None,
+    period: Annotated[str | None, typer.Option("--period", help="Whole month, YYYY-MM")] = None,
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Declare a one-off stretch (a trip, a festival) so challenges and baselines allow for it."""
+    ensure_tools_registered()
+    conn = open_db(get_db_path(db))
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        args = {"category": category, "reason": reason, "period": period,
+                "from_date": from_date, "to_date": to_date}
+        res = execute_tool(ctx, "record_contextual_exception", args)
+        conn.commit()
+        if not res.ok:
+            print_error(f"Could not record the exception: {res.error.message}")
+            raise typer.Exit(code=1)
+        print_success(f"Noted: {category} ({reason}) {from_date or period}"
+                      + (f" to {to_date}" if to_date else "") + ".")
+    finally:
+        conn.close()
+
+
 @memory_app.command("confirm")
 def memory_confirm_cmd(
     memory_id: Annotated[str, typer.Argument(help="Memory item ID")],
@@ -4388,6 +4538,9 @@ app.add_typer(learning_app, name="learning")
 @learning_app.command("show")
 def learning_show_cmd(
     user: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    subject: Annotated[
+        str | None, typer.Option("--subject", "-s", help="Filter by subject kind or key")
+    ] = None,
     db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
 ) -> None:
@@ -4398,6 +4551,11 @@ def learning_show_cmd(
     conn = open_db(db_path)
     try:
         stats = list_tenant_learning_stats(conn, user_id=user)
+        if subject:
+            stats = [
+                s for s in stats
+                if s.get("subject_kind") == subject or s.get("subject_key") == subject
+            ]
         if json_output:
             print_json(stats)
             return
@@ -4438,7 +4596,7 @@ def learning_show_cmd(
 def learning_reset_cmd(
     user: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
     subject: Annotated[
-        str | None, typer.Option("--subject", "-s", help="Specific subject key to reset")
+        str | None, typer.Option("--subject", "-s", help="Specific subject kind or key to reset")
     ] = None,
     db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
 ) -> None:
@@ -4448,7 +4606,15 @@ def learning_reset_cmd(
     db_path = get_db_path(db)
     conn = open_db(db_path)
     try:
-        cnt = reset_learning(conn, user_id=user, subject_key=subject)
+        sub_kind = (
+            subject
+            if subject in ("challenge_template", "alert_type", "anomaly_type")
+            else None
+        )
+        sub_key = subject if sub_kind is None else None
+        cnt = reset_learning(
+            conn, user_id=user, subject_kind=sub_kind, subject_key=sub_key
+        )
         conn.commit()
         if subject:
             console.print(

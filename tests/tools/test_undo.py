@@ -17,6 +17,7 @@ from copilot.models.domain import Account, Category, Transaction, User
 from copilot.tools.executor import ExecutionContext, execute_tool
 from copilot.tools.financial import recategorize_transaction_handler, register_financial_tools
 from copilot.tools.undo import undo_handler
+from copilot.workflow.nodes import ensure_tools_registered
 
 T0 = "2024-01-01T00:00:00Z"
 POLICY = load_policy(Path(__file__).resolve().parents[2] / "config" / "policy.yaml")
@@ -293,6 +294,7 @@ def test_undo_through_execute_tool_after_interleaved_edit(conn, exec_ctx):
 
 def test_undo_called_as_in_ui(conn, exec_ctx):
     """Verify that calling undo through execute_tool exactly as UI does works cleanly."""
+    ensure_tools_registered()  # this test must not depend on what an earlier test registered
     T0 = "2026-09-01T10:00:00Z"
     tx = Transaction(
         id="tx_ui_1",

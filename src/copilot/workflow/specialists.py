@@ -56,6 +56,18 @@ SPECIALIST_TOOL_ALLOWLIST: dict[str, set[str]] = {
         "explain_change",
         "investigate_month_change",
     },
+    "CoachAgent": {
+        "list_experiments",
+        "get_experiment",
+        "experiment_progress",
+        "list_offers",
+        "get_offer_details",
+        "get_user_progress",
+        "get_personal_bests",
+        "list_goals",
+        "get_goal_progress",
+        "list_adjustments",
+    },
 }
 
 DOMAIN_TO_ROLE: dict[str, str] = {
@@ -63,6 +75,8 @@ DOMAIN_TO_ROLE: dict[str, str] = {
     "goals": "GoalsAgent",
     "readiness": "ReadinessAgent",
     "behaviour": "BehaviourAgent",
+    "coaching": "CoachAgent",
+    "experiments": "CoachAgent",
 }
 
 
@@ -381,6 +395,78 @@ def _run_specialist_core(
 
             else:
                 gaps.append(f"Unhandled behaviour question kind: {kind}")
+
+        elif role == "CoachAgent":
+            if kind in ("challenge_potential", "experiment_feasibility"):
+                res_offers = execute_specialist_tool(
+                    ctx, role, "list_offers", {"status": "shown"}
+                )
+                res_exps = execute_specialist_tool(
+                    ctx, role, "list_experiments", {"status": "active"}
+                )
+                if res_offers.ok and res_offers.data:
+                    findings.append({
+                        "metric": "available_offers",
+                        "value": _to_dict(res_offers.data),
+                        "confidence": "high",
+                        "evidence": "list_offers(status='shown')",
+                    })
+                if res_exps.ok and res_exps.data:
+                    findings.append({
+                        "metric": "active_experiments",
+                        "value": _to_dict(res_exps.data),
+                        "confidence": "high",
+                        "evidence": "list_experiments(status='active')",
+                    })
+                if not findings:
+                    gaps.append("Could not retrieve challenge potential or active experiments")
+
+            elif kind == "progress_review":
+                res_prog = execute_specialist_tool(ctx, role, "get_user_progress", {})
+                res_bests = execute_specialist_tool(ctx, role, "get_personal_bests", {})
+                if res_prog.ok and res_prog.data:
+                    findings.append({
+                        "metric": "user_progress",
+                        "value": _to_dict(res_prog.data),
+                        "confidence": "high",
+                        "evidence": "get_user_progress",
+                    })
+                if res_bests.ok and res_bests.data:
+                    findings.append({
+                        "metric": "personal_bests",
+                        "value": _to_dict(res_bests.data),
+                        "confidence": "high",
+                        "evidence": "get_personal_bests",
+                    })
+                if not findings:
+                    gaps.append("Could not retrieve progress or personal bests")
+
+            elif kind == "goal_coaching":
+                gid = params.get("goal_id")
+                if gid:
+                    res = execute_specialist_tool(ctx, role, "get_goal_progress", {"goal_id": gid})
+                else:
+                    res = execute_specialist_tool(ctx, role, "list_goals", {})
+                res_exps = execute_specialist_tool(ctx, role, "list_experiments", {})
+                if res.ok and res.data:
+                    findings.append({
+                        "metric": "goal_context",
+                        "value": _to_dict(res.data),
+                        "confidence": "high",
+                        "evidence": "goals",
+                    })
+                if res_exps.ok and res_exps.data:
+                    findings.append({
+                        "metric": "experiments",
+                        "value": _to_dict(res_exps.data),
+                        "confidence": "high",
+                        "evidence": "list_experiments",
+                    })
+                if not findings:
+                    gaps.append("Could not retrieve goal coaching details")
+
+            else:
+                gaps.append(f"Unhandled coaching question kind: {kind}")
 
 
     except PermissionError as p_err:

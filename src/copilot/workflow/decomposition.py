@@ -26,6 +26,7 @@ MULTI_DOMAIN_INTENTS = {
     "tradeoff_compare",
     "contribution_check",
     "trip_planning",
+    "challenge_affordability",
 }
 
 

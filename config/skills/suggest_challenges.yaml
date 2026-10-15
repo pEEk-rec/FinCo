@@ -1,0 +1,16 @@
+name: suggest_challenges
+version: 1
+description: Suggest candidate behavioural challenge experiments tailored to recent spend patterns.
+inputs:
+  status: optional
+preconditions:
+  - has_transactions
+steps:
+  - list_offers:
+      status: $status
+  - get_financial_state: {}
+outputs:
+  - challenge_offers
+  - financial_overview
+narration_template: challenge_offer
+eval_cases: tests/skills/suggest_challenges/

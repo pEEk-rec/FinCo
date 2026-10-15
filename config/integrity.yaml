@@ -1,0 +1,4 @@
+# Integrity & Recategorisation Verification Configuration (PLAN_PHASE4 Section 5.2)
+
+share_of_margin_bp: 5000  # 50% of margin by which target was met
+late_days_threshold: 2    # Days late after window end

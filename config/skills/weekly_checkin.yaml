@@ -1,0 +1,17 @@
+name: weekly_checkin
+version: 1
+description: Check ongoing progress, observed spend, and pace for an active financial experiment.
+inputs:
+  experiment_id: required
+preconditions:
+  - has_transactions
+steps:
+  - get_experiment:
+      experiment_id: $experiment_id
+  - experiment_progress:
+      experiment_id: $experiment_id
+outputs:
+  - experiment_summary
+  - pace_status
+narration_template: experiment_checkin
+eval_cases: tests/skills/weekly_checkin/

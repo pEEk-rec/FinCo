@@ -15,6 +15,11 @@ recommendation_templates:
   affordability: "Affordability analysis for {amount_inr}: projected calendar coverage is {calendar_status} with remaining buffer of {buffer_inr}."
   monthly_close: "Monthly wrap-up complete: rollover released {released_count} buckets, memory confidence refreshed, and {alerts_count} active alerts evaluated."
   trip_planning: "Trip plan for target {target_inr} by {target_date}: monthly contribution required is {required_inr} with {tradeoff_summary}."
+  challenge_offer: "Challenge offer: {title} ({difficulty}) targets {target_inr} over {duration_days} days. Baseline median: {baseline_median_inr}."
+  experiment_checkin: "Weekly check-in for '{title}': current spend is {observed_inr} against target {target_inr}. Status: {status}."
+  experiment_review: "Experiment review for '{title}': observed {observed_inr} vs baseline median {baseline_inr} ({outcome}). Earned {xp_awarded} XP."
+  adaptive_proposal: "Adaptive proposal ({kind}) for '{title}': {reason}. Proposed new target: {new_target_inr}."
+  progress_summary: "Progress snapshot: Level {level} ({total_xp} XP). Current streak: {current_streak} days. Badges unlocked: {badges_count}."
 
 fallback_templates:
   general: "Analysis indicates current spend of {amount_inr} across recorded categories. Review your budgets to maintain cashflow buffer."
@@ -26,6 +31,11 @@ fallback_templates:
   readiness_fallback: "Investment readiness assessed. Emergency fund and obligation coverage reviewed against policy thresholds."
   contribution_plan_fallback: "Contribution plan computed over {horizon_months} months following user priority waterfall."
   tradeoff_fallback: "Tradeoff alternatives compared across completion dates, shortfall days, and constraint satisfaction."
+  challenge_offer_fallback: "Challenge offer available: {title}. Review target and duration to opt in."
+  experiment_checkin_fallback: "Experiment check-in recorded. Track your weekly pace against the target."
+  experiment_review_fallback: "Experiment concluded. Review your observed spend and learning insights."
+  adaptive_proposal_fallback: "Adaptive adjustment proposal ready for review."
+  progress_summary_fallback: "Gamification progress: current level {level} with {total_xp} XP earned."
 
 hedged_sentences:
   inconclusive_investigation: "Could not determine a definitive cause for this spend change; unexplained amount: {unexplained_inr}."

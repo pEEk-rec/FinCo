@@ -1,0 +1,202 @@
+{
+  "start something that helps me spend less on subscriptions": {
+    "expected": "start_experiment",
+    "replies": [
+      "{\"intent_type\":\"start_experiment\",\"category_name\":\"Subscriptions\",\"goal_name\":null,\"amount_inr\":null,\"period\":null,\"refusal_class\":null}"
+    ],
+    "got": "start_experiment",
+    "source": "llm"
+  },
+  "I'd like to try a no spend weekend": {
+    "expected": "start_experiment",
+    "replies": [
+      "{\"intent_type\":\"start_experiment\",\"amount_inr\":null,\"category_name\":null,\"goal_name\":null,\"period\":null,\"refusal_class\":null}"
+    ],
+    "got": "start_experiment",
+    "source": "llm"
+  },
+  "build me an experiment around cutting down my cab rides": {
+    "expected": "start_experiment",
+    "replies": [
+      "{\"intent_type\":\"start_experiment\",\"amount_inr\":null,\"category_name\":\"Travel\",\"goal_name\":null,\"period\":null,\"refusal_class\":null}"
+    ],
+    "got": "start_experiment",
+    "source": "llm"
+  },
+  "I want to take on a savings challenge this fortnight": {
+    "expected": "start_experiment",
+    "replies": [
+      "{\"amount_inr\": null, \"category_name\": null, \"goal_name\": null, \"intent_type\": \"challenge_suggestions\", \"period\": \"fortnight\", \"refusal_class\": null}"
+    ],
+    "got": "challenge_suggestions",
+    "source": "llm"
+  },
+  "is my active challenge going well": {
+    "expected": "experiment_status",
+    "replies": [
+      "{\n  \"intent_type\": \"experiment_status\",\n  \"amount_inr\": null,\n  \"category_name\": null,\n  \"goal_name\": null,\n  \"period\": null,\n  \"refusal_class\": null\n}"
+    ],
+    "got": "experiment_status",
+    "source": "llm"
+  },
+  "how many days remain in my experiment": {
+    "expected": "experiment_status",
+    "replies": [
+      "{\n  \"intent_type\": \"experiment_status\",\n  \"amount_inr\": null,\n  \"category_name\": null,\n  \"goal_name\": null,\n  \"period\": null,\n  \"refusal_class\": null\n}"
+    ],
+    "got": "experiment_status",
+    "source": "llm"
+  },
+  "I'd like an update on my ongoing challenge": {
+    "expected": "experiment_status",
+    "replies": [
+      "{\n  \"intent_type\": \"experiment_status\"\n}"
+    ],
+    "got": "experiment_status",
+    "source": "llm"
+  },
+  "am I behind on my delivery challenge": {
+    "expected": "experiment_status",
+    "replies": [
+      "{\n  \"intent_type\": \"experiment_status\"\n}"
+    ],
+    "got": "experiment_status",
+    "source": "llm"
+  },
+  "what habits have been effective for me before": {
+    "expected": "what_worked",
+    "replies": [
+      "{\n  \"intent_type\": \"what_worked\",\n  \"amount_inr\": null,\n  \"category_name\": null,\n  \"goal_name\": null,\n  \"period\": null,\n  \"refusal_class\": null\n}"
+    ],
+    "got": "what_worked",
+    "source": "llm"
+  },
+  "show me which challenges I finished successfully": {
+    "expected": "what_worked",
+    "replies": [
+      "{\n  \"intent_type\": \"what_worked\"\n}"
+    ],
+    "got": "what_worked",
+    "source": "llm"
+  },
+  "what did I do before that cut my spending": {
+    "expected": "what_worked",
+    "replies": [
+      "{\n  \"intent_type\": \"what_worked\"\n}"
+    ],
+    "got": "what_worked",
+    "source": "llm"
+  },
+  "remind me which experiments were helpful": {
+    "expected": "what_worked",
+    "replies": [
+      "{\n  \"intent_type\": \"what_worked\",\n  \"amount_inr\": null,\n  \"category_name\": null,\n  \"goal_name\": null,\n  \"period\": null,\n  \"refusal_class\": null\n}"
+    ],
+    "got": "what_worked",
+    "source": "llm"
+  },
+  "what could I try this week to save more": {
+    "expected": "challenge_suggestions",
+    "replies": [
+      "{\n  \"intent_type\": \"challenge_suggestions\",\n  \"amount_inr\": null,\n  \"category_name\": null,\n  \"goal_name\": null,\n  \"period\": \"this week\",\n  \"refusal_class\": null\n}"
+    ],
+    "got": "challenge_suggestions",
+    "source": "llm"
+  },
+  "propose a challenge that suits my spending": {
+    "expected": "challenge_suggestions",
+    "replies": [
+      "{\n  \"intent_type\": \"challenge_suggestions\"\n}"
+    ],
+    "got": "challenge_suggestions",
+    "source": "llm"
+  },
+  "do I have any offers this week": {
+    "expected": "challenge_suggestions",
+    "replies": [
+      "{\n  \"intent_type\": \"unknown\"\n}"
+    ],
+    "got": "challenge_suggestions",
+    "source": "deterministic"
+  },
+  "show the challenges you have for me": {
+    "expected": "challenge_suggestions",
+    "replies": [
+      "{\n  \"intent_type\": \"challenge_suggestions\",\n  \"amount_inr\": null,\n  \"category_name\": null,\n  \"goal_name\": null,\n  \"period\": null,\n  \"refusal_class\": null\n}"
+    ],
+    "got": "challenge_suggestions",
+    "source": "llm"
+  },
+  "report on my points and badges": {
+    "expected": "progress_summary",
+    "replies": [
+      "{\n  \"intent_type\": \"progress_summary\",\n  \"amount_inr\": null,\n  \"category_name\": null,\n  \"goal_name\": null,\n  \"period\": null,\n  \"refusal_class\": null\n}"
+    ],
+    "got": "progress_summary",
+    "source": "llm"
+  },
+  "give me an overview of my progress": {
+    "expected": "progress_summary",
+    "replies": [
+      "{\n  \"intent_type\": \"progress_summary\",\n  \"amount_inr\": null,\n  \"category_name\": null,\n  \"goal_name\": null,\n  \"period\": null,\n  \"refusal_class\": null\n}"
+    ],
+    "got": "progress_summary",
+    "source": "llm"
+  },
+  "how do I compare to my own personal best": {
+    "expected": "progress_summary",
+    "replies": [
+      "{\n  \"intent_type\": \"progress_summary\"\n}"
+    ],
+    "got": "progress_summary",
+    "source": "llm"
+  },
+  "what is my xp total": {
+    "expected": "progress_summary",
+    "replies": [
+      "{\n  \"intent_type\": \"progress_summary\",\n  \"amount_inr\": null,\n  \"category_name\": null,\n  \"goal_name\": null,\n  \"period\": null,\n  \"refusal_class\": null\n}"
+    ],
+    "got": "progress_summary",
+    "source": "llm"
+  },
+  "am I within my budget": {
+    "expected": "negative",
+    "replies": [
+      "{\n  \"intent_type\": \"check_budget\",\n  \"amount_inr\": null,\n  \"category_name\": null,\n  \"goal_name\": null,\n  \"period\": null,\n  \"refusal_class\": null\n}"
+    ],
+    "got": "check_budget",
+    "source": "llm"
+  },
+  "what if I spend 2000 more on shopping each month": {
+    "expected": "negative",
+    "replies": [
+      "{\n  \"intent_type\": \"whatif_add_spend\",\n  \"amount_inr\": 2000,\n  \"category_name\": \"Shopping\",\n  \"goal_name\": null,\n  \"period\": \"monthly\",\n  \"refusal_class\": null\n}"
+    ],
+    "got": "whatif_add_spend",
+    "source": "llm"
+  },
+  "show my recurring subscriptions": {
+    "expected": "negative",
+    "replies": [
+      "{\n  \"intent_type\": \"list_recurring\"\n}"
+    ],
+    "got": "list_recurring",
+    "source": "llm"
+  },
+  "any unusual transactions this month": {
+    "expected": "negative",
+    "replies": [
+      "{\"intent_type\":\"investigate_anomaly\",\"amount_inr\":null,\"category_name\":null,\"goal_name\":null,\"period\":null,\"refusal_class\":null}"
+    ],
+    "got": "investigate_anomaly",
+    "source": "llm"
+  },
+  "how is my laptop goal doing": {
+    "expected": "negative",
+    "replies": [
+      "{\"intent_type\":\"goal_progress\",\"amount_inr\":null,\"category_name\":null,\"goal_name\":null,\"period\":null,\"refusal_class\":null}"
+    ],
+    "got": "goal_progress",
+    "source": "llm"
+  }
+}

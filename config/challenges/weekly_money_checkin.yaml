@@ -1,0 +1,14 @@
+# Challenge Template: Weekly Money Check-in (PLAN_PHASE4 Section 5.4)
+
+code: "weekly_money_checkin"
+family: "checkin_habit"
+metric: "checkin_rate"
+eligible_categories: []
+allowed_durations: [7, 14, 28]
+allowed_difficulties: ["easy", "medium"]
+trigger_class: "checkin_prompt"
+weekdays_only: false
+title: "Weekly Money Check-in"
+rationale_template: "Answer weekly financial check-ins consistently to maintain budget clarity."
+safety_tags:
+  - "habits"

@@ -160,7 +160,7 @@ def test_transactions_and_correction_and_undo(test_db_path: str) -> None:
     assert "updated to category" in correct_res.output
 
     # List audit trail to get the correction event id
-    audit_json = runner.invoke(app, ["audit", "--db", test_db_path, "--json", "--limit", "10"])
+    audit_json = runner.invoke(app, ["audit", "--db", test_db_path, "--json", "--limit", "5000"])
     assert audit_json.exit_code == 0
     events = json.loads(audit_json.output)
     user_override_event = next(

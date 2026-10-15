@@ -12,6 +12,7 @@ half_lives_days:
   contextual_exception: 365
   advice_feedback: 120
   merchant_habit: 180
+  experiment_outcome: 180
   preference: 0  # 0 indicates no time decay
 
 support_cap_bp: 10000

@@ -1,0 +1,9 @@
+# Baseline Engine Configuration (PLAN_PHASE4 Section 1.3, Section 5.2)
+
+default_k: 6
+min_windows: 3
+max_lookback_weeks: 26
+max_missing_days: 0
+
+min_effect_share_bp: 1000  # 10%
+min_effect_paise: 20000    # ₹200 (20000 paise)

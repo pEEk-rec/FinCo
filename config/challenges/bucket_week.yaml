@@ -1,0 +1,17 @@
+# Challenge Template: Bucket Adherence Week (PLAN_PHASE4 Section 5.4)
+
+code: "bucket_week"
+family: "bucket_adherence"
+metric: "bucket_adherence_days"
+eligible_categories:
+  - "entertainment"
+  - "dining_out"
+  - "shopping"
+allowed_durations: [7, 14]
+allowed_difficulties: ["easy", "medium"]
+trigger_class: "bucket_low"
+weekdays_only: false
+title: "Bucket Adherence Week"
+rationale_template: "Maintain selected discretionary spending buckets at or above zero balance."
+safety_tags:
+  - "non_essential_only"

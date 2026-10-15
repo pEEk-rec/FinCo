@@ -1,0 +1,14 @@
+# Challenge Template: Tag Everything Week (PLAN_PHASE4 Section 5.4)
+
+code: "tag_everything_week"
+family: "tagging_completeness"
+metric: "tagging_completeness"
+eligible_categories: []
+allowed_durations: [7, 14]
+allowed_difficulties: ["easy", "medium"]
+trigger_class: "low_tagging_completeness"
+weekdays_only: false
+title: "Tag Everything Week"
+rationale_template: "Categorize every payment so zero unknown or untagged transactions remain."
+safety_tags:
+  - "data_quality"

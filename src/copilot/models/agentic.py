@@ -42,6 +42,11 @@ IntentType = Literal[
     "affordability",
     "trip_planning",
     "memory_query",
+    "start_experiment",
+    "experiment_status",
+    "what_worked",
+    "challenge_suggestions",
+    "progress_summary",
     "unknown",
 ]
 
@@ -328,6 +333,13 @@ TimelineKind = Literal[
     "skill_run",
     "tradeoff",
     "contribution_plan",
+    "challenge_offer",
+    "experiment",
+    "experiment_checkin",
+    "adjustment",
+    "experiment_review",
+    "xp_award",
+    "badge_award",
 ]
 
 

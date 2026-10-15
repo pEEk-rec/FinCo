@@ -27,3 +27,21 @@ jobs:
   monthly_close:
     schedule: "monthly@1st_02:00"
     enabled: true
+  create_checkins:
+    schedule: "daily@08:00"
+    enabled: true
+  create_due_reviews:
+    schedule: "daily@09:00"
+    enabled: true
+  expire_offers:
+    schedule: "daily@00:15"
+    enabled: true
+  run_adaptive_detectors:
+    schedule: "daily@10:00"
+    enabled: true
+  weekly_offers:
+    schedule: "weekly@monday_08:00"
+    enabled: true
+  award_xp_and_badges:
+    schedule: "daily@11:00"
+    enabled: true

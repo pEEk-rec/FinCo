@@ -1,0 +1,9 @@
+{
+  "name": "checkin_delivery_experiment",
+  "description": "Weekly checkin evaluating delivery spend pace against target",
+  "inputs": {
+    "experiment_id": "exp_delivery_01"
+  },
+  "expected_status": "ok",
+  "expected_outputs_contain": ["get_experiment", "experiment_progress"]
+}

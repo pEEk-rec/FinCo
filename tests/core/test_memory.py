@@ -307,6 +307,26 @@ def test_contextual_exception_rejects_unallowed_reason(conn: sqlite3.Connection)
     assert item.statement_json["reason"] == "travel"
 
 
+def test_contextual_exception_can_cover_a_dated_range(conn: sqlite3.Connection):
+    """A trip inside a month is stored with its exact days; bad ranges are refused."""
+    user_id = "u_ctx_range"
+    _setup_test_user(conn, user_id)
+    item = record_contextual_exception(
+        conn, user_id=user_id, category="dining", period="",
+        reason="travel", from_date="2026-09-10", to_date="2026-09-16",
+    )
+    assert item.statement_json["from_date"] == "2026-09-10"
+    assert item.statement_json["to_date"] == "2026-09-16"
+    assert item.statement_json["period"] == "2026-09"
+    for first, last in (("2026-09-16", "2026-09-10"), ("2026-09-10", None), ("bad", "2026-09-12")):
+        with pytest.raises(ToolFailure) as exc_info:
+            record_contextual_exception(
+                conn, user_id=user_id, category="dining", period="",
+                reason="travel", from_date=first, to_date=last,
+            )
+        assert exc_info.value.error.code == ErrorCode.INVALID_INPUT
+
+
 # -------------------------------------------------------------------------------------------------
 # 3. Observer 3: Advice Feedback
 # -------------------------------------------------------------------------------------------------

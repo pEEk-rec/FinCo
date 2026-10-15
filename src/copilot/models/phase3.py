@@ -300,6 +300,7 @@ class MemoryItem(BaseModel):
         "advice_feedback",
         "preference",
         "merchant_habit",
+        "experiment_outcome",
     ]
     subject_key: str
     statement_json: dict[str, Any]
@@ -320,7 +321,16 @@ class MemoryEvidence(BaseModel):
     user_id: str
     memory_id: str
     polarity: Literal["supports", "contradicts"]
-    ref_kind: Literal["txn", "advice", "audit_event", "anomaly", "investigation", "capture_label"]
+    ref_kind: Literal[
+        "txn",
+        "advice",
+        "audit_event",
+        "anomaly",
+        "investigation",
+        "capture_label",
+        "review",
+        "experiment",
+    ]
     ref_id: str
     observed_at: str
     weight_bp: int = Field(ge=0, le=10000)
@@ -372,7 +382,7 @@ class SkillRun(BaseModel):
 class SubQuestion(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    domain: Literal["cashflow", "goals", "readiness", "behaviour"]
+    domain: Literal["cashflow", "goals", "readiness", "behaviour", "coaching", "experiments"]
     question_kind: str
     parameters: dict[str, Any] = Field(default_factory=dict)
 
@@ -481,7 +491,7 @@ class FeedbackStat(BaseModel):
 
     id: str
     user_id: str
-    subject_kind: Literal["alert_kind", "advice_kind"]
+    subject_kind: Literal["alert_kind", "advice_kind", "challenge_template"]
     subject_key: str
     alpha_milli: int = Field(default=2000, gt=0)
     beta_milli: int = Field(default=2000, gt=0)

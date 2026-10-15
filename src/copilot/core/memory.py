@@ -19,7 +19,7 @@ import math
 import sqlite3
 import uuid
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Literal
@@ -58,6 +58,7 @@ def load_memory_config() -> dict[str, Any]:
                 "contextual_exception": 365,
                 "advice_feedback": 120,
                 "merchant_habit": 180,
+                "experiment_outcome": 180,
                 "preference": 0,
             },
             "support_cap_bp": 10000,
@@ -999,10 +1000,28 @@ def record_contextual_exception(
     clock: datetime | None = None,
     actor: str = "user",
     run_id: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
 ) -> MemoryItem:
     """
     Directly records a contextual exception memory item with validated reason label.
+
+    `period` names a month ("2026-09") or a day. A user can also give `from_date` and `to_date`
+    (inclusive) for a stretch inside a month, such as a trip; challenge pauses, baselines and
+    streak freezes then cover exactly those days.
     """
+    if (from_date is None) != (to_date is None):
+        raise ToolFailure(ErrorCode.INVALID_INPUT, "Give both from_date and to_date, or neither.")
+    if from_date and to_date:
+        try:
+            first, last = date.fromisoformat(from_date), date.fromisoformat(to_date)
+        except ValueError as exc:
+            raise ToolFailure(ErrorCode.INVALID_INPUT, "Dates must be YYYY-MM-DD.") from exc
+        if last < first or (last - first).days > 92:
+            raise ToolFailure(
+                ErrorCode.INVALID_INPUT, "The range must be in order and at most 93 days."
+            )
+        period = from_date[:7]
     cfg = load_memory_config()
     allowed_reasons = set(cfg.get("allowed_exception_reasons", []))
     clean_reason = reason.strip().lower()
@@ -1015,7 +1034,8 @@ def record_contextual_exception(
     now_dt = now_utc(clock) if clock is not None else datetime.now(UTC)
     clock_iso = to_utc_iso(now_dt)
 
-    subject_key = f"category:{category}|period:{period}"
+    span = f"{from_date}..{to_date}" if from_date and to_date else period
+    subject_key = f"category:{category}|period:{span}"
     existing = get_memory_by_subject(conn, user_id, "contextual_exception", subject_key)
 
     statement = {
@@ -1023,6 +1043,9 @@ def record_contextual_exception(
         "period": period,
         "reason": clean_reason,
     }
+    if from_date and to_date:
+        statement["from_date"] = from_date
+        statement["to_date"] = to_date
     if txn_id:
         statement["txn_id"] = txn_id
 

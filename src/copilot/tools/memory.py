@@ -18,7 +18,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, model_validator
 
 from copilot.audit.events import record_event
 from copilot.core.errors import ErrorCode, ToolFailure
@@ -204,9 +204,17 @@ class RecordContextualExceptionInput(ToolInput):
     """Input for recording a contextual exception reason."""
 
     category: str = Field(..., description="Category for the exception.")
-    period: str = Field(..., description="Period in YYYY-MM format.")
+    period: str | None = Field(default=None, description="Period in YYYY-MM format.")
+    from_date: str | None = Field(default=None, description="First day, YYYY-MM-DD (inclusive).")
+    to_date: str | None = Field(default=None, description="Last day, YYYY-MM-DD (inclusive).")
     reason: str = Field(..., description="Reason from allowed list (e.g. festival, travel).")
     txn_id: str | None = Field(default=None, description="Optional associated transaction ID.")
+
+    @model_validator(mode="after")
+    def _a_month_or_a_range(self) -> RecordContextualExceptionInput:
+        if not self.period and not (self.from_date and self.to_date):
+            raise ValueError("Give a period (YYYY-MM) or both from_date and to_date.")
+        return self
 
 
 class RecordContextualExceptionOutput(ToolOutput):
@@ -505,9 +513,11 @@ def record_contextual_exception_handler(
         ctx.conn,
         user_id=ctx.user_id,
         category=params.category,
-        period=params.period,
+        period=params.period or "",
         reason=params.reason,
         txn_id=params.txn_id,
+        from_date=params.from_date,
+        to_date=params.to_date,
         clock=ctx.clock,
         actor=ctx.actor,
         run_id=ctx.run_id,

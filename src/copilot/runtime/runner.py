@@ -45,10 +45,14 @@ def _get_period_key(job_kind: str, dt: datetime) -> str:
     """Return period identifier used for idempotency tracking."""
     if job_kind in ("rollover_buckets", "monthly_close"):
         return dt.strftime("%Y-%m")
+    elif job_kind == "weekly_offers":
+        return dt.strftime("%Y-W%W")
     elif job_kind == "evaluate_alerts":
         return dt.strftime("%Y-%m-%d-%H")
     else:
-        # Daily jobs: refresh_memories, coverage_scan, suggest_commitments, expire_drafts
+        # Daily jobs: refresh_memories, coverage_scan, suggest_commitments, expire_drafts,
+        # create_checkins, create_due_reviews, expire_offers, run_adaptive_detectors,
+        # award_xp_and_badges
         return dt.strftime("%Y-%m-%d")
 
 
@@ -177,6 +181,71 @@ def _execute_job_handler(
                 },
                 None,
             )
+
+        # Phase 4 Runtime Maintenance Jobs (PLAN_PHASE4 Section 5.11 & Stage 4.10)
+        elif job_kind == "create_checkins":
+            res = execute_tool(ctx, "create_checkins", {})
+            if not res.ok:
+                err_msg = res.error.message if res.error else "failed"
+                err_code = res.error.code.value if res.error else "tool_failure"
+                return False, {"error": err_msg, "period": period_key}, err_code
+            chks = getattr(res.data, "checkins", [])
+            return True, {"created_count": len(chks), "period": period_key}, None
+
+        elif job_kind == "create_due_reviews":
+            res = execute_tool(ctx, "create_due_reviews", {})
+            if not res.ok:
+                err_msg = res.error.message if res.error else "failed"
+                err_code = res.error.code.value if res.error else "tool_failure"
+                return False, {"error": err_msg, "period": period_key}, err_code
+            revs = getattr(res.data, "reviews", [])
+            return True, {"created_count": len(revs), "period": period_key}, None
+
+        elif job_kind == "expire_offers":
+            res = execute_tool(ctx, "expire_offers", {})
+            if not res.ok:
+                err_msg = res.error.message if res.error else "failed"
+                err_code = res.error.code.value if res.error else "tool_failure"
+                return False, {"error": err_msg, "period": period_key}, err_code
+            expired = getattr(res.data, "expired_count", 0)
+            return True, {"expired_count": expired, "period": period_key}, None
+
+        elif job_kind == "run_adaptive_detectors":
+            res = execute_tool(ctx, "run_adaptive_detectors", {})
+            if not res.ok:
+                err_msg = res.error.message if res.error else "failed"
+                err_code = res.error.code.value if res.error else "tool_failure"
+                return False, {"error": err_msg, "period": period_key}, err_code
+            props = getattr(res.data, "proposals_created", 0)
+            exc_cnt = getattr(res.data, "exceptions_detected", 0)
+            return True, {
+                "proposals_created": props,
+                "exceptions_detected": exc_cnt,
+                "period": period_key,
+            }, None
+
+        elif job_kind == "weekly_offers":
+            res = execute_tool(ctx, "weekly_offers", {})
+            if not res.ok:
+                err_msg = res.error.message if res.error else "failed"
+                err_code = res.error.code.value if res.error else "tool_failure"
+                return False, {"error": err_msg, "period": period_key}, err_code
+            offers = getattr(res.data, "offers", [])
+            return True, {"offers_created": len(offers), "period": period_key}, None
+
+        elif job_kind == "award_xp_and_badges":
+            res = execute_tool(ctx, "award_xp_and_badges", {})
+            if not res.ok:
+                err_msg = res.error.message if res.error else "failed"
+                err_code = res.error.code.value if res.error else "tool_failure"
+                return False, {"error": err_msg, "period": period_key}, err_code
+            xp_cnt = getattr(res.data, "xp_awarded_count", 0)
+            badge_cnt = getattr(res.data, "badges_awarded_count", 0)
+            return True, {
+                "xp_awarded_count": xp_cnt,
+                "badges_awarded_count": badge_cnt,
+                "period": period_key,
+            }, None
 
         else:
             return False, {"error": f"Unknown job kind '{job_kind}'"}, "unknown_job_kind"

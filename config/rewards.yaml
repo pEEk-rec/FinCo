@@ -1,0 +1,94 @@
+# Rewards & XP Allowlist Configuration (PLAN_PHASE4 Section 1.3, Section 5.7)
+
+xp:
+  daily_cap: 100
+
+rules:
+  checkin_answered:
+    points: 15
+    max_daily_share: 30
+    description: "Answering a scheduled experiment check-in"
+  experiment_completed:
+    points: 40
+    max_daily_share: 50
+    description: "Completing an experiment window"
+  experiment_reviewed_abandoned:
+    points: 20
+    max_daily_share: 30
+    description: "Submitting a review after abandoning an experiment (learning rewarded)"
+  target_met:
+    points: 30
+    max_daily_share: 40
+    description: "Meeting the target threshold of an experiment"
+  new_personal_best:
+    points: 25
+    max_daily_share: 50
+    description: "Setting a new personal best on a tracked metric"
+  goal_milestone_25:
+    points: 30
+    max_daily_share: 30
+    description: "Reaching 25% progress on an active goal"
+  goal_milestone_50:
+    points: 40
+    max_daily_share: 40
+    description: "Reaching 50% progress on an active goal"
+  goal_milestone_75:
+    points: 50
+    max_daily_share: 50
+    description: "Reaching 75% progress on an active goal"
+  goal_milestone_100:
+    points: 75
+    max_daily_share: 75
+    description: "Completing 100% of an active goal"
+  emergency_fund_maintained:
+    points: 50
+    max_daily_share: 50
+    description: "Keeping emergency fund at or above target for full calendar month"
+  tagging_completeness_week:
+    points: 25
+    max_daily_share: 25
+    description: "Maintaining >=95% tagging completeness for the week"
+  monthly_review_viewed:
+    points: 20
+    max_daily_share: 20
+    description: "Reviewing the monthly financial review"
+  memory_confirmation:
+    points: 10
+    max_daily_share: 20
+    description: "Confirming or updating an active behavioural memory"
+
+forbidden_metrics_and_categories:
+  metrics:
+    - "essential_reduction"
+    - "commitment_skip"
+    - "investment_amount"
+    - "contribution_amount"
+    - "borrowing"
+    - "transaction_volume"
+    - "trading_volume"
+  categories:
+    - "rent"
+    - "groceries"
+    - "utilities"
+    - "education"
+    - "education_fees"
+    - "transport"
+    - "health"
+    - "healthcare"
+    - "insurance"
+    - "emis"
+    - "loan"
+    - "debt"
+    - "investments"
+
+levels:
+  thresholds: [0, 100, 250, 500, 1000, 2000, 3500, 5000]
+  names:
+    - "Level 1 - Starter"
+    - "Level 2 - Explorer"
+    - "Level 3 - Builder"
+    - "Level 4 - Consistent"
+    - "Level 5 - Seasoned"
+    - "Level 6 - Advanced"
+    - "Level 7 - Master"
+    - "Level 8 - Anchor"

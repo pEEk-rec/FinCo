@@ -1,0 +1,27 @@
+# Experiments Configuration (PLAN_PHASE4 Section 1.3, Section 5.3)
+
+duration_days_min: 7
+duration_days_max: 56
+default_duration_days: 14
+default_start_weekday: 0  # 0 = Monday
+
+limits:
+  max_active: 2
+  max_per_category: 1
+
+checkins:
+  every_days: 7
+
+review:
+  delay_days: 2
+
+difficulties:
+  easy:
+    reduction_share_bp: 1000   # 10% below median
+  medium:
+    reduction_share_bp: 2000   # 20% below median
+  hard:
+    reduction_share_bp: 3000   # 30% below median
+
+min_target_share_bp: 5000       # Target never below 50% of baseline median
+target_round_paise: 5000        # Targets rounded to nearest ₹50 (5000 paise)

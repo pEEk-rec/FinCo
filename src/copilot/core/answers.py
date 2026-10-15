@@ -337,7 +337,7 @@ def _forecast(data: dict[str, Any], period: str) -> Answer:
         points.append(f"Regular payments still due: {f.money('pending', pending)}")
     return _build(
         f,
-        f"At this pace, {f.period(period)} will end at about {f.money('projected', data['projected_total'])}.",
+        f"At this pace, {f.period(period)} will end at about {f.money('projected', data['projected_total'])}.",  # noqa: E501
         points,
         ["How is my budget doing this month?", "What did I spend by category?"],
         "medium",
@@ -460,7 +460,7 @@ def _whatif(
     points = []
     if base < 0:
         points.append(
-            f"Right now you're {f.abs_money('short', base)} short each month (spending more than comes in)."
+            f"Right now you're {f.abs_money('short', base)} short each month (spending more than comes in)."  # noqa: E501
         )
     else:
         points.append(f"Right now you're {f.money('ahead', base)} ahead each month.")
@@ -488,7 +488,7 @@ def _whatif(
         ).fetchone()
         base_goal = cmp["baseline"]["goal_impacts"].get(gid_month, "unknown")
         points.append(
-            f"{row[0] if row else 'Your goal'}: {_words(base_goal)} now, {_words(status)} with this change."
+            f"{row[0] if row else 'Your goal'}: {_words(base_goal)} now, {_words(status)} with this change."  # noqa: E501
         )
     return _build(
         f,
@@ -515,7 +515,7 @@ def _goals(
     g = goals[0]
     pct = g["current_paise"] * 100 // g["target_paise"] if g["target_paise"] else 0
     headline = (
-        f"{g['name']}: {f.money('saved', g['current_paise'])} of {f.money('target', g['target_paise'])} "
+        f"{g['name']}: {f.money('saved', g['current_paise'])} of {f.money('target', g['target_paise'])} "  # noqa: E501
         f"saved ({f.percent('progress', pct)})."
     )
     remaining = max(0, g["target_paise"] - g["current_paise"])
@@ -568,7 +568,7 @@ def _anomalies(obs: list[dict[str, Any]], conn: sqlite3.Connection, user_id: str
             continue
         merchant = (row["merchant_normalized"] or row["merchant_raw"]).split(" upi")[0].title()
         points.append(
-            f"{merchant}, {f.abs_money('amount', row['amount_paise'])} on {f.day(row['occurred_at'])}: "
+            f"{merchant}, {f.abs_money('amount', row['amount_paise'])} on {f.day(row['occurred_at'])}: "  # noqa: E501
             f"{ANOMALY_PHRASE.get(a['kind'], a['kind'].replace('_', ' '))}"
         )
         if len(points) == 4:
@@ -594,7 +594,7 @@ def _recurring(conn: sqlite3.Connection, user_id: str) -> Answer:
         return _build(f, "I haven't found any repeating payments yet.", [], [])
     points = []
     for r in rows[:6]:
-        line = f"{r['merchant_normalized'].title()}: about {f.money('amount', r['typical_amount_paise'])}"
+        line = f"{r['merchant_normalized'].title()}: about {f.money('amount', r['typical_amount_paise'])}"  # noqa: E501
         if r["cadence_days"]:
             line += f" every {f.count('cadence', r['cadence_days'], 'days')}"
         if r["next_expected"]:

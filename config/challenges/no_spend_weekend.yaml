@@ -1,0 +1,18 @@
+# Challenge Template: No-Spend Weekend (PLAN_PHASE4 Section 5.4)
+
+code: "no_spend_weekend"
+family: "no_spend_habit"
+metric: "no_spend_days"
+eligible_categories:
+  - "shopping"
+  - "entertainment"
+  - "dining_out"
+  - "food_delivery"
+allowed_durations: [7, 14]
+allowed_difficulties: ["easy", "medium", "hard"]
+trigger_class: "weekend_heavy"
+weekdays_only: false
+title: "No-Spend Weekend"
+rationale_template: "Aim for zero discretionary debits across non-essential categories during weekend days."
+safety_tags:
+  - "non_essential_only"

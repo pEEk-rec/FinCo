@@ -1,0 +1,17 @@
+name: review_experiment
+version: 1
+description: Review completed or concluded financial experiment metrics, baseline comparison, and XP awarded.
+inputs:
+  experiment_id: required
+preconditions:
+  - has_transactions
+steps:
+  - get_experiment:
+      experiment_id: $experiment_id
+  - experiment_progress:
+      experiment_id: $experiment_id
+outputs:
+  - outcome_metrics
+  - learning_review
+narration_template: experiment_review
+eval_cases: tests/skills/review_experiment/

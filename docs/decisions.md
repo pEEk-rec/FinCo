@@ -175,7 +175,7 @@ What was built:
 - Added detect_anomalies which correctly recalls ground truth anomalies (large transactions, new merchants, duplicate charges).
 - Created orecast_month which splits transactions into fixed (recurring series) and variable, and forecasts the rest of the month.
 - Created get_financial_state to output FinancialStateSnapshot including the balance, budget statuses, and queue size.
-- Updated udget_status to include projected_exceed.
+- Updated budget_status to include projected_exceed.
 All integrated into src/copilot/tools/analysis.py and registered.
 
 ## Stage 1.7: Dispute, correction and undo (Completed)
@@ -183,7 +183,7 @@ What was built:
 - Enhanced 
 ecategorize_transaction to support --remember flag, creating merchant overrides.
 - Applied overrides automatically to past agent-set transactions of the same merchant.
-- Added undo tool that restores efore_data from audit events to revert recategorizations or batch overrides.
+- Added undo tool that restores before_data from audit events to revert recategorizations or batch overrides.
 - Configured policy to allow undo for both agent and user.
 
 ## Stage 1.8: Findings, advice drafting and validator (Completed)
@@ -1456,3 +1456,331 @@ Not doing: the divergence check in undo still compares only the category fields.
 
 ---
 *Checkpoint B reached. Phase 3 fully implemented, hardened, verified, and documented.*
+
+## Stage 4.0: Discover, Align, Adapt & Phase 4 Config Foundation
+### 1. What was built:
+- Completed Section 0.7 codebase alignment audit in `docs/phase4_alignment.md` mapping all 11 Phase 3/4 integration points.
+- Created 10 Phase 4 YAML configuration files and directories: `experiments.yaml`, `baseline.yaml`, `challenges/` (8 templates: `weekday_home_cooking`, `delivery_cap`, `no_spend_weekend`, `subscription_review`, `bucket_week`, `goal_boost`, `tag_everything_week`, `weekly_money_checkin`), `offers.yaml`, `rewards.yaml`, `badges.yaml`, `streaks.yaml`, `pace.yaml`, `integrity.yaml`, and `phase4_safety.yaml`.
+- Built strict Pydantic schemas and loaders in `src/copilot/config/phase4.py` with `extra="forbid"`, duration boundary checks (7 to 56 days), baseline window constraints ($K \ge 3$), reward allowlist validator rejecting forbidden metrics or essential category reductions, and pressure-phrase detection.
+- Authored test suite `tests/config/test_phase4_config.py` verifying all configuration files, boundary values, and safety validators (5 tests passing).
+
+### 2. Why this design:
+- Configuration-as-code ensures all game mechanics, reward rules, difficulty reductions, and safety boundaries remain auditable and tunable without modifying core arithmetic logic.
+- Validating the reward allowlist at configuration load time statically guarantees that no rule can ever reward risky behaviors (cutting essentials, borrowing, skipping commitments).
+
+### 3. What it deliberately does not do:
+- Does not allow reduction targets on essential categories (rent, groceries, utilities, education, health, insurance, EMIs).
+- Does not permit variable-ratio, random, or loot-box rewards of any kind.
+- Does not run any git commands.
+
+### 4. Examiner Viva Q&A:
+- *Q: How does Phase 4 prevent gamification from becoming predatory or encouraging unhealthy financial austerity?*
+- *A: Phase 4 enforces four structural guardrails: 1) Essential categories (rent, food, medicine, debt) are strictly excluded from reduction challenges; 2) Reward rules are verified against an allowlist that statically rejects essential cuts, borrowing, or investment volumes; 3) Pressure phrases (e.g., 'hurry', 'last chance', 'missed out') and shame framing are blocked by safety copy filters; 4) Offers are opt-in with cooldowns and rest periods if unhelpful.*
+
+## Stage 4.1: Schema and Models
+### 1. What was built:
+- Authored migration `005_phase4_schema.sql` creating 8 STRICT SQLite tables: `experiments`, `experiment_checkins`, `experiment_reviews`, `adjustment_proposals`, `offers`, `xp_events`, `badge_awards`, and `streak_freezes`, complete with foreign keys, indexes, enums, and append-only triggers on `xp_events`.
+- Created structured and domain models in `src/copilot/models/phase4.py`: `Hypothesis`, `MetricDef`, `Baseline`, `IntegrityNote`, `Experiment`, `ExperimentCheckin`, `ExperimentReview`, `AdjustmentProposal`, `Offer`, `XpEvent`, `BadgeAward`, `StreakFreeze`, `PersonalBest`, and `Progress`.
+- Implemented multi-tenant repository layer in `src/copilot/db/repo_phase4.py` filtering every query strictly by `user_id = ?`.
+- Verified idempotency, constraints, append-only triggers, JSON round-trips, and backward-compatible migration over Phase 3 database with 8 tests in `tests/db/test_phase4_schema.py`.
+
+### 2. Why this design:
+- STRICT tables and SQLite check constraints ensure that invalid dates, out-of-range basis points ($1 \le \text{rank\_p\_bp} \le 10000$), or unrecognized status enums are rejected at the storage layer.
+- `xp_events` unique constraint `(user_id, rule_code, ref_kind, ref_id)` with `INSERT OR IGNORE` guarantees idempotency: the same milestone or check-in cannot be awarded twice even under repeated background job execution.
+
+### 3. What it deliberately does not do:
+- Does not store derived entities (progress, levels, streaks, personal bests); these are computed deterministically from transactions, reviews, and events.
+- Does not allow direct modification or deletion of `xp_events` rows (guaranteed by SQLite `BEFORE UPDATE` and `BEFORE DELETE` triggers).
+
+### 4. Examiner Viva Q&A:
+- *Q: Why are progress metrics, personal bests, and streaks derived dynamically rather than stored in a user_progress table?*
+- *A: Derived metrics avoid state divergence and race conditions. Storing running streak counters or XP balances risks de-synchronization when transactions are recategorized or deleted. By computing personal bests and streaks from transactions and immutable events (`xp_events`, `streak_freezes`), the system guarantees that all progress indicators are purely deterministic and verifiable from raw history.*
+
+## Stage 4.2: Metric Catalogue and Baseline Engine
+### 1. What was built:
+- Implemented `src/copilot/core/metrics.py` providing pure-function calculators for all 8 catalogue metrics: `category_spend`, `merchant_group_spend`, `txn_count`, `no_spend_days`, `bucket_adherence_days`, `goal_allocation`, `checkin_rate`, and `tagging_completeness`. All metric functions operate on integer paise and integer basis points with half-open IST window conversion.
+- Implemented `src/copilot/core/baseline.py`:
+  - `generate_candidate_windows`: generates $K$ non-overlapping windows of `duration_days` preceding start date, aligned to weekdays/weekends.
+  - `calculate_baseline`: candidate window generation, window exclusion filtering (pre-account creation, contextual exceptions, existing experiments), minimum threshold check ($K \ge 3$), and integer lower-middle median for even counts: `sorted_vals[(N // 2) - 1]`.
+  - `evaluate_outcome`: deterministic classification into `beyond_usual_range`, `within_usual_range`, `above_usual_range`, or `no_baseline`. Calculates exact permutation rank $p$: $\text{rank\_p\_bp} = \frac{(1 + \text{count}(b \le v)) \times 10000}{K + 1}$ for lower-is-better metrics (mirrored for higher-is-better).
+  - `calculate_pace`: linear progress calculation with integer round-half-up math and symmetric tolerance band in basis points.
+  - `calculate_integrity_notes`: scans audit events for recategorisations out of target categories, detects late transactions and contextual exceptions, and flags `confirmation_required = True` when recategorised amount $\ge 50\%$ of the winning margin.
+- Authored test suite `tests/core/test_baseline_and_metrics.py` covering boundary conditions, exact rank-$p$ arithmetic, window exclusions, even-count median rules, integrity thresholds, and mathematical invariants (13/13 passing).
+
+### 2. Why this design:
+- Lower-middle median selection guarantees that the median value is always an exact integer from the observed history without floating-point interpolation or rounding bias.
+- Exact permutation rank-$p$ formula avoids parametric assumptions (no Gaussian approximations) and remains strictly bounded in $(0, 10000]$ basis points for any integer $K \ge 3$.
+- Integrity engine protects self-competition validity: if a user "wins" a challenge primarily by recategorizing spend to another bucket, the system halts automatic XP awards until the user confirms the recategorization.
+
+### 3. What it deliberately does not do:
+- Makes zero causal claims: the engine outputs observational comparisons against personal baseline ("below usual range"), never attributing changes to specific causes or user effort.
+- Does not modify any transaction records or perform writes to financial tables.
+
+### 4. Examiner Viva Q&A:
+- *Q: Why does the baseline engine exclude windows overlapping contextual exceptions or other active experiments?*
+- *A: Contaminated baseline windows distort what is 'usual' for the user. If an earlier window overlapped a festival, holiday trip, or another active experiment, the spending in that period was an outlier or an intervention. Excluding those windows ensures that the baseline represents ordinary, unperturbed behaviour.*
+- *Q: Why is the permutation rank formula calculated as (1 + count) / (K + 1) rather than count / K?*
+- *A: In non-parametric statistics and Monte Carlo hypothesis testing, the exact permutation p-value includes the observed trial itself in the denominator and numerator: p = (1 + count(b <= v)) / (K + 1). This ensures that rank-p is strictly greater than 0 and never equals 0, preventing division-by-zero or over-confident p=0 claims on finite sample sizes.*
+
+## Stage 4.3: Experiments Lifecycle and Tools
+### 1. What was built:
+- Implemented `src/copilot/core/experiments.py`:
+  - `design_experiment`: Enforces safety guards (essential categories rent, groceries, healthcare, utilities, education, EMIs blocked from reduction targets), category conflict detection against active experiments, baseline calculation, target floor at 50% of baseline median, and structured hypothesis formulation.
+  - Lifecycle state machine: `start_experiment` (freezes metric definition and baseline, verifies limits and conflict checks), `pause_experiment`, `resume_experiment`, `abandon_experiment` (allowed at any time without penalty, immediately generating a compassionate learning review).
+  - `create_checkins`: Weekly checkin generator with linear pace computation.
+  - `answer_checkin`: Records user answer, auto-generates `pause` proposal when user indicates difficulty (`want_to_pause`).
+  - `create_due_reviews`: Generates reviews after `window_end + delay_days` passing; evaluates deterministic outcomes, integrity notes, and optional goal links without causal claims.
+  - `submit_review_feedback`: Records difficulty, helpfulness, repeat interest; transitions review to `reviewed`.
+  - `get_experiment_progress`: Calculates real-time observed metric vs target and pace status.
+- Implemented `src/copilot/tools/experiments.py` registering 12 tools (read and write) with `SideEffect.READ` and `SideEffect.WRITE_LOGICAL`:
+  - Read tools: `get_experiment`, `list_experiments`, `experiment_progress`.
+  - Governed write tools: `design_experiment`, `start_experiment`, `pause_experiment`, `resume_experiment`, `abandon_experiment`, `answer_checkin`, `submit_review_feedback`, `create_checkins`, `create_due_reviews`.
+- Updated `config/policy.yaml`: human-in-the-loop opt-in; user has full permission for starting, pausing, abandoning experiments and submitting feedback; agent is strictly denied starting, pausing, or abandoning experiments without user action (`{agent: deny, user: allow}`). `design_experiment` requires user approval for agent.
+- Updated `config/planner_capabilities.yaml`: categorized read tools as `planner_selectable: true`, `tool_class: read`, and write tools as `planner_selectable: false`, `tool_class: write_logical`.
+- Multi-tenant repo functions in `src/copilot/db/repo_phase4.py` for starting experiments, recording check-in answers, updating review feedback.
+- Authored comprehensive test suites:
+  - `tests/core/test_experiments_lifecycle.py` (7 tests).
+  - `tests/tools/test_experiments_tools.py` (2 end-to-end tests verifying policy enforcement, audit trails, and execution context).
+
+### 2. Why this design:
+- Human-in-the-loop opt-in: The agent can propose or design an experiment, but only the user can start, pause, or abandon an experiment.
+- Baseline and metric definition are frozen at `started_at` to prevent post-hoc moving of goalposts or retrospective baseline tampering.
+- Abandonment is penalty-free and immediate: creating a positive learning review upon abandonment removes shame and behavioral resistance.
+
+### 3. What it deliberately does not do:
+- Does not allow moving money or automatically altering budgets.
+- Does not shame or penalize users on abandonment or failure.
+- Does not allow reduction targets on essential categories.
+
+### 4. Examiner Viva Q&A:
+- *Q: Why is abandonment designed as a first-class, penalty-free action that immediately generates a learning review?*
+- *A: Traditional financial apps inflict guilt or break streaks upon abandonment, causing user churn. In behavioral science (growth mindset / pre-commitment contracts), abandoning an unsuitable experiment provides valuable insight into what interventions are unsustainable. By immediately producing a kind learning review ('You tested home cooking for 5 days and found work hours interfered'), the copilot captures behavioral preferences without demoralizing the user.*
+- *Q: Why are metric definitions and baselines frozen upon start?*
+- *A: If an experiment dynamically updated its baseline or categories mid-flight, outcome evaluation would suffer from observer bias and data snooping. Freezing both at start ensures the evaluation remains an honest, pre-registered test.*
+
+## Stage 4.4: Challenge Templates and Personalisation
+### 1. What was built:
+- Implemented `src/copilot/core/challenges.py` supporting LLM-composed challenge specs with validation, 8 configurable YAML challenge templates acting as seeds and fallback, trigger evaluation engine (weekend dining, exceeded budgets, at-risk goals, low tagging completeness), deterministic parameter fitting and safety filtering. Sized targets are rounded to nearest ₹50 (5000 paise) and floored at 50% of baseline median.
+- Built `decompose_goal_gap` decomposing a goal's monthly gap into candidate experiments without ever claiming completion or promising the goal will be reached.
+- Authored test suite `tests/core/test_challenges_and_offers.py` covering invalid LLM specs (essential categories, unknown metrics, out-of-range duration), number hallucination suppression, fallback templates, deterministic triggers, calendar low-balance safety filter, cooldown boundaries, and property tests.
+
+### 2. Why this design:
+- Strict separation of creativity and arithmetic: LLMs propose interventions, titles, and non-essential categories, but all financial numbers (baselines, targets, expected effects, feasibility) are computed by deterministic Python code.
+- Essential categories (rent, groceries, utilities, health, etc.) are statically and dynamically excluded from reduction targets.
+
+### 3. What it deliberately does not do:
+- Does not allow the LLM to set target values (any target proposed by LLM is discarded and recomputed from historical baselines).
+- Does not start experiments automatically: generated offers are drafts (`status='shown'`) that require human opt-in.
+- Does not make promises about achieving savings goals.
+
+### 4. Examiner Viva Q&A:
+- *Q: Why are numbers inside LLM-proposed challenge specifications ignored by the system?*
+- *A: LLMs frequently hallucinate plausible-sounding financial targets that may be mathematically unachievable or dangerous for the user. FinCo treats the LLM solely as a natural-language composer for hypothesis framing and thematic suggestions, while deterministic baseline calculations own all quantitative targets.*
+
+## Stage 4.5: Adaptive Challenge Detectors
+### 1. What was built:
+- Implemented `src/copilot/core/adaptive.py` with 5 deterministic detectors:
+  1. Two consecutive 'behind' check-ins -> proposes `ease_target` (one difficulty level down) or `end_early`.
+  2. User check-in response `want_to_pause` -> proposes `pause`.
+  3. Pace ahead by wide margin ($\ge 30\%$) at midpoint -> proposes optional `raise_target_optional` (never auto-applied).
+  4. New firm commitment in window -> proposes `ease_target`.
+  5. Declared contextual exception overlapping window -> automatically creates `auto_applied_pause` and `extend` proposal for the overlapping days.
+- Lifecycle actions: `accept_adjustment`, `reject_adjustment` (auto-applied pause cannot be rejected, only reversed), `expire_stale_proposals`, and integration batch runner `run_adaptive_detectors`.
+- Implemented `src/copilot/tools/adjustments.py` with 5 governed tools (`list_adjustments`, `accept_adjustment`, `reject_adjustment`, `run_adaptive_detectors`, `expire_stale_proposals`).
+- Configured policy in `config/policy.yaml` (accept/reject: user allow, agent deny) and capabilities in `config/planner_capabilities.yaml`.
+- Authored test suites `tests/core/test_adaptive.py` (26 tests) and `tests/tools/test_adjustments_tools.py` (2 tests).
+
+### 2. Why this design:
+- Agent proposes, human decides: every mid-flight adjustment requires explicit user consent, except when the user has already declared an exception memory covering that period (where auto-pause is applied immediately, shown transparently, and reversible).
+- Target in force at the end of the experiment is used to determine `target_met`, ensuring users are not penalized for adapting targets to life changes.
+
+### 3. What it deliberately does not do:
+- Does not auto-apply `raise_target_optional` under any circumstance.
+- Does not change experiment targets silently behind the user's back.
+- Does not shame users when easing targets or ending early.
+
+### 4. Examiner Viva Q&A:
+- *Q: Why is an exception-triggered pause automatic while all other adjustments are strictly opt-in proposals?*
+- *A: If a user declares a contextual exception (e.g., medical emergency, family festival, holiday travel), continuing an active austerity experiment would cause false failures and guilt. Pausing the challenge and proposing a window extension respects the user's declared life context automatically, while still remaining fully visible and reversible.*
+
+## Stage 4.6: Self-Competition, Personal Bests, and Forgiving Streaks
+### 1. What was built:
+- Implemented `src/copilot/core/self_competition.py`:
+  - `compute_personal_bests`: derives personal bests per metric and window length from completed/reviewed experiments. Breaks ties in favor of the earliest achievement date.
+  - `evaluate_new_personal_best`: tests whether candidate observed values beat historical bests; preserves earlier date on ties.
+  - `format_self_comparison`: formats comparative statements strictly comparing the user with their own past ("compared with your median of ₹M and personal best of ₹B"), validated by `assert_no_social_comparison`.
+  - Forgiving streak engine (`calculate_streak_from_daily_series`): enforces exactly 1 grace day per 7-day boundary, freezes streaks across declared contextual exceptions, and formats broken streaks as "Longest streak: N days" without shame or loss framing.
+  - Domain streak calculators: `calculate_tagging_streak`, `calculate_checkin_streak`, `calculate_bucket_streak`, and unified `get_active_streaks`.
+- Authored test suite `tests/core/test_self_competition.py`: 9 comprehensive tests verifying personal best directionality and earliest-wins tie breaks, grace days at exactly 7-day boundaries, freeze duration during exceptions, broken streak wording, forbidden phrase scanning, and real database integration.
+
+### 2. Why this design:
+- Self-competition only: traditional gamification compares users against peers, causing anxiety or demoralization for lower-income users. FinCo anchors every comparison against the user's own past median and personal bests.
+- Forgiving streaks: streaks that break permanently upon a single miss incentivize abandonment. Providing 1 grace day per 7 days and freezing during exceptions supports realistic human life rhythms while preserving momentum.
+
+### 3. What it deliberately does not do:
+- Never compares the user with other users, peer cohorts, population averages, or leaderboards.
+- Never uses loss or shame language ("lost your streak", "streak broken", "failed") when a streak ends.
+- Does not store streak counters or personal bests as mutable database state; they are derived dynamically to prevent state de-synchronization.
+
+### 4. Examiner Viva Q&A:
+- *Q: Why are streaks and personal bests computed dynamically from historical data rather than stored as running counters?*
+- *A: Running streak counters in financial applications suffer from state corruption whenever past transactions are backfilled, recategorized, or deleted. By deriving streaks from daily compliance maps and personal bests from immutable experiment review records, all progress metrics remain mathematically verifiable, reproducible, and immune to synchronization bugs.*
+
+## Stage 4.7: Progress, Rewards, Badges, and Wellbeing Copy Safety
+
+### 1. What was built:
+- Implemented `src/copilot/core/rewards.py`:
+  - Static rule validator (`validate_reward_rules`): verifies at startup and test-time that reward rules never reference essential categories (rent, groceries, health, utilities, EMIs), skipping commitments, borrowing, or contribution/investment amounts.
+  - XP awarding engine (`award_xp`): allowlisted rules from `config/rewards.yaml`, daily cap enforcement (capped at 100 points/day), and append-only idempotency via database unique constraints on `(user_id, rule_code, ref_kind, ref_id)`.
+  - Integrity confirmation gate (`can_award_target_met_xp`): blocks `target_met` XP if review flagged `confirmation_required` until explicit `user_confirmed` is recorded.
+  - Learning rewarded on abandonment (`award_experiment_outcome_xp`): finishing an abandoned-and-reviewed experiment earns learning XP (`experiment_reviewed_abandoned`, 20 pts).
+  - Neutral levels calculator (`calculate_user_level`): determines level index, neutral level name ("Level 1 - Starter", "Level 2 - Explorer", etc., never "wealthy" or "rich"), XP in level, and XP to next level.
+  - Badges engine (`check_and_award_badges`): deterministic predicates across reviews, check-ins, tagging streaks, personal bests, emergency fund goals, and feedback reflections. Awarded once with verifiable evidence in `evidence_json`.
+  - Copy safety scanner (`scan_copy_safety`): validates all text against pressure phrases, forbidden encouragements (skip rent, skip groceries, skip meals), social comparison terms, and shame framing.
+  - Progress model constructor (`get_user_progress`): compiles unified `Progress` snapshot including total XP, level info, badges, personal bests, and active streaks.
+- Authored test suite `tests/core/test_rewards.py`: 14 comprehensive tests covering static validation, idempotency, daily cap clamping, abandoned-and-reviewed learning XP, integrity gates, neutral levels, badge awarding with evidence, copy safety scans, and progress aggregation.
+
+### 2. Why this design:
+- Anti-addictive, growth-oriented gamification: traditional game mechanics use countdown timers, variable ratio schedules, and loss framing to induce compulsive engagement. FinCo uses deterministic XP allowlists, hard daily caps, no loss of points, neutral progression labels, and rewards honest reflection/learning even when an experiment is abandoned.
+- Integrity assurance: if a user's transactions during a challenge suggest recategorization-assisted wins or missing data, XP for hitting the target is withheld until confirmed by the user.
+
+### 3. What it deliberately does not do:
+- Does not reward reductions in essential categories or skipping financial commitments.
+- Does not reward investment or contribution amounts (which would privilege wealthy users over disciplined users).
+- Never deducts XP or takes away badges (monotonic progression).
+- Does not use shame terms, countdown timers, or social comparisons.
+
+### 4. Examiner Viva Q&A:
+- *Q: Why are reward points strictly capped at 100 per day, and why are contribution amounts excluded from earning XP?*
+- *A: Rewarding contribution amounts or uncapped points incentivizes reckless financial behavior (e.g., depositing large sums or engaging in high transaction volumes for points) and favors higher-income users. Rewarding only healthy financial behaviors (check-ins, tagging, reviewing, meeting non-essential targets) with a hard daily cap ensures engagement remains sustainable, safe, and equitable.*
+- *Q: How does the integrity confirmation gate prevent 'gaming' the reward system?*
+- *A: If an experiment review detects anomalies—such as a user moving transactions out of dining into uncategorized to artificially hit a dining spend reduction target—the baseline engine flags `confirmation_required: True`. The reward engine blocks `target_met` XP until the user explicitly reviews and confirms the validity of the data.*
+
+## Stage 4.8: Learning Loop into Memory and Recommendations
+
+### 1. What was built:
+- Implemented `src/copilot/core/learning_loop.py`:
+  - Beta posterior updates (`update_template_posterior`, `get_template_posterior`): updates Beta posteriors in `feedback_stats` (`subject_kind='challenge_template'`) with exact math (+1.0 alpha on completed with helpful!=False, +1.0 beta on unhelpful, +1.0 beta on abandonment, +0.25 beta on dismissed offers).
+  - Outcome memory recording (`record_experiment_outcome_memory`): writes structured `experiment_outcome` behavioural memory items with evidence links to review and matching window transactions, decaying per Phase 3 memory half-life (180 days).
+  - Non-causal advice citations (`format_outcome_memory_advice_evidence`, `assert_no_causal_claims`): generates observational correlation statements while strictly forbidding causal claims ('caused', 'leads to', 'because of', 'guaranteed').
+  - Template suppression in advice (`is_template_suppressed_in_advice`): unhelpful reviews suppress the template in advice drafting during the cooldown window.
+  - Active outcome memory retrieval (`get_active_outcome_memories`): filters out forgotten and retired memories.
+  - Contribution-plan repeating options (`get_contribution_plan_experiment_options`): extracts repeating options for successful experiments.
+  - Failure candidate exporter (`export_phase4_failure_candidates`): exports reviews with integrity confirmation flags, `no_baseline`, or difficulty 5 to `eval/candidates/phase4/` as draft test cases (agentic SDLC flywheel).
+  - Integrated review hook (`process_post_review_learning`): coordinates posterior update, memory writing, and failure export.
+- Upgraded schema in `src/copilot/db/migrations/005_phase4_schema.sql` and Phase 3 models in `src/copilot/models/phase3.py` to support `challenge_template` in `feedback_stats`, `experiment_outcome` in `memory_items.kind`, and `review`, `experiment` in `memory_evidence.ref_kind`.
+- Authored test suite `tests/core/test_learning_loop.py`: 9 comprehensive tests verifying posterior math, memory writing and decay, non-causal advice validation, unhelpful suppression, forgotten exclusion, contribution-plan options, failure export, and integrated review lifecycle.
+
+### 2. Why this design:
+- Feedback closed loop: experiments are not isolated silos; their outcomes feed directly into user memory, offer propensities, and future financial advice.
+- Strict correlation vs causation: even when an experiment succeeds (e.g., dining spend decreases), other unobserved life factors might have influenced it. Citing correlation ('when you tried X, spending was ₹Y') maintains honesty and avoids misleading the user with false causal promises.
+- Agentic SDLC flywheel: when challenges encounter edge cases (no baseline, high difficulty, integrity anomalies), the system captures them as evaluation candidates rather than attempting risky runtime self-modification.
+
+### 3. What it deliberately does not do:
+- Does not modify agent prompts or code at runtime.
+- Never claims causal links between behavioral challenges and financial outcomes.
+- Does not continue recommending templates that the user has explicitly rated unhelpful.
+
+### 4. Examiner Viva Q&A:
+- *Q: Why does FinCo prohibit causal language ('X caused Y') when citing experiment outcomes in financial advice?*
+- *A: Financial transactions are subject to numerous confounding variables (payday timing, illness, social events, seasonality). Claiming that an intervention 'caused' a spending decrease is scientifically unfounded and establishes misleading expectations. Citing observed correlation ('When you tried weekday home cooking, dining spend was below your usual range') accurately conveys factual history without making unverified causal claims.*
+- *Q: What is the purpose of exporting failure reviews to `eval/candidates/phase4/`?*
+- *A: In accordance with agentic SDLC best practices, an AI system should not alter its own code or prompts dynamically in production. Instead, edge cases (such as data anomalies or difficulty spikes) are exported as structured candidate cases for human engineers to review, curate, and promote into the permanent regression test suite.*
+
+## Stage 4.9: Offer Policy, Decision Simulator, and Off-Policy Evaluation
+
+### 1. What was built:
+- Implemented `src/copilot/core/policy.py`:
+  - `select_offers_thompson`: Thompson sampling drawing $\theta \sim \text{Beta}(\alpha, \beta)$ using an injected seeded RNG, scoring each candidate arm by $\text{score} = \text{round}(\theta \times \text{value\_weight} \times 10000)$, and taking top $K$ slots.
+  - Monte Carlo propensity logging: estimates selection probabilities with 1000 seeded re-draws; logs exact integer propensities in $[1, 10000]$ basis points, guaranteeing $\sum \text{propensities} \le K \times 10000$.
+  - Policies `select_offers_greedy` (posterior mean exploitation) and `select_offers_random` (uniform exploration baseline).
+  - Protective rest-weeks detector (`is_user_in_rest_weeks`): pauses offers for 2 weeks (14 days) whenever the user abandons or rates as unhelpful two experiments in a row.
+  - Dispatcher `select_challenge_offers` coordinating rest-week checks, policy selection, and status reporting.
+- Implemented decision-level simulator in `eval/sim/`:
+  - `eval/sim/personas.py`: Latent personas (`ThriftyCook`, `BusyCommuter`, `FickleDrifter`) with probabilities for acceptance, completion, and helpfulness, preference drift after week 26, `DEV_SEEDS`, and `HELD_OUT_SEEDS`.
+  - `eval/sim/simulator.py`: 52-week offline simulation loop with dynamic candidate generation, decision simulation, posterior updating, and cumulative regret tracking against the best fixed slate in hindsight.
+  - `eval/sim/off_policy.py`: Standard Horvitz-Thompson Inverse Propensity Scoring (`estimate_ips`) and Self-Normalized Hajek Estimator (`estimate_snips`) with standard error, 95% confidence intervals, and Kish's Effective Sample Size.
+- Implemented CLI command `copilot sim run` (`src/copilot/cli/sim.py`, registered in `src/copilot/cli/main.py`) with rich table and JSON outputs.
+- Authored test suite `tests/core/test_policy_and_sim.py`: 9 tests covering seed reproducibility, propensity bounds, rest-week pauses, essential-category safety exclusion, simulation determinism, Thompson regret reduction over random (13.94 vs 24.05 on dev personas), off-policy SNIPS error bounds on held-out seeds, and CLI invocation.
+- Drafted simulation results in `docs/eval_report_phase4.md`.
+
+### 2. Why this design:
+- Bounded stochastic exploration: Thompson sampling strikes an optimal balance between presenting high-probability helpful challenges and discovering new preferences across challenge families. Because challenge offers are optional opt-in suggestions (unlike critical financial alerts), stochastic exploration is acceptable and safe.
+- Logged propensities for off-policy counterfactuals: storing the exact propensity $p_b$ alongside every presented offer enables off-policy evaluation (IPS and SNIPS) without needing to deploy unvetted policies to users.
+- Rest-week fatigue protection: user fatigue or consecutive negative experiences trigger an immediate pause in suggestions, respecting psychological boundaries.
+
+### 3. What it deliberately does not do:
+- Never includes essential categories in the candidate arm pool.
+- Does not expose off-policy simulation or offline evaluation tools to the conversational planner or MCP.
+- Never charges or monetizes gamified engagement.
+
+### 4. Examiner Viva Q&A:
+- *Q: Why is Thompson sampling with stochastic exploration acceptable for challenge offers, while prohibited for Phase 3 risk warnings?*
+- *A: Risk warnings (e.g. low-balance shortfalls or debt traps) are safety-critical interventions where exploring a suboptimal policy could result in severe financial harm, missed payments, or overdraft fees. In contrast, weekly challenge offers are opt-in behavioral suggestions with no financial downside; exploration merely discovers which non-essential lifestyle nudges the user finds enjoyable and sustainable.*
+- *Q: Why are selection propensities logged during Thompson sampling, and how does SNIPS improve over standard IPS?*
+- *A: Logging propensities $p_b$ allows counterfactual off-policy evaluation of new policies using historical interaction logs. While standard IPS is unbiased, its variance explodes when $p_b$ is small. Self-Normalized IPS (SNIPS) normalizes the weights by their sum, drastically reducing estimator variance and remaining bounded in $[0, 1]$, which prevents wild estimation swings on sparse logs.*
+
+## Stage 4.10: Agent Integration
+
+### 1. What was built:
+- **Phase 4 Intent Classification & Refusal Gate (`src/copilot/core/intent.py`):**
+  - Added 5 new behavioral engagement intents: `start_experiment`, `experiment_status`, `what_worked`, `challenge_suggestions`, and `progress_summary` with exact regex boundaries and entity resolution.
+  - Extended refusal gate with `BETTING_GAMBLING` refusal class, blocking peer betting, lottery, wager, and cash prize requests with polite explanations of healthy self-competition alternatives.
+- **Deterministic Plan Templates (`config/plan_templates.yaml`):**
+  - Defined minimal tool plan templates for all 5 Phase 4 intents ensuring strict tool minimality (1-2 tools per plan, no write tools in read plans).
+- **Planner Capabilities & Policy Rules (`config/planner_capabilities.yaml`, `config/policy.yaml`):**
+  - Registered read tools (`list_offers`, `get_offer_details`, `get_user_progress`, `get_personal_bests`, `design_experiment_from_goal`, `weekly_checkin`, `review_experiment`, `list_experiments`, `experiment_progress`) as `planner_selectable: true`.
+  - Registered write and lifecycle tools (`start_experiment`, `pause_experiment`, `resume_experiment`, `abandon_experiment`, `answer_checkin`, `submit_review_feedback`, `accept_offer`, `dismiss_offer`, `accept_adjustment`, `reject_adjustment`) as `planner_selectable: false` and enforced policy `{agent: deny, user: allow}`.
+  - Granted runtime jobs `{agent: allow, user: allow}`.
+- **Skills Library Integration (`config/skills/`, `src/copilot/skills/tools.py`):**
+  - Created skill manifests with prompt templates and evaluation test cases: `design_experiment_from_goal.yaml`, `weekly_checkin.yaml`, `review_experiment.yaml`, and `suggest_challenges.yaml`.
+  - Implemented tool wrappers and registered executable handlers with full audit integration.
+- **CoachAgent Multi-Agent Integration (`src/copilot/workflow/specialists.py`):**
+  - Registered `CoachAgent` specialist handling `"coaching"` and `"experiments"` domain questions.
+  - Enabled multi-domain routing (e.g., combining CashflowAgent + GoalsAgent + CoachAgent) with graceful degradation when specialized coaching tools fail.
+- **Runtime Job Handlers & Idempotency (`src/copilot/runtime/runner.py`, `config/runtime.yaml`):**
+  - Integrated 6 Phase 4 runtime jobs: `create_checkins`, `create_due_reviews`, `expire_offers`, `run_adaptive_detectors`, `weekly_offers`, and `award_xp_and_badges`.
+  - Enforced idempotency via period keys (`YYYY-MM-DD` and `YYYY-Www`).
+- **Narration Templates & MCP Guardrails (`config/explanation_templates.yaml`, `config/mcp.yaml`):**
+  - Added explanation templates for challenge offers, check-ins, reviews, adjustments, and progress summaries respecting non-causal rules and pressure phrase bans.
+  - Configured MCP exposure to strictly allow read tools (`list_experiments`, `experiment_progress`, `get_user_progress`, `get_personal_bests`, `list_offers`), with all write/mutation tools excluded.
+- **Timeline Read Model (`src/copilot/core/timeline.py`, `src/copilot/models/agentic.py`):**
+  - Added timeline item kinds for `challenge_offer`, `experiment`, `experiment_checkin`, `adjustment`, `experiment_review`, `xp_award`, and `badge_award`.
+  - Pinned pending adjustment proposals to `pending_approvals`.
+- **Comprehensive Integration Tests (`tests/workflow/test_agent_integration_phase4.py`):**
+  - 9 tests covering intent classification accuracy, betting refusals, plan minimality, adversarial plan rejection, CoachAgent execution, graceful degradation, runtime job idempotency, MCP read-only filtering, and timeline integration.
+
+### 2. Why this design:
+- Strict Human-in-the-Loop Isolation: AI agents can suggest experiments, review progress, and evaluate check-ins, but starting, pausing, abandoning, or accepting offers/adjustments requires explicit user authorization. No autonomous actor can mutate the user's financial habits or commitments without consent.
+- Minimal Tool Execution: By enforcing minimal plan templates, each intent executes only the precise tools required to answer the query, reducing latency, token consumption, and failure surface area.
+- Multi-domain Synthesis: `CoachAgent` participates as an equal peer in the specialist supervisor graph, enabling queries that bridge cashflow forecasts, long-term goals, and behavioral experiments.
+
+### 3. What it deliberately does not do:
+- Does not expose write tools or money-movement actions to MCP clients or conversational planners.
+- Does not allow peer comparisons or wagering in intent matching or agent prompts.
+- Does not permit ungrounded causal claims in narration templates.
+
+### 4. Examiner Viva Q&A:
+- *Q: How does FinCo ensure that conversational LLMs cannot manipulate behavioral challenges or award unearned XP?*
+- *A: Through four deterministic barriers: 1) Planner capability rules mark all Phase 4 write tools as `planner_selectable: false`; 2) Policy rules strictly enforce `{agent: deny, user: allow}` on experiment lifecycle and offer actions; 3) MCP config exposes only pure read tools; 4) XP and badge awards are evaluated only through deterministic runtime jobs (`award_xp_and_badges`) based on verified ledger and review events.*
+- *Q: How does CoachAgent handle unhandled coaching sub-questions without throwing errors or hallucinating answers?*
+- *A: Following FinCo's graceful degradation pattern, if an unhandled question or tool failure occurs inside a specialist execution, the error is caught, recorded in the audit trace, and appended as an information gap in the agentic state. The supervisor synthesizes a helpful response explaining what information could not be retrieved rather than failing or fabricating data.*
+
+
+## Stage 4.11: CLI, API and demo (closed after the session limit)
+
+**Explain-back.** Stage 4.11 makes everything built so far reachable by a person: `copilot challenges`, `experiments`, `adjustments`, `progress`, `learning`, `sim`, the matching API routes and the demo script. Antigravity built the commands but had never run them on a seeded database; the tests inserted offers by hand. Running the real journey end to end found five things that the tests could not see, and each now has a test in `tests/cli/test_cli_phase4_journey.py`:
+1. `copilot run` closed its connection without committing, so everything the graph wrote (categories, audit rows) was lost. An older test only passed because those audit rows did not exist; I widened that test's audit window and left its assertion alone.
+2. `copilot challenges offers` sent a `week_start` that the tool rejects and never looked at the result, so offers could not be generated from the command line at all. The tool now accepts `week_start`, and the CLI reports a failure.
+3. The offers table showed an empty Reason column because it read the wrong key.
+4. The feedback tool never called the learning loop (`process_post_review_learning` was only called from tests), so feedback changed no posterior and wrote no memory. Now the first feedback for a review teaches the loop once; resubmitting changes nothing. Abandoning an experiment adds the small failure weight for its template.
+5. No user-facing path could declare a dated exception, so the plan's auto-pause could not be shown. `copilot memory exception --category --reason --from --to` (and optional `from_date`/`to_date` on the existing tool) now do it, with a check that the range is in order and at most 93 days.
+Not done on purpose: the terminal answer to "what worked for me" is still terse (see known issues).
+
+## Stage 4.12: Evaluation harness, golden scenarios and report
+
+**Explain-back.** `copilot eval --phase 4` builds a fresh synthetic user for every trial and measures the claims the plan makes, with targets written down before looking at results and derived from theory instead of tuned: with K=6 earlier periods, a comparison that is pure chance still says "beyond your usual range" about 1 time in 7 (14.3%), so the pass line for false alarms is 14.3% plus two standard errors, and detection must be at least 2.5 times the false-alarm rate. Measured on held-out seeds that nothing was tuned on: false alarms 18.3% (rank-only 19.2%), detection of a real 35% cut 51.7%. In plain words the check catches about half of real improvements and is wrong about one in five quiet fortnights; the app words results as "beyond your usual range", never as proof. K=12 is reported alongside K=6 as a sensitivity check. Intent reading on held-out phrasing is 75.0% against a pre-declared 80% target and is left as a visible FAIL; I did not tune on the held-out set. Every model reply used by the evaluation is replayed from a recorded cassette, so the run is offline and repeatable.
+
+## Stage 4.13: Hardening, documentation and the twelve safety rules
+
+**Explain-back.** Each of the twelve rules in section 8 has a test that fails when the rule is removed, and `scripts/mutation_check_phase4.py` proves it by breaking the code 18 ways (for example letting the agent start an experiment, exposing a write tool over MCP, registering a money-transfer tool, letting learning lower a hard-floor alert) and checking that a test turns red each time; all 18 are caught (`docs/phase4_mutation_checks.md`). The hardening pass also fixed: two threads sharing one SQLite connection could interleave savepoints (per-connection lock) and tool registration could race (registration lock), both found by a flaky test that only failed under load; weekly offers are idempotent per week (unique index in migration 006); a rest week or a quiet week withholds offers before any model call is spent; recategorisation during a window is detected on the real audit event shape; and a model outage while reading a question falls back to the rules instead of failing. No new dependency, no money movement, integer paise everywhere, `user_id` on every table.

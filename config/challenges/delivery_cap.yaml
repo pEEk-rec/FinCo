@@ -1,0 +1,16 @@
+# Challenge Template: Delivery Cap (PLAN_PHASE4 Section 5.4)
+
+code: "delivery_cap"
+family: "delivery_spend"
+metric: "merchant_group_spend"
+eligible_categories:
+  - "food_delivery"
+allowed_durations: [7, 14, 28]
+allowed_difficulties: ["easy", "medium", "hard"]
+merchant_group: "food_delivery"
+trigger_class: "budget_exceeded"
+weekdays_only: false
+title: "Delivery App Spend Cap"
+rationale_template: "Set an intentional cap on app-based food orders to stay within your baseline."
+safety_tags:
+  - "non_essential_only"

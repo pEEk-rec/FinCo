@@ -198,3 +198,55 @@ templates:
         arg_bindings: {}
         rationale: "List active and observed behavioural memories and patterns"
 
+  # Phase 4 Plan Templates (PLAN_PHASE4 Section 5.11 & Stage 4.10)
+  start_experiment:
+    intent_type: start_experiment
+    required_tools: ["list_offers"]
+    allowed_tools: ["list_offers", "get_offer_details", "list_experiments"]
+    default_steps:
+      - tool_name: list_offers
+        arg_bindings: {}
+        rationale: "List available personalized challenge offers to help start an experiment"
+
+  experiment_status:
+    intent_type: experiment_status
+    required_tools: ["list_experiments"]
+    allowed_tools: ["list_experiments", "get_experiment", "experiment_progress"]
+    default_steps:
+      - tool_name: list_experiments
+        arg_bindings: {"status": "active"}
+        rationale: "Fetch active experiments to check status and progress"
+
+  what_worked:
+    intent_type: what_worked
+    required_tools: ["list_experiments"]
+    allowed_tools: ["list_experiments", "list_memories", "get_personal_bests"]
+    default_steps:
+      - tool_name: list_experiments
+        arg_bindings: {"status": "completed"}
+        rationale: "Review completed experiments to identify successful habits"
+      - tool_name: list_memories
+        arg_bindings: {}
+        rationale: "Inspect behavioral memories and observations of past successes"
+
+  challenge_suggestions:
+    intent_type: challenge_suggestions
+    required_tools: ["list_offers"]
+    allowed_tools: ["list_offers", "get_offer_details"]
+    default_steps:
+      - tool_name: list_offers
+        arg_bindings: {}
+        rationale: "Retrieve pending challenge and experiment offers tailored to your spending"
+
+  progress_summary:
+    intent_type: progress_summary
+    required_tools: ["get_user_progress"]
+    allowed_tools: ["get_user_progress", "get_personal_bests", "list_experiments"]
+    default_steps:
+      - tool_name: get_user_progress
+        arg_bindings: {}
+        rationale: "Retrieve XP, level, active streak, and badge progress summary"
+      - tool_name: get_personal_bests
+        arg_bindings: {}
+        rationale: "Fetch personal best records across experiment metrics"
+

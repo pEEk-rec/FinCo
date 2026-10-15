@@ -1,0 +1,5 @@
+# Experiment Pace Configuration (PLAN_PHASE4 Section 5.2, Section 5.5)
+
+tolerance_bp: 1000  # 10% tolerance around linear pace
+consecutive_behind_for_adaptation: 2
+ahead_margin_bp: 2500  # 25% ahead for optional raise target proposal

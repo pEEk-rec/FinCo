@@ -7,6 +7,7 @@ All tool calls MUST pass strictly through `execute_tool(ctx, tool_name, params)`
 """
 
 import sqlite3
+import threading
 import time
 from datetime import datetime
 from typing import Any
@@ -28,8 +29,22 @@ from copilot.tools.registry import get as get_tool
 from copilot.workflow.findings import build_findings_from_analysis
 from copilot.workflow.state import AgentState, TraceEntry
 
+_REGISTRATION_LOCK = threading.RLock()
+
 
 def ensure_tools_registered() -> None:
+    """
+    Make sure every tool is registered, safely from several threads at once.
+
+    Parallel specialists each call this first. Without the lock two threads could both see a
+    tool missing and both register it, and one would fail with "already registered", which
+    silently dropped that specialist's findings.
+    """
+    with _REGISTRATION_LOCK:
+        _register_missing_tools()
+
+
+def _register_missing_tools() -> None:
     """Ensure all tool specifications are registered in the global registry."""
     if get_tool("get_financial_state") is None:
         from copilot.tools.financial import register_financial_tools
@@ -90,6 +105,26 @@ def ensure_tools_registered() -> None:
         from copilot.skills.tools import register_skill_tools
 
         register_skill_tools()
+
+    if get_tool("design_experiment") is None:
+        from copilot.tools.experiments import register_experiment_tools
+
+        register_experiment_tools()
+
+    if get_tool("list_adjustments") is None:
+        from copilot.tools.adjustments import register_adjustment_tools
+
+        register_adjustment_tools()
+
+    if get_tool("list_offers") is None:
+        from copilot.tools.challenges import register_challenge_tools
+
+        register_challenge_tools()
+
+    if get_tool("get_user_progress") is None:
+        from copilot.tools.rewards import register_rewards_tools
+
+        register_rewards_tools()
 
 
 

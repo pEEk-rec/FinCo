@@ -63,7 +63,7 @@ def main() -> int:
     print(f"  {len(specs)} tools registered: {len(reads)} read-only, {len(writes)} change data")
     print(f"  The planner may choose from {len(selectable)} tools, all read-only.")
     print(
-        f"  Tools that change data and are available to the planner: {len(selectable & set(writes))}"
+        f"  Tools that change data and are available to the planner: {len(selectable & set(writes))}"  # noqa: E501
     )
     ok = not (selectable & set(writes)) and selectable <= set(reads)
     failures += not ok
@@ -85,13 +85,11 @@ def main() -> int:
     heading("2. Trying to rewrite history")
     audit_id = conn.execute("SELECT id FROM audit_events LIMIT 1").fetchone()[0]
     attempts = {
-        "UPDATE an audit row": "UPDATE audit_events SET reason = 'edited' WHERE id = '%s'"
-        % audit_id,
-        "DELETE an audit row": "DELETE FROM audit_events WHERE id = '%s'" % audit_id,
+        "UPDATE an audit row": f"UPDATE audit_events SET reason = 'edited' WHERE id = '{audit_id}'",
+        "DELETE an audit row": f"DELETE FROM audit_events WHERE id = '{audit_id}'",
         "overwrite with INSERT OR REPLACE": (
-            "INSERT OR REPLACE INTO audit_events (id, user_id, occurred_at, actor, event_type, reason) "
-            "VALUES ('%s', '%s', '2000-01-01T00:00:00Z', 'system', 'x', 'forged')"
-            % (audit_id, user)
+            "INSERT OR REPLACE INTO audit_events (id, user_id, occurred_at, actor, event_type, reason) "  # noqa: E501
+            f"VALUES ('{audit_id}', '{user}', '2000-01-01T00:00:00Z', 'system', 'x', 'forged')"
         ),
     }
     for name, sql in attempts.items():

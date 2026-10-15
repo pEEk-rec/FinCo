@@ -152,3 +152,25 @@ copilot learning reset --subject budget_risk:groceries
 # Reset all learned state for user
 copilot learning reset --all
 ```
+
+---
+
+## 9. Phase 4 Exploration: Thompson Sampling for Challenge Offers vs. Phase 3 Safety-Critical Alerts
+
+### Why Exploration is Acceptable for Offers but Forbidden for Alerts
+A foundational design principle in FinCo is asymmetric exploration risk:
+1. **Safety-Critical Alerts (Phase 3): Zero Exploration Allowed.**
+   Alerts monitor real-world financial risks (imminent calendar shortfalls, unpaid firm commitments, severe budget breaches). Suppressing a critical alert due to an exploratory random draw could result in bounced payments, bank penalties, or credit score damage. Therefore, alert sensitivity strictly uses the deterministic posterior mean with safety floors.
+2. **Behavioral Challenge Offers (Phase 4): Thompson Sampling Permitted.**
+   Challenge offers (e.g. 'Cook at home on weekends to save ₹500') are optional, non-binding invitations. If an exploratory arm is suggested and the user is uninterested, they simply click 'Not now' or ignore it with zero financial downside. Exploration allows the copilot to discover user preferences across diverse challenge styles without financial risk.
+3. **Propensity Logging and Off-Policy Evaluation (IPS):**
+   Every Thompson sampling draw logs its exact selection probability ($\pi_0(a|x)$) via Monte Carlo re-draws. This enables sound off-policy counterfactual evaluation (Inverse Propensity Scoring and Self-Normalized IPS) on historical logs without deploying unvalidated policies.
+
+## Phase 4 loop, as built
+
+First feedback on a review calls `process_post_review_learning`: the template's Beta posterior gets
++1 alpha (helpful) or +1 beta (not helpful), an `experiment_outcome` memory is written with links to
+the review, and failure candidates are exported when their criteria are met. Abandoning adds +1 beta;
+dismissing an offer adds 0.25 beta. Repeated feedback for the same review does not count twice. The
+posterior only changes how likely a template is to be offered; it never forces an offer, never
+lowers a hard-floor alert, and never makes a causal claim.

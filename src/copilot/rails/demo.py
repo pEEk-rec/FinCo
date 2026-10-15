@@ -8,7 +8,7 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from copilot.core.timeutil import from_utc_iso, now_utc, to_utc_iso
+from copilot.core.timeutil import from_utc_iso, to_utc_iso
 from copilot.rails.engine import ReconcileOut, categorize, ensure_schema, reconcile
 
 ALERTS = [
@@ -96,7 +96,6 @@ def nightly_sync(conn: sqlite3.Connection, user_id: str, clock: datetime | None)
     The row id is a hash of account, time, amount and narration, so syncing twice adds nothing.
     """
     ensure_schema(conn)
-    now = now_utc(clock)
     base = from_utc_iso("2024-03-18T06:30:00Z")
     posted = skipped = 0
     known = {r[0] for r in conn.execute("SELECT id FROM categories WHERE user_id = ?", (user_id,))}
@@ -106,11 +105,11 @@ def nightly_sync(conn: sqlite3.Connection, user_id: str, clock: datetime | None)
         occurred = to_utc_iso(base + timedelta(minutes=minutes - 35))
         key = f"a1|{occurred}|{paise}|{narration}"
         tid = "aa_sync_" + hashlib.sha256(key.encode()).hexdigest()[:20]
-        category, source = categorize(narration, paise, direction)
+        category, _ = categorize(narration, paise, direction)
         if category not in known:  # this profile may not have the category a rule names
-            category, source = None, "none"
+            category = None
         cur = conn.execute(
-            "INSERT OR IGNORE INTO transactions (id, user_id, account_id, occurred_at, amount_paise,"
+            "INSERT OR IGNORE INTO transactions (id, user_id, account_id, occurred_at, amount_paise,"  # noqa: E501
             " direction, merchant_raw, description, category_id, category_confidence,"
             " category_source, created_at) VALUES (?, ?, 'a1', ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (

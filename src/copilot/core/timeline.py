@@ -325,7 +325,7 @@ def build_timeline(
                 ts=row["created_at"],
                 kind="commitment",
                 title=f"Commitment: {row['name']} ({row['kind']})",
-                detail=f"Amount: {amt_str}, schedule: {row['schedule_kind']}, certainty: {row['certainty']}",
+                detail=f"Amount: {amt_str}, schedule: {row['schedule_kind']}, certainty: {row['certainty']}",  # noqa: E501
                 status=row["status"],
                 ref={"commitment_id": row["id"]},
             )
@@ -393,7 +393,7 @@ def build_timeline(
                 ts=row["created_at"],
                 kind="contribution_plan",
                 title=f"Contribution Plan ({row['horizon_months']}M)",
-                detail=f"Waterfall plan from {row['period_from']}, horizon {row['horizon_months']} months",
+                detail=f"Waterfall plan from {row['period_from']}, horizon {row['horizon_months']} months",  # noqa: E501
                 status="completed",
                 ref={"contribution_plan_id": row["id"]},
             )
@@ -401,7 +401,7 @@ def build_timeline(
 
     # 12. Tradeoff Analyses
     tradeoff_query = (
-        "SELECT id, run_id, created_at FROM tradeoff_analyses WHERE user_id = ? ORDER BY created_at ASC"
+        "SELECT id, run_id, created_at FROM tradeoff_analyses WHERE user_id = ? ORDER BY created_at ASC"  # noqa: E501
     )
     for r in conn.execute(tradeoff_query, (user_id,)).fetchall():
         row = dict(r)
@@ -446,7 +446,170 @@ def build_timeline(
                 )
             )
 
-    # 8. Filter by since if specified
+    # 14. Phase 4 Challenge Offers
+    try:
+        offers_query = (
+            "SELECT id, template_code, difficulty, params_json, status, created_at, decided_at "
+            "FROM offers WHERE user_id = ? ORDER BY created_at ASC"
+        )
+        for r in conn.execute(offers_query, (user_id,)).fetchall():
+            row = dict(r)
+            ts = row.get("decided_at") or row["created_at"]
+            p_data = json.loads(row["params_json"]) if row.get("params_json") else {}
+            title = p_data.get("title", f"Challenge ({row['template_code']})")
+            raw_entries.append(
+                TimelineEntry(
+                    ts=ts,
+                    kind="challenge_offer",
+                    title=f"Challenge Offer: {title}",
+                    detail=f"Difficulty: {row['difficulty']}, status: {row['status']}",
+                    status=row["status"],
+                    ref={"offer_id": row["id"]},
+                )
+            )
+    except sqlite3.OperationalError:
+        pass
+
+    # 15. Phase 4 Experiments
+    try:
+        exp_query = (
+            "SELECT id, title, difficulty, status, started_at, created_at "
+            "FROM experiments WHERE user_id = ? ORDER BY created_at ASC"
+        )
+        for r in conn.execute(exp_query, (user_id,)).fetchall():
+            row = dict(r)
+            ts = row.get("started_at") or row["created_at"]
+            raw_entries.append(
+                TimelineEntry(
+                    ts=ts,
+                    kind="experiment",
+                    title=f"Experiment: {row['title']}",
+                    detail=f"Difficulty: {row['difficulty']}, status: {row['status']}",
+                    status=row["status"],
+                    ref={"experiment_id": row["id"]},
+                )
+            )
+    except sqlite3.OperationalError:
+        pass
+
+    # 16. Phase 4 Experiment Check-ins
+    try:
+        chk_query = (
+            "SELECT id, experiment_id, checkin_date, pace_status, created_at "
+            "FROM experiment_checkins WHERE user_id = ? ORDER BY created_at ASC"
+        )
+        for r in conn.execute(chk_query, (user_id,)).fetchall():
+            row = dict(r)
+            raw_entries.append(
+                TimelineEntry(
+                    ts=row["created_at"],
+                    kind="experiment_checkin",
+                    title="Weekly Check-in",
+                    detail=f"Check-in date: {row['checkin_date']}, pace: {row['pace_status']}",
+                    status=row["pace_status"],
+                    ref={"checkin_id": row["id"], "experiment_id": row["experiment_id"]},
+                )
+            )
+    except sqlite3.OperationalError:
+        pass
+
+    # 17. Phase 4 Adaptive Proposals
+    try:
+        adj_query = (
+            "SELECT id, experiment_id, kind, status, created_at, decided_at "
+            "FROM adjustment_proposals WHERE user_id = ? ORDER BY created_at ASC"
+        )
+        for r in conn.execute(adj_query, (user_id,)).fetchall():
+            row = dict(r)
+            ts = row.get("decided_at") or row["created_at"]
+            raw_entries.append(
+                TimelineEntry(
+                    ts=ts,
+                    kind="adjustment",
+                    title=f"Adaptive Proposal ({row['kind']})",
+                    detail=f"Status: {row['status']}",
+                    status=row["status"],
+                    ref={"proposal_id": row["id"], "experiment_id": row["experiment_id"]},
+                )
+            )
+            if row["status"] == "proposed":
+                pending_approvals.append(
+                    TimelineEntry(
+                        ts=row["created_at"],
+                        kind="approval_pending",
+                        title=f"Adaptive Proposal Awaiting Decision ({row['kind']})",
+                        detail=f"Proposed adjustment for experiment '{row['experiment_id']}'",
+                        status="awaiting_approval",
+                        ref={"proposal_id": row["id"], "experiment_id": row["experiment_id"]},
+                    )
+                )
+    except sqlite3.OperationalError:
+        pass
+
+    # 18. Phase 4 Experiment Reviews
+    try:
+        rev_query = (
+            "SELECT id, experiment_id, outcome, effect_value, created_at "
+            "FROM experiment_reviews WHERE user_id = ? ORDER BY created_at ASC"
+        )
+        for r in conn.execute(rev_query, (user_id,)).fetchall():
+            row = dict(r)
+            raw_entries.append(
+                TimelineEntry(
+                    ts=row["created_at"],
+                    kind="experiment_review",
+                    title=f"Experiment Review ({row['outcome']})",
+                    detail=f"Outcome: {row['outcome']}, effect: {row['effect_value']}",
+                    status=row["outcome"],
+                    ref={"review_id": row["id"], "experiment_id": row["experiment_id"]},
+                )
+            )
+    except sqlite3.OperationalError:
+        pass
+
+    # 19. Phase 4 XP Events
+    try:
+        xp_query = (
+            "SELECT id, rule_code, points, created_at "
+            "FROM xp_events WHERE user_id = ? ORDER BY created_at ASC"
+        )
+        for r in conn.execute(xp_query, (user_id,)).fetchall():
+            row = dict(r)
+            raw_entries.append(
+                TimelineEntry(
+                    ts=row["created_at"],
+                    kind="xp_award",
+                    title=f"XP Earned (+{row['points']} XP)",
+                    detail=f"Rule: {row['rule_code']}",
+                    status="awarded",
+                    ref={"xp_event_id": row["id"]},
+                )
+            )
+    except sqlite3.OperationalError:
+        pass
+
+    # 20. Phase 4 Badge Awards
+    try:
+        badge_query = (
+            "SELECT id, badge_code, awarded_at "
+            "FROM badge_awards WHERE user_id = ? ORDER BY awarded_at ASC"
+        )
+        for r in conn.execute(badge_query, (user_id,)).fetchall():
+            row = dict(r)
+            raw_entries.append(
+                TimelineEntry(
+                    ts=row["awarded_at"],
+                    kind="badge_award",
+                    title=f"Badge Unlocked: {row['badge_code']}",
+                    detail=f"Badge code: {row['badge_code']}",
+                    status="awarded",
+                    ref={"badge_id": row["id"]},
+                )
+            )
+    except sqlite3.OperationalError:
+        pass
+
+    # Filter by since if specified
     if since_iso:
         raw_entries = [e for e in raw_entries if e.ts >= since_iso]
         pending_approvals = [e for e in pending_approvals if e.ts >= since_iso]

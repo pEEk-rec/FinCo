@@ -1,0 +1,9 @@
+{
+  "name": "goal_experiment_decomposition",
+  "description": "User breaks down emergency fund goal into candidate challenge experiments",
+  "inputs": {
+    "goal_id": "g_emergency"
+  },
+  "expected_status": "ok",
+  "expected_outputs_contain": ["list_goals", "get_financial_state"]
+}

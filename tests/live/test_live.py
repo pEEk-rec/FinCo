@@ -342,9 +342,14 @@ UNKNOWN_CSV = (
 
 
 def _reply(*decisions):
-    return json.dumps({"decisions": [
-        {"merchant_normalized": m, "category_id": c, "confidence": p} for m, c, p in decisions
-    ]})
+    return json.dumps(
+        {
+            "decisions": [
+                {"merchant_normalized": m, "category_id": c, "confidence": p}
+                for m, c, p in decisions
+            ]
+        }
+    )
 
 
 def _with_model(live, reply):
@@ -400,14 +405,12 @@ def test_remembered_choice_labels_the_same_merchant_next_time(live):
     client.post("/api/live/import/statement", headers=AUTH, json={"text": UNKNOWN_CSV})
     item = client.get("/api/review-queue", headers=AUTH).json()["items"][0]["transaction"]
     done = client.post(
-        f"/api/transactions/{item['id']}/category", headers=AUTH,
+        f"/api/transactions/{item['id']}/category",
+        headers=AUTH,
         json={"category_id": "education", "remember": True},
     )
     assert done.status_code == 200
-    again = (
-        "Date,Narration,Debit,Credit\n"
-        "20/03/2024," + item["merchant_raw"] + ",75.00,\n"
-    )
+    again = "Date,Narration,Debit,Credit\n20/03/2024," + item["merchant_raw"] + ",75.00,\n"
     out = client.post("/api/live/import/statement", headers=AUTH, json={"text": again}).json()
     assert out["needs_review"] == 1  # the other unknown one; this merchant is remembered
 
@@ -423,8 +426,10 @@ def test_everyday_life_categories_exist_and_rules_use_them(live):
     )
     out = client.post("/api/live/import/statement", headers=AUTH, json={"text": text}).json()
     assert out["needs_review"] == 0
-    cats = {t["merchant_raw"][:6]: t["category_id"] for t in
-            client.get("/api/transactions", headers=AUTH).json()["items"]}
+    cats = {
+        t["merchant_raw"][:6]: t["category_id"]
+        for t in client.get("/api/transactions", headers=AUTH).json()["items"]
+    }
     assert cats["UPI-LO"] == "health" and cats["ATM-WD"] == "cash"
 
 

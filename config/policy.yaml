@@ -95,3 +95,44 @@ tools:
   contribution_review:         {decision: allow}
   explain_month_change:        {decision: allow}
   run_skill:                   {decision: allow}
+
+  # Phase 4 Experiments
+  design_experiment:           {agent: needs_approval, user: allow}
+  start_experiment:            {agent: deny, user: allow}
+  pause_experiment:            {agent: deny, user: allow}
+  resume_experiment:           {agent: deny, user: allow}
+  abandon_experiment:          {agent: deny, user: allow}
+  answer_checkin:              {agent: deny, user: allow}
+  submit_review_feedback:      {agent: deny, user: allow}
+  confirm_review_integrity:    {agent: deny, user: allow}
+  get_experiment:              {decision: allow}
+  list_experiments:            {decision: allow}
+  experiment_progress:         {decision: allow}
+  create_checkins:             {agent: allow, user: allow}
+  create_due_reviews:          {agent: allow, user: allow}
+
+  # Phase 4 Adaptive Adjustments
+  list_adjustments:            {decision: allow}
+  accept_adjustment:           {agent: deny, user: allow}
+  reject_adjustment:           {agent: deny, user: allow}
+  run_adaptive_detectors:      {agent: allow, user: allow}
+  expire_stale_proposals:      {agent: allow, user: allow}
+
+  # Phase 4 Challenges & Offers
+  list_offers:                 {decision: allow}
+  get_offer_details:           {decision: allow}
+  accept_offer:                {agent: deny, user: allow}
+  dismiss_offer:               {agent: deny, user: allow}
+  suggest_challenges:          {agent: allow, user: allow}
+  expire_offers:               {agent: allow, user: allow}
+  weekly_offers:               {agent: allow, user: allow}
+
+  # Phase 4 Rewards & Progress
+  get_user_progress:           {decision: allow}
+  get_personal_bests:          {decision: allow}
+  award_xp_and_badges:         {agent: allow, user: allow}
+
+  # Phase 4 Skills
+  design_experiment_from_goal: {decision: allow}
+  weekly_checkin:              {decision: allow}
+  review_experiment:           {decision: allow}

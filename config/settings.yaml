@@ -10,6 +10,10 @@ default_warn_threshold_pct: 80  # used when a budget is created without its own 
 forecast_method: run_rate       # see tools.financial.run_rate_forecast
 llm_max_retries: 2              # structured_call retries after the first attempt
 transfer_window_hours: 48
+# The model reads each question first; the rules guard its answer and are the fallback
+# (PLAN_PHASE4 section 0.8). Set false, or FINCO_LLM_PRIMARY=0, to read with rules first.
+llm_primary: true
+llm_cache_ttl_s: 3600           # the same redacted question reuses the model's answer
 recurring_tolerance_pct: 10
 recurring_min_occurrences: 3
 

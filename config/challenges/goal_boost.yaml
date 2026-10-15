@@ -1,0 +1,14 @@
+# Challenge Template: Goal Boost Sprint (PLAN_PHASE4 Section 5.4)
+
+code: "goal_boost"
+family: "goal_boost_allocation"
+metric: "goal_allocation"
+eligible_categories: []
+allowed_durations: [7, 14, 28]
+allowed_difficulties: ["easy", "medium", "hard"]
+trigger_class: "goal_at_risk"
+weekdays_only: false
+title: "Goal Boost Sprint"
+rationale_template: "Increase logical contributions towards a priority goal with confirmed feasibility."
+safety_tags:
+  - "allocation"

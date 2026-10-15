@@ -1,0 +1,15 @@
+name: design_experiment_from_goal
+version: 1
+description: Break down a target savings goal into candidate challenge experiments without moving money.
+inputs:
+  goal_id: required
+preconditions:
+  - has_transactions
+steps:
+  - list_goals: {}
+  - get_financial_state: {}
+outputs:
+  - candidate_experiments
+  - goal_gap_analysis
+narration_template: goal_progress
+eval_cases: tests/skills/design_experiment_from_goal/

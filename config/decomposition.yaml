@@ -25,6 +25,13 @@ decomposition_templates:
       question_kind: bucket_allocation
     - domain: behaviour
       question_kind: seasonal_patterns
+  challenge_affordability:
+    - domain: cashflow
+      question_kind: calendar_coverage
+    - domain: goals
+      question_kind: goal_impact
+    - domain: coaching
+      question_kind: challenge_potential
 
 registered_question_kinds:
   calendar_coverage: cashflow
@@ -43,4 +50,8 @@ registered_question_kinds:
   anomaly_check: behaviour
   habit_investigation: behaviour
   memory_retrieval: behaviour
+  challenge_potential: coaching
+  experiment_feasibility: coaching
+  progress_review: coaching
+  goal_coaching: coaching
 

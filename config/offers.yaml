@@ -1,0 +1,17 @@
+# Weekly Offers Configuration (PLAN_PHASE4 Section 1.3, Section 5.4, Section 5.9)
+
+ttl_days: 7
+max_per_week: 3
+cooldown_days: 30
+rest_weeks: 2
+# After this many offers in a row were dismissed or ignored, none are shown for `quiet_weeks`
+# (PLAN_PHASE4 section 1.3: a minimum share of not-offered weeks when offers keep being dismissed).
+dismissed_in_a_row: 6
+quiet_weeks: 1
+dismiss_weight: 0.25
+propensity_draws: 1000
+llm_candidates: 6
+policy: "thompson"
+
+beta_prior_alpha: 2
+beta_prior_beta: 2

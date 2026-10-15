@@ -12,19 +12,25 @@ Provides:
 - Safe AgentTask creation with automatic PII redaction and audit logging
 """
 
+import hashlib
 import logging
 import re
 import sqlite3
+import time
 import uuid
 from datetime import UTC, date, datetime
 from decimal import Decimal
-from typing import Any, Literal
+from functools import lru_cache
+from typing import Any, Literal, get_args
 
+import yaml
 from pydantic import BaseModel, ConfigDict
 
 from copilot.audit.events import record_event
 from copilot.config.phase2 import IntentPatternsConfig, load_intent_patterns
 from copilot.context.builder import ContextBuilder
+from copilot.core.config import PROJECT_ROOT, load_settings
+from copilot.core.errors import ToolFailure
 from copilot.core.timeutil import IST, now_utc, to_utc_iso
 from copilot.db.repo import insert_agent_task
 from copilot.llm.client import LLMClient, StructuredOutputError
@@ -43,6 +49,7 @@ RefusalClass = Literal[
     "MARKET_PREDICTION",
     "SENSITIVE_DATA_SUBMISSION",
     "OUT_OF_SCOPE",
+    "BETTING_GAMBLING",
 ]
 
 _BENIGN_ANALYTICAL_PREFIX = re.compile(
@@ -65,9 +72,7 @@ _INVEST_QUERY = re.compile(
     r"\b(stock|stocks|share|shares|fund|funds|mutual fund|mutual funds|sip|"
     r"crypto|bitcoin|etf|gold\s+investment)\b"
 )
-_INVEST_TOP = re.compile(
-    r"(?i)\b(best|top)\b.*\b(stocks|shares|mutual funds|funds|investments)\b"
-)
+_INVEST_TOP = re.compile(r"(?i)\b(best|top)\b.*\b(stocks|shares|mutual funds|funds|investments)\b")
 
 
 def check_input_gate(
@@ -133,12 +138,31 @@ def check_input_gate(
                 msg = cfg.refusal_templates.get("MONEY_MOVEMENT", "")
                 return True, "MONEY_MOVEMENT", msg
 
+    # 7. Check Betting, Gambling, Lotteries, and Peer Wagers
+    betting_patterns = cfg.refusal_classes.get("BETTING_GAMBLING", [])
+    if any(re.search(pat, clean_text) for pat in betting_patterns) or re.search(
+        r"(?i)\b(bet|betting|gamble|gambling|wager|lottery|lotto|raffle)\b|"
+        r"\bchallenge\b.*?\b(?:for|with)\s+money\b|"
+        r"\b(?:challenge\s+(?:my\s+)?(?:friend|coworker|peer|someone)\s+(?:for|with)\s+money|bet\s+(?:my\s+)?friend)\b|"
+        r"\b(?:bet\s+\d+|wager\s+\d+|put\s+money\s+on\s+this|win\s+money|cash\s+prize)\b",
+        clean_text,
+    ):
+        msg = cfg.refusal_templates.get(
+            "BETTING_GAMBLING",
+            "FinCo strictly prohibits financial betting, wagers, lotteries, and peer-to-peer "
+            "monetary challenges. All behavioral engagement is rooted in healthy self-competition "
+            "against your own historical baselines, non-monetary XP progression, and "
+            "personal bests.",
+        )
+        return True, "BETTING_GAMBLING", msg
+
     return False, None, None
 
 
 # ---------------------------------------------------------------------------------------------
 # 2. Deterministic Amount Parser (Paise)
 # ---------------------------------------------------------------------------------------------
+
 
 def parse_amount_paise(text: str) -> int | None:
     """
@@ -219,18 +243,30 @@ def parse_amount_paise(text: str) -> int | None:
 # ---------------------------------------------------------------------------------------------
 
 _MONTH_NAMES: dict[str, int] = {
-    "jan": 1, "january": 1,
-    "feb": 2, "february": 2,
-    "mar": 3, "march": 3,
-    "apr": 4, "april": 4,
+    "jan": 1,
+    "january": 1,
+    "feb": 2,
+    "february": 2,
+    "mar": 3,
+    "march": 3,
+    "apr": 4,
+    "april": 4,
     "may": 5,
-    "jun": 6, "june": 6,
-    "jul": 7, "july": 7,
-    "aug": 8, "august": 8,
-    "sep": 9, "sept": 9, "september": 9,
-    "oct": 10, "october": 10,
-    "nov": 11, "november": 11,
-    "dec": 12, "december": 12,
+    "jun": 6,
+    "june": 6,
+    "jul": 7,
+    "july": 7,
+    "aug": 8,
+    "august": 8,
+    "sep": 9,
+    "sept": 9,
+    "september": 9,
+    "oct": 10,
+    "october": 10,
+    "nov": 11,
+    "november": 11,
+    "dec": 12,
+    "december": 12,
 }
 
 
@@ -422,6 +458,68 @@ def resolve_entities(
 # 5. Deterministic Intent Classifier
 # ---------------------------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------------------------
+# Phase 4 intents read by cues, not by fixed phrases
+# ---------------------------------------------------------------------------------------------
+_CHALLENGE_NOUN = r"(?:challenges?|experiments?|no[- ]spend\s+(?:week|day|weekend|month)s?)"
+_P4_WORKED = re.compile(
+    r"\b(worked|works|helped|effective|successful|went\s+well|landed\s+below|saving\s+tricks|"
+    r"habit\s+changes?|reduced\s+my\s+spending)\b|"
+    rf"\b(?:past|previous|earlier|finished|completed)\s+(?:\w+\s+)?{_CHALLENGE_NOUN}|"
+    rf"\b{_CHALLENGE_NOUN}\s+(?:i\s+)?(?:completed|finished|tried\s+before)"
+)
+_P4_STATUS_CUE = re.compile(
+    r"\b(going|progress|status|on\s+track|on\s+pace|pace|ahead|behind|stand|doing|update|"
+    r"check[- ]?in|how\s+far|days?\s+(?:are\s+)?left|working)\b"
+)
+_P4_SUGGEST = re.compile(
+    r"\b(suggest\w*|recommend\w*|offers?|ideas?|available|propose|could\s+i\s+(?:run|try)|"
+    r"should\s+i\s+try|something\s+(?:i\s+could\s+)?try|fit\s+my\s+spending)\b"
+)
+_P4_PROGRESS = re.compile(
+    r"\b(streaks?|badges?|xp|levels?|points|achievements?|personal\s+bests?|my\s+record|"
+    r"own\s+record|progress\s+(?:report|summary|so\s+far|overview))\b|"
+    r"\bsummari[sz]e\s+my\s+progress\b|\bhow\s+am\s+i\s+doing\s+overall\b"
+)
+_P4_START = re.compile(
+    rf"\b(?:start|begin|launch|set\s*up|create|design|run|try|take\s+on|do|kick\s*off)\b"
+    rf".{{0,30}}\b{_CHALLENGE_NOUN}|"
+    rf"\b(?:i\s+want|i'?d\s+like|i\s+would\s+like|let'?s|can\s+we)\b.{{0,25}}\b{_CHALLENGE_NOUN}|"
+    r"\b(?:i\s+want\s+to|i'?d\s+like\s+to|let'?s|can\s+we|help\s+me|can\s+you\s+help\s+me)\b"
+    r".{0,40}\b(?:cut|reduce|spend\s+less|order\s+less|bring\s+.{1,25}\s+down|trim|save\s+more)\b|"
+    r"\b(?:test|try)\s+(?:whether|if)\b.{0,30}\bspend\s+less\b|"
+    r"\b(?:try|trying)\s+(?:to\s+)?(?:spend(?:ing)?\s+less|cut|reduce)\b"
+)
+
+
+def _phase4_intent_from_cues(text: str) -> str | None:
+    """
+    Read the five Phase 4 intents from cue words and shapes rather than exact phrases.
+
+    This is the rule-based fallback. With a model configured the model reads the question
+    first (core/intent.llm_classify_intent). Order matters: a question about what already
+    happened, or how it is going, is not a request to start something new.
+    """
+    has_noun = bool(re.search(rf"\b{_CHALLENGE_NOUN}", text))
+    if "goal" in text and not has_noun:
+        return None  # goal questions belong to goal_check
+    if _P4_WORKED.search(text) and (
+        has_noun or re.search(r"\b(for\s+me|before|earlier|tried|habit|saving|save)\b", text)
+    ):
+        return "what_worked"
+    if _P4_STATUS_CUE.search(text) and (has_noun or "my experiment" in text):
+        return "experiment_status"
+    if _P4_SUGGEST.search(text) and (
+        has_noun or re.search(r"\b(save|spend\s+less|try|offers?|ideas?)\b", text)
+    ):
+        return "challenge_suggestions"
+    if _P4_PROGRESS.search(text):
+        return "progress_summary"
+    if _P4_START.search(text):
+        return "start_experiment"
+    return None
+
+
 def classify_intent(
     text: str,
     entities: dict[str, Any],
@@ -465,23 +563,24 @@ def classify_intent(
     ):
         intent_type = "affordability"
 
-    elif (
-        any(k in clean_lower for k in cfg.intent_keywords.get("commitment_check", []))
-        or re.search(
-            r"\b(commitment|obligation|can\s+i\s+pay|will\s+i\s+be\s+able\s+to\s+pay|"
-            r"bill\s+coverage|obligation\s+coverage|can\s+i\s+pay\s+on\s+the|emi\s+due|paid\s+safely)\b",
-            clean_lower,
-        )
+    elif any(
+        k in clean_lower for k in cfg.intent_keywords.get("commitment_check", [])
+    ) or re.search(
+        r"\b(commitment|obligation|can\s+i\s+pay|will\s+i\s+be\s+able\s+to\s+pay|"
+        r"bill\s+coverage|obligation\s+coverage|can\s+i\s+pay\s+on\s+the|emi\s+due|paid\s+safely)\b",
+        clean_lower,
     ):
         intent_type = "commitment_check"
 
-    elif any(
-        k in clean_lower for k in cfg.intent_keywords.get("investment_readiness", [])
-    ) or re.search(
-        r"\b(investment\s+readiness|readiness|ready\s+to\s+invest|start\s+investing|"
-        r"savings\s+cushion|emergency\s+reserve|investment\s+capacity)\b",
-        clean_lower,
-    ) or ("ready" in clean_lower and "invest" in clean_lower):
+    elif (
+        any(k in clean_lower for k in cfg.intent_keywords.get("investment_readiness", []))
+        or re.search(
+            r"\b(investment\s+readiness|readiness|ready\s+to\s+invest|start\s+investing|"
+            r"savings\s+cushion|emergency\s+reserve|investment\s+capacity)\b",
+            clean_lower,
+        )
+        or ("ready" in clean_lower and "invest" in clean_lower)
+    ):
         intent_type = "investment_readiness"
 
     elif any(
@@ -494,16 +593,18 @@ def classify_intent(
     ):
         intent_type = "contribution_check"
 
-    elif any(
-        k in clean_lower for k in cfg.intent_keywords.get("tradeoff_compare", [])
-    ) or re.search(
-        r"\b(tradeoff|trade-off|compare\s+alternatives|compare\s+tradeoffs|"
-        r"which\s+(?:scenario\s+)?option\s+is\s+better|side\s+by\s+side\s+comparison|"
-        r"tradeoff\s+analysis|scenario\s+comparison)\b",
-        clean_lower,
-    ) or (
-        ("scenario" in clean_lower or "alternative" in clean_lower)
-        and ("better" in clean_lower or "compare" in clean_lower)
+    elif (
+        any(k in clean_lower for k in cfg.intent_keywords.get("tradeoff_compare", []))
+        or re.search(
+            r"\b(tradeoff|trade-off|compare\s+alternatives|compare\s+tradeoffs|"
+            r"which\s+(?:scenario\s+)?option\s+is\s+better|side\s+by\s+side\s+comparison|"
+            r"tradeoff\s+analysis|scenario\s+comparison)\b",
+            clean_lower,
+        )
+        or (
+            ("scenario" in clean_lower or "alternative" in clean_lower)
+            and ("better" in clean_lower or "compare" in clean_lower)
+        )
     ):
         intent_type = "tradeoff_compare"
 
@@ -516,13 +617,73 @@ def classify_intent(
         intent_type = "memory_query"
 
     elif any(
-        k in clean_lower for k in cfg.intent_keywords.get("calendar_lookahead", [])
+        k in clean_lower for k in cfg.intent_keywords.get("start_experiment", [])
     ) or re.search(
-        r"\b(financial\s+calendar|calendar|lookahead|cashflow\s+calendar|daily\s+projection|"
-        r"calendar\s+projection|upcoming\s+cashflow|next\s+60\s+days|balance\s+lookahead|"
-        r"running\s+balance|shortfall\s+days|running\s+low\s+balances)\b",
+        r"\b((?:start|begin|launch|try|take\s+on)\s+(?:an?\s+)?(?:experiment|challenge)|"
+        r"help\s+me\s+spend\s+less\s+on|cut\s+spending\s+on|reduce\s+spending\s+on|"
+        r"sign\s+me\s+up\s+for\s+a\s+challenge|i\s+want\s+to\s+start\s+a\s+challenge)\b",
         clean_lower,
-    ) or ("daily" in clean_lower and "balance" in clean_lower):
+    ):
+        intent_type = "start_experiment"
+
+    elif any(
+        k in clean_lower for k in cfg.intent_keywords.get("experiment_status", [])
+    ) or re.search(
+        r"\b(how\s+is\s+my\s+challenge\s+going|experiment\s+status|challenge\s+progress|"
+        r"active\s+challenge|active\s+experiment|challenge\s+checkin|experiment\s+checkin|"
+        r"experiment\s+pace|checkin\s+status|how\s+am\s+i\s+doing\s+on\s+my\s+(?:active\s+)?challenge|"
+        r"update\s+on\s+my\s+(?:active\s+)?experiment)\b",
+        clean_lower,
+    ):
+        intent_type = "experiment_status"
+
+    elif any(k in clean_lower for k in cfg.intent_keywords.get("what_worked", [])) or re.search(
+        r"\b(what\s+has\s+worked\s+for\s+me\s+before|what\s+worked|past\s+challenges|"
+        r"past\s+experiments|successful\s+experiments|what\s+helped\s+me\s+save|"
+        r"previous\s+outcomes|what\s+worked\s+in\s+the\s+past|what\s+behavioral\s+changes\s+worked|"
+        r"what\s+past\s+experiments)\b",
+        clean_lower,
+    ):
+        intent_type = "what_worked"
+
+    elif any(
+        k in clean_lower for k in cfg.intent_keywords.get("challenge_suggestions", [])
+    ) or re.search(
+        r"\b(challenge\s+suggestions?|suggest\s+(?:some\s+)?challenges?|suggest\s+an?\s+experiment|"
+        r"recommend\s+an?\s+experiment|what\s+challenges?\s+should\s+i\s+try|weekly\s+offers|"
+        r"give\s+me\s+challenge\s+ideas|any\s+challenge\s+offers|suggest\s+a\s+challenge)\b",
+        clean_lower,
+    ):
+        intent_type = "challenge_suggestions"
+
+    elif (
+        any(k in clean_lower for k in cfg.intent_keywords.get("progress_summary", []))
+        or re.search(
+            r"\b(show\s+my\s+progress|progress\s+summary|my\s+badges|my\s+level|my\s+xp|"
+            r"my\s+streaks|gamification\s+progress|my\s+rewards\s+progress|"
+            r"how\s+much\s+xp\s+do\s+i\s+have|show\s+my\s+progress\s+overview)\b",
+            clean_lower,
+        )
+        or (
+            ("progress" in clean_lower or "summary" in clean_lower)
+            and bool(re.search(r"\b(xp|badges?|streaks?|levels?)\b", clean_lower))
+        )
+    ):
+        intent_type = "progress_summary"
+
+    elif (cue_intent := _phase4_intent_from_cues(clean_lower)) is not None:
+        intent_type = cue_intent  # type: ignore[assignment]
+
+    elif (
+        any(k in clean_lower for k in cfg.intent_keywords.get("calendar_lookahead", []))
+        or re.search(
+            r"\b(financial\s+calendar|calendar|lookahead|cashflow\s+calendar|daily\s+projection|"
+            r"calendar\s+projection|upcoming\s+cashflow|next\s+60\s+days|balance\s+lookahead|"
+            r"running\s+balance|shortfall\s+days|running\s+low\s+balances)\b",
+            clean_lower,
+        )
+        or ("daily" in clean_lower and "balance" in clean_lower)
+    ):
         intent_type = "calendar_lookahead"
 
     elif any(k in clean_lower for k in cfg.intent_keywords.get("bucket_status", [])) or re.search(
@@ -532,20 +693,24 @@ def classify_intent(
     ):
         intent_type = "bucket_status"
 
-    elif any(k in clean_lower for k in cfg.intent_keywords.get("goal_progress", [])) or re.search(
-        r"\b(goal\s+progress|goal\s+completion|projected\s+completion|goal\s+pacing|"
-        r"goal\s+timeline|how\s+far\s+along\s+is\s+my\s+goal|how\s+is\s+my\s+goal\s+doing|"
-        r"track\s+my\s+goal)\b",
-        clean_lower,
-    ) or (
-        (
-            "progress" in clean_lower
-            or "progressing" in clean_lower
-            or "pacing" in clean_lower
-            or "completion" in clean_lower
-            or "timeline" in clean_lower
+    elif (
+        any(k in clean_lower for k in cfg.intent_keywords.get("goal_progress", []))
+        or re.search(
+            r"\b(goal\s+progress|goal\s+completion|projected\s+completion|goal\s+pacing|"
+            r"goal\s+timeline|how\s+far\s+along\s+is\s+my\s+goal|how\s+is\s+my\s+goal\s+doing|"
+            r"track\s+my\s+goal)\b",
+            clean_lower,
         )
-        and ("goal" in clean_lower or bool(entities.get("goal_id")))
+        or (
+            (
+                "progress" in clean_lower
+                or "progressing" in clean_lower
+                or "pacing" in clean_lower
+                or "completion" in clean_lower
+                or "timeline" in clean_lower
+            )
+            and ("goal" in clean_lower or bool(entities.get("goal_id")))
+        )
     ):
         intent_type = "goal_progress"
 
@@ -566,9 +731,9 @@ def classify_intent(
     elif any(k in clean_lower for k in cfg.intent_keywords.get("goal_check", [])) or entities.get(
         "goal_id"
     ):
-        has_goal_kw = any(
-            w in clean_lower for w in ("goal", "target", "on track")
-        ) or bool(entities.get("goal_id"))
+        has_goal_kw = any(w in clean_lower for w in ("goal", "target", "on track")) or bool(
+            entities.get("goal_id")
+        )
         if has_goal_kw:
             intent_type = "goal_check"
 
@@ -602,10 +767,9 @@ def classify_intent(
         intent_type = "alerts_overview"
 
     # Priority 8: Spend summary
-    elif (
-        any(k in clean_lower for k in cfg.intent_keywords.get("summarize_period", []))
-        or re.search(r"\bhow\s+much\s+(?:did\s+i|have\s+i)\s+spend\b", clean_lower)
-    ):
+    elif any(
+        k in clean_lower for k in cfg.intent_keywords.get("summarize_period", [])
+    ) or re.search(r"\bhow\s+much\s+(?:did\s+i|have\s+i)\s+spend\b", clean_lower):
         intent_type = "summarize_period"
 
     return Intent(
@@ -626,6 +790,7 @@ def classify_intent(
 # ---------------------------------------------------------------------------------------------
 # 6. LLM Intent & Entity Extraction Helper (Optional / Fallback)
 # ---------------------------------------------------------------------------------------------
+
 
 class LLMIntentCandidate(BaseModel):
     """Structured intent candidate extracted by LLM helper."""
@@ -659,11 +824,60 @@ Rules:
 """
 
 
+# ---------------------------------------------------------------------------------------------
+# Response cache for the model's reading of a question (PLAN_PHASE4 section 0.8.5)
+# ---------------------------------------------------------------------------------------------
+_INTENT_PROMPT_VERSION = "intent_v3"
+_INTENT_CACHE: dict[str, tuple[float, tuple[Intent | None, str | None]]] = {}
+_INTENT_CACHE_MAX = 256
+
+
+_GLOSSARY_PATH = PROJECT_ROOT / "config" / "intent_glossary.yaml"
+
+
+@lru_cache(maxsize=1)
+def _intent_glossary_text() -> str:
+    """One line per intent: its name and what it means (config/intent_glossary.yaml)."""
+    glossary = yaml.safe_load(_GLOSSARY_PATH.read_text(encoding="utf-8"))
+    lines = []
+    for name in get_args(IntentType):
+        meaning = glossary.get(name)
+        lines.append(f"   - {name}: {meaning}\n" if meaning else f"   - {name}\n")
+    return "".join(lines)
+
+
+def _intent_cache_key(text: str, categories: dict[str, str], goals: dict[str, str]) -> str:
+    """Key by prompt version and the redacted input, never the raw question."""
+    raw = f"{_INTENT_PROMPT_VERSION}|{text}|{sorted(categories)}|{sorted(goals)}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _intent_cache_get(key: str) -> tuple[Intent | None, str | None] | None:
+    ttl = load_settings().llm_cache_ttl_s
+    hit = _INTENT_CACHE.get(key)
+    if not ttl or hit is None or time.monotonic() - hit[0] > ttl:
+        return None
+    intent, refusal = hit[1]
+    return (intent.model_copy(deep=True) if intent is not None else None), refusal
+
+
+def _intent_cache_put(key: str, value: tuple[Intent | None, str | None]) -> None:
+    if not load_settings().llm_cache_ttl_s:
+        return
+    if len(_INTENT_CACHE) >= _INTENT_CACHE_MAX:
+        _INTENT_CACHE.pop(next(iter(_INTENT_CACHE)))  # the oldest entry
+    intent, refusal = value
+    _INTENT_CACHE[key] = (
+        time.monotonic(),
+        ((intent.model_copy(deep=True) if intent is not None else None), refusal),
+    )
+
+
 def llm_classify_intent(
     client: LLMClient,
     redacted_text: str,
     user_categories: dict[str, str],  # name -> id
-    user_goals: dict[str, str],        # name -> id
+    user_goals: dict[str, str],  # name -> id
     user_id: str | None = None,
     task_id: str | None = None,
     conn: sqlite3.Connection | None = None,
@@ -674,15 +888,17 @@ def llm_classify_intent(
     Hallucinated entities are strictly dropped.
     Returns (intent_or_none, refusal_class_or_none).
     """
+    cache_key = _intent_cache_key(redacted_text, user_categories, user_goals)
+    cached = _intent_cache_get(cache_key)
+    if cached is not None:
+        return cached
     builder = ContextBuilder(conn=conn)
     instruction = (
         "You are a financial intent classifier.\n"
         "Analyze the user request and map it to an intent and entities.\n"
         "Rules:\n"
         "1. intent_type MUST be one of:\n"
-        "   - summarize_period, explain_change, investigate_anomaly, check_budget,\n"
-        "   - forecast, whatif_add_spend, whatif_reduce_spend, goal_check,\n"
-        "   - list_recurring, alerts_overview, unknown\n"
+        f"{_intent_glossary_text()}"
         "2. If asking for investment advice or money transfers, set refusal_class.\n"
         "3. Only extract category_name if it matches one of the known categories exactly.\n"
         "4. Only extract goal_name if it matches one of the known goals exactly.\n"
@@ -703,6 +919,10 @@ def llm_classify_intent(
             conn=conn,
         )
     except StructuredOutputError:
+        return None, None
+    except ToolFailure as exc:
+        # The model is down, out of quota or too slow: the rules read the question instead.
+        logger.warning("Model could not read the question (%s); using the rules", exc)
         return None, None
 
     # Check if LLM flagged a refusal (e.g. subtle investment advice)
@@ -744,12 +964,14 @@ def llm_classify_intent(
         confidence_label="medium",
         source="llm",
     )
+    _intent_cache_put(cache_key, (intent, None))
     return intent, None
 
 
 # ---------------------------------------------------------------------------------------------
 # 7. Clarification Generator (Strictly Single Round)
 # ---------------------------------------------------------------------------------------------
+
 
 def generate_clarification(
     intent: Intent,
@@ -800,6 +1022,7 @@ def generate_clarification(
 # ---------------------------------------------------------------------------------------------
 # 8. Task Creation Pipeline
 # ---------------------------------------------------------------------------------------------
+
 
 def create_agent_task(
     conn: sqlite3.Connection,
@@ -884,11 +1107,14 @@ def create_agent_task(
     intent = classify_intent(raw_text, entities, period_info, amount_paise, cfg)
 
     # Step 5: Optional LLM Helper (only if unknown or missing critical entities)
-    if intent.type == "unknown" and effective_llm_client is not None:
+    # The model reads first when configured (`llm_primary`); otherwise only when the rules
+    # could not tell. Either way its answer is validated below and the rules remain the
+    # fallback.
+    if effective_llm_client is not None and (
+        load_settings().llm_primary or intent.type == "unknown"
+    ):
         cat_map = dict(
-            conn.execute(
-                "SELECT name, id FROM categories WHERE user_id = ?", (user_id,)
-            ).fetchall()
+            conn.execute("SELECT name, id FROM categories WHERE user_id = ?", (user_id,)).fetchall()
         )
         goal_map = dict(
             conn.execute(

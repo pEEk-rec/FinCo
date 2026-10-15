@@ -18,6 +18,11 @@ refusal_classes:
     - "\\b\\d{4}[-\\s]?\\d{4}[-\\s]?\\d{4}[-\\s]?\\d{4}\\b"
   OUT_OF_SCOPE:
     - "(?i)\\b(weather|recipe|movie|joke|sports\\s+score)\\b"
+  BETTING_GAMBLING:
+    - "(?i)\\b(bet|betting|gamble|gambling|wager|lottery|lotto|raffle)\\b"
+    - "(?i)\\bchallenge\\b.*?\\b(?:for|with)\\s+money\\b"
+    - "(?i)\\b(challenge\\s+(?:my\\s+)?(?:friend|coworker|peer|someone|anyone)\\s+(?:for|with)\\s+money|bet\\s+(?:my\\s+)?friend)\\b"
+    - "(?i)\\b(bet\\s+\\d+|wager\\s+\\d+|put\\s+money\\s+on\\s+this|win\\s+money|cash\\s+prize|monetary\\s+prize)\\b"
 
 refusal_templates:
   INVESTMENT_ADVICE: "I cannot provide investment advice. FinCo cannot recommend specific funds, stocks, or SIP products. I can assess your investment readiness, calculate surplus headroom, and evaluate commitment coverage."
@@ -25,6 +30,7 @@ refusal_templates:
   MARKET_PREDICTION: "FinCo does not project investment returns, compound interest, or market index growth. Balances never grow by assumption in our planning model."
   SENSITIVE_DATA_SUBMISSION: "For your security, never enter OTPs, CVVs, passwords, or full debit card numbers. Financial analysis only requires historical transaction records and category limits."
   OUT_OF_SCOPE: "I specialize strictly in personal finance, budget tracking, cashflow forecasting, and goal analysis."
+  BETTING_GAMBLING: "FinCo strictly prohibits financial betting, wagers, lotteries, and peer-to-peer monetary challenges. All behavioral engagement is rooted in healthy self-competition against your own historical baselines, non-monetary XP progression, and personal bests."
 
 intent_keywords:
   summarize_period:
@@ -186,6 +192,56 @@ intent_keywords:
     - "what memories"
     - "list memories"
 
+  start_experiment:
+    - "start experiment"
+    - "start challenge"
+    - "help me spend less on"
+    - "cut spending on"
+    - "reduce spending on"
+    - "try a challenge"
+    - "new experiment"
+    - "take on a challenge"
+
+  experiment_status:
+    - "how is my challenge going"
+    - "experiment status"
+    - "challenge progress"
+    - "active challenge"
+    - "active experiment"
+    - "challenge checkin"
+    - "how am i doing on my challenge"
+    - "experiment pace"
+
+  what_worked:
+    - "what has worked for me before"
+    - "what worked"
+    - "past challenges"
+    - "past experiments"
+    - "successful experiments"
+    - "what helped me save"
+    - "previous outcomes"
+    - "what behavioral changes worked"
+
+  challenge_suggestions:
+    - "challenge suggestions"
+    - "suggest challenges"
+    - "suggest a challenge"
+    - "recommend an experiment"
+    - "what challenge should i try"
+    - "weekly offers"
+    - "give me challenge ideas"
+    - "any challenge offers"
+
+  progress_summary:
+    - "show my progress"
+    - "progress summary"
+    - "my badges"
+    - "my level"
+    - "my xp"
+    - "my streaks"
+    - "gamification progress"
+    - "how much xp do i have"
+
 labelled_examples:
   goal_progress:
     - "How is my emergency fund goal progressing?"
@@ -286,4 +342,54 @@ labelled_examples:
     - "What do you remember regarding my weekend spending?"
     - "List active memories for dining and shopping."
     - "What does the copilot know about my festival spend?"
+
+  start_experiment:
+    - "Help me spend less on food delivery."
+    - "Start a challenge to cut my dining spend."
+    - "Begin an experiment to reduce shopping expenses."
+    - "Help me spend less on weekend eating out."
+    - "I want to start a challenge for no-spend days."
+    - "Try a challenge to cut spending on coffee."
+    - "Start experiment on grocery spend reduction."
+    - "Sign me up for a challenge to save on transit."
+
+  experiment_status:
+    - "How is my challenge going this week?"
+    - "Show my experiment status and current pace."
+    - "What is my challenge progress so far?"
+    - "How am I doing on my active challenge?"
+    - "Active experiment pace and checkin status."
+    - "How is my challenge going on dining out?"
+    - "Check on my experiment status for this fortnight."
+    - "Give me an update on my active experiment."
+
+  what_worked:
+    - "What has worked for me before in saving money?"
+    - "Show me what worked in past challenges."
+    - "What successful experiments have I completed?"
+    - "What behavioral changes worked best for me?"
+    - "What has worked for me before to cut dining spend?"
+    - "Review previous outcomes and what worked."
+    - "What past experiments helped me save the most?"
+    - "Show what worked from my historical challenges."
+
+  challenge_suggestions:
+    - "Give me some challenge suggestions for this month."
+    - "Suggest challenges to help me build my savings."
+    - "What challenges should I try next week?"
+    - "Recommend an experiment for my variable spend."
+    - "Show weekly offers and challenge suggestions."
+    - "Suggest a challenge based on my usual baseline."
+    - "Give me challenge ideas for weekend spending."
+    - "Do you have any challenge offers for me right now?"
+
+  progress_summary:
+    - "Show my progress and current level."
+    - "Give me a progress summary of my XP and badges."
+    - "Show my badges and active streaks."
+    - "What is my progress summary in FinCo?"
+    - "How much XP do I have and what level am I?"
+    - "Show my progress, personal bests, and streaks."
+    - "Give me a gamification progress summary."
+    - "Show my progress overview across all challenges."
 

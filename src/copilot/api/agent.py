@@ -78,6 +78,16 @@ def run_ask(
         except Exception:  # noqa: BLE001 - the tool results below are still valid and shown
             log.exception("Could not write the answer; showing the tool results only")
             answer = None
+    plan_steps = (result.get("plan") or {}).get("steps", [])
+    planned_by_model = any(step.get("proposed_by") == "llm" for step in plan_steps)
+    read_by_model = ((result.get("intent") or {}).get("source")) == "llm"
+    wrote_by_model = bool(answer is not None and answer.written_by == "ai")
+    if llm is None:
+        path, why = "rules", "no model is configured or it was switched off"
+    elif planned_by_model or read_by_model or wrote_by_model:
+        path, why = "llm", "the model took part and its output passed validation"
+    else:
+        path, why = "fallback", "the model was unavailable or its output was not accepted"
     return {
         "answer": answer.model_dump() if answer else None,
         "llm": {
@@ -85,7 +95,9 @@ def run_ask(
             "model": getattr(llm, "model", None) if llm is not None else None,
             "calls": getattr(llm, "calls", 0) if llm is not None else 0,
             "failures": getattr(llm, "failures", 0) if llm is not None else 0,
-            "planner": "llm" if llm is not None else "rules",
+            "planner": "llm" if planned_by_model else "rules",
+            "path": path,
+            "path_reason": why,
         },
         "task_id": result.get("task_id"),
         "status": "needs_clarification" if question else str(result.get("status", "completed")),

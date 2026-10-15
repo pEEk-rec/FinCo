@@ -1,0 +1,16 @@
+# Challenge Template: Weekday Home Cooking (PLAN_PHASE4 Section 5.4)
+
+code: "weekday_home_cooking"
+family: "dining_cooking"
+metric: "category_spend"
+eligible_categories:
+  - "dining_out"
+  - "food_delivery"
+allowed_durations: [7, 14, 28]
+allowed_difficulties: ["easy", "medium", "hard"]
+trigger_class: "weekend_heavy"
+weekdays_only: true
+title: "Weekday Home Cooking"
+rationale_template: "Focus on cooking at home Monday through Friday to bring down weekday food spend."
+safety_tags:
+  - "non_essential_only"

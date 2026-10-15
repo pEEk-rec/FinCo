@@ -21,6 +21,12 @@ providers:
     timeout_s: 14
     safety: 0.85
 
+# Names other parts of the system use for a task.
+aliases:
+  intent_extraction: intent
+  decomposition: planning
+  critique: planning
+
 tasks:
   # Reading the question: tiny, latency-critical.
   intent:

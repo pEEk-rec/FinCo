@@ -170,7 +170,7 @@ class SkillManifest(BaseModel):
 class SubQuestionTemplate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    domain: Literal["cashflow", "goals", "readiness", "behaviour"]
+    domain: Literal["cashflow", "goals", "readiness", "behaviour", "coaching", "experiments"]
     question_kind: str
 
 

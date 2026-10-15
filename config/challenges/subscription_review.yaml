@@ -1,0 +1,15 @@
+# Challenge Template: Subscription Audit (PLAN_PHASE4 Section 5.4)
+
+code: "subscription_review"
+family: "subscriptions_audit"
+metric: "txn_count"
+eligible_categories:
+  - "subscriptions"
+allowed_durations: [7, 14]
+allowed_difficulties: ["easy", "medium"]
+trigger_class: "many_open_reviews"
+weekdays_only: false
+title: "Subscription Audit"
+rationale_template: "Review and decide on active subscriptions to remove unused services."
+safety_tags:
+  - "non_essential_only"

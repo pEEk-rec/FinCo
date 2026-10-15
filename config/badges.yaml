@@ -1,0 +1,31 @@
+# Badges Catalogue Configuration (PLAN_PHASE4 Section 5.7)
+
+badges:
+  first_experiment_reviewed:
+    name: "First Step"
+    description: "Completed and reviewed your first financial experiment"
+    category: "experiments"
+  four_checkins_streak:
+    name: "Consistent Check-in"
+    description: "Answered four consecutive weekly check-ins without skipping"
+    category: "habits"
+  tag_master_week:
+    name: "Clarity Champion"
+    description: "Categorized 100% of transactions for a full week"
+    category: "clarity"
+  first_personal_best:
+    name: "Personal Record"
+    description: "Achieved a new personal best on any tracked metric"
+    category: "self_competition"
+  emergency_anchor:
+    name: "Safety Net Anchor"
+    description: "Maintained emergency fund target for a complete month"
+    category: "security"
+  goal_finisher:
+    name: "Goal Finisher"
+    description: "Reached 100% of an active financial goal"
+    category: "goals"
+  thoughtful_reflector:
+    name: "Thoughtful Reflector"
+    description: "Completed reviews and submitted reflection feedback for three experiments"
+    category: "learning"

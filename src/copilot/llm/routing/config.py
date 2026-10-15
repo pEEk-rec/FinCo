@@ -64,10 +64,13 @@ class RouterConfig(BaseModel):
 
     providers: dict[ProviderName, ProviderLimits]
     tasks: dict[str, TaskPolicy]
+    #: other names callers use for a task (for example the context builder's purposes)
+    aliases: dict[str, str] = Field(default_factory=dict)
 
     def policy(self, task: str) -> TaskPolicy:
-        """The policy for `task`, falling back to `general`."""
-        return self.tasks.get(task) or self.tasks["general"]
+        """The policy for `task` (or its alias), falling back to `general`."""
+        name = self.aliases.get(task, task)
+        return self.tasks.get(name) or self.tasks["general"]
 
 
 def load_router_config(path: str | Path = DEFAULT_CONFIG) -> RouterConfig:

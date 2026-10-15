@@ -44,3 +44,9 @@ exposed_tools:
   - "run_skill"
   - "run_whatif"
   - "trip_planning"
+  # Phase 4 Read Tools
+  - "list_experiments"
+  - "experiment_progress"
+  - "get_user_progress"
+  - "get_personal_bests"
+  - "list_offers"

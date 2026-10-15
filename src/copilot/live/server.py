@@ -55,13 +55,11 @@ def main() -> None:
     parser.add_argument("--webhook-secret", default=os.environ.get("LIVE_WEBHOOK_SECRET"))
     parser.add_argument("--no-llm", action="store_true", help="keep the language model off")
     args = parser.parse_args()
-    app, state, secret = build_live(
-        Path(args.db), args.token, args.webhook_secret, not args.no_llm
-    )
+    app, state, secret = build_live(Path(args.db), args.token, args.webhook_secret, not args.no_llm)
     print(f"FinCo LIVE API on http://127.0.0.1:{args.port}   (real data, database: {args.db})")
     print(f"Session token: {state.token}")
     print(
-        f"SMS webhook: POST http://<this-computer>:{args.port}{WEBHOOK_PATH}  header X-Webhook-Secret: {secret}"
+        f"SMS webhook: POST http://<this-computer>:{args.port}{WEBHOOK_PATH}  header X-Webhook-Secret: {secret}"  # noqa: E501
     )
     uvicorn.run(
         app,

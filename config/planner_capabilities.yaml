@@ -585,3 +585,226 @@ tools:
     cost: medium
     short_description: "Execute a certified skill procedure by name"
     intents: ["affordability", "trip_planning", "contribution_check"]
+
+  # Phase 4 Skills (PLAN_PHASE4 Section 5.11)
+  design_experiment_from_goal:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Run goal-to-experiment decomposition skill"
+    intents: ["start_experiment", "goal_check"]
+
+  weekly_checkin:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Run weekly experiment checkin skill: progress and pace"
+    intents: ["experiment_status"]
+
+  review_experiment:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Run completed experiment review skill: outcome and baseline comparison"
+    intents: ["experiment_status", "what_worked"]
+
+  # Phase 4 Experiment Tools (PLAN_PHASE4 Section 5.3)
+  get_experiment:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Get financial experiment details by id"
+    intents: ["experiment_status"]
+
+  list_experiments:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "List financial experiments for user with optional status filter"
+    intents: ["experiment_status", "what_worked", "start_experiment"]
+
+  experiment_progress:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Get progress, current observed spend/metric, and pace for an experiment"
+    intents: ["experiment_status"]
+
+  design_experiment:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: medium
+    short_description: "Design a new financial experiment with baseline sizing"
+    intents: ["start_experiment"]
+
+  start_experiment:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Start an offered financial experiment"
+    intents: ["start_experiment"]
+
+  pause_experiment:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Pause an active financial experiment"
+    intents: ["experiment_status"]
+
+  resume_experiment:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Resume a paused financial experiment"
+    intents: ["experiment_status"]
+
+  abandon_experiment:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Abandon an experiment at any time without penalty"
+    intents: ["experiment_status"]
+
+  answer_checkin:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Answer a scheduled weekly check-in"
+    intents: ["experiment_status"]
+
+  submit_review_feedback:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Submit user feedback for an experiment review"
+    intents: ["experiment_status"]
+
+  confirm_review_integrity:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "User confirms that recategorised payments in an experiment window were genuine"
+    intents: []
+
+  create_checkins:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: medium
+    short_description: "Runtime maintenance job: generate due weekly check-ins"
+    intents: []
+
+  create_due_reviews:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: medium
+    short_description: "Runtime maintenance job: generate due reviews"
+    intents: []
+
+  list_adjustments:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "List adaptive adjustment proposals for active or past experiments"
+    intents: ["experiment_status"]
+
+  accept_adjustment:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "User accepts an adaptive adjustment proposal"
+    intents: ["experiment_status"]
+
+  reject_adjustment:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "User rejects an adaptive adjustment proposal"
+    intents: ["experiment_status"]
+
+  run_adaptive_detectors:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: medium
+    short_description: "Runtime maintenance job: run adaptive challenge detectors over active experiments"
+    intents: []
+
+  expire_stale_proposals:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Runtime maintenance job: expire stale adjustment proposals"
+    intents: []
+
+  # Phase 4 Challenges & Offers (PLAN_PHASE4 Section 5.4 & 5.11)
+  list_offers:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "List personalized challenge offers for user"
+    intents: ["challenge_suggestions", "start_experiment"]
+
+  get_offer_details:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Get full details of a specific challenge offer"
+    intents: ["challenge_suggestions", "start_experiment"]
+
+  accept_offer:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Accept a challenge offer to start an experiment"
+    intents: []
+
+  dismiss_offer:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Dismiss a challenge offer"
+    intents: []
+
+  suggest_challenges:
+    planner_selectable: false
+    tool_class: read
+    cost: medium
+    short_description: "Generate candidate challenge offers without saving"
+    intents: ["challenge_suggestions"]
+
+  expire_offers:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Runtime maintenance job: expire stale shown offers"
+    intents: []
+
+  weekly_offers:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: medium
+    short_description: "Runtime maintenance job: generate weekly challenge offers"
+    intents: []
+
+  # Phase 4 Rewards & Progress (PLAN_PHASE4 Section 5.6 & 5.7)
+  get_user_progress:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Get user gamification progress snapshot (XP, level, streak, badges)"
+    intents: ["progress_summary"]
+
+  get_personal_bests:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Get user personal best records across metrics"
+    intents: ["progress_summary", "what_worked"]
+
+  award_xp_and_badges:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: medium
+    short_description: "Runtime maintenance job: evaluate and award pending XP and badges"
+    intents: []
+
+

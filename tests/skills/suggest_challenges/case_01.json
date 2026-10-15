@@ -1,0 +1,9 @@
+{
+  "name": "suggest_spending_challenges",
+  "description": "Suggest active personalized challenges tailored to recent transactions",
+  "inputs": {
+    "status": "shown"
+  },
+  "expected_status": "ok",
+  "expected_outputs_contain": ["list_offers", "get_financial_state"]
+}

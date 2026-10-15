@@ -311,7 +311,9 @@ def reconcile(
             continue
         ref = ev["reference"]
 
-        def closeness(c: sqlite3.Row) -> tuple[int, float]:
+        def closeness(
+            c: sqlite3.Row, ref: str | None = ref, when: datetime = when
+        ) -> tuple[int, float]:
             by_ref = 0 if ref and ref in c["merchant_raw"] else 1
             return by_ref, abs((from_utc_iso(c["occurred_at"]) - when).total_seconds())
 
@@ -407,7 +409,7 @@ def ingest_receipt(
     if payment is None:
         return ReceiptOut(
             outcome="unmatched",
-            reason="No payment of that amount from that merchant yet. Send it again after the alert.",
+            reason="No payment of that amount from that merchant yet. Send it again after the alert.",  # noqa: E501
             merchant=receipt.merchant,
             problems=receipt.problems,
         )
@@ -559,7 +561,7 @@ def pacing(conn: sqlite3.Connection, user_id: str, clock: datetime | None = None
     prov_count = 0
     prov_rows = conn.execute(
         "SELECT id, category_id, amount_paise FROM rail_events WHERE user_id = ?"
-        " AND status = 'provisional' AND direction = 'debit' AND occurred_at >= ? AND occurred_at < ?",
+        " AND status = 'provisional' AND direction = 'debit' AND occurred_at >= ? AND occurred_at < ?",  # noqa: E501
         (user_id, start, end),
     ).fetchall()
     for r in prov_rows:

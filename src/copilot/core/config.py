@@ -5,6 +5,7 @@ Values that the code does not support are rejected at load time (for example a t
 than Asia/Kolkata), so config can never silently disagree with the implementation.
 """
 
+import os
 from pathlib import Path
 from typing import Literal
 
@@ -35,6 +36,8 @@ class Settings(BaseModel):
     default_warn_threshold_pct: int = Field(ge=0, le=100)
     forecast_method: Literal["run_rate"]
     llm_max_retries: int = Field(ge=0, le=5)
+    llm_primary: bool = True
+    llm_cache_ttl_s: int = Field(default=3600, ge=0, le=86400)
     transfer_window_hours: int = Field(ge=1, le=168, default=48)
     recurring_tolerance_pct: int = Field(ge=0, le=50, default=10)
     recurring_min_occurrences: int = Field(ge=2, le=12, default=3)
@@ -52,8 +55,15 @@ def load_settings(path: str | Path = DEFAULT_SETTINGS_PATH) -> Settings:
     if not isinstance(data, dict):
         raise ValueError(f"Settings file {path} must contain a mapping.")
     settings = Settings.model_validate(data)
+    override = os.environ.get("FINCO_LLM_PRIMARY")
+    primary = (
+        settings.llm_primary
+        if override is None
+        else override.strip().lower() not in {"0", "false", "no", "off"}
+    )
     return settings.model_copy(
         update={
+            "llm_primary": primary,
             "db_path": _resolve(settings.db_path),
             "policy_path": _resolve(settings.policy_path),
             "categorization_rules_path": _resolve(settings.categorization_rules_path),

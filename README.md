@@ -64,6 +64,48 @@ Finance Copilot ingests bank statements, classifies messy UPI transactions, disc
 
 ---
 
+## Phase 4: Behavioural Engagement and Gamification
+
+Phase 4 turns the copilot's advice into small, optional, measured experiments ("challenges") and
+tells the user honestly whether they worked. Nothing here moves money, and nothing is automatic:
+the user opts in to every challenge.
+
+```
+ weekly job -> offers (Thompson sampling, logged propensity) -> user accepts (opt-in)
+      ^                                                              |
+      |                                                              v
+ learning loop  <- feedback <- review (rank vs own history) <- experiment (frozen baseline, pace)
+ (Beta posteriors,                    ^                              |
+  outcome memory)                     |            dated exception -> auto-pause / extend (user accepts)
+                                      +-- integrity note if payments were recategorised
+```
+
+What it adds:
+
+- **Honest measurement.** A result is ranked against the user's own K=6 earlier comparable periods
+  ("lower than all 6 of your previous 14-day periods"). With six earlier periods a quiet window
+  still looks "beyond usual range" about 1 time in 7 by chance, so the wording says what was
+  compared and never claims the challenge caused the change. Small differences (under 10% and under
+  ₹200) are called "within your usual range".
+- **Forgiving by design.** One grace day per week on streaks, streak freezes and window pauses for
+  declared exceptions (`copilot memory exception ... --from --to`), rest weeks after two abandoned
+  challenges, quiet weeks after repeated "not now" answers, and no social comparison anywhere.
+- **Gamification that follows real behaviour.** XP for things the user actually did, levels, badges,
+  and personal bests compared only with the user's own past.
+- **Learning loop.** Feedback moves a per-template Beta posterior and writes an outcome memory; the
+  offer policy (Thompson sampling with a seeded generator) uses it, and an offline simulator with
+  IPS/SNIPS estimates checks the policy without touching a user.
+- **Model first, rules as guard.** A configured model reads each question first; the rules validate
+  its answer and are the fallback (`llm_primary`, `FINCO_LLM_PRIMARY=0` to flip). Tests never use
+  the network; recorded replies are in `tests/cassettes/`.
+
+Try it (offline, about a minute): `bash scripts/demo_phase4.sh`, which follows
+`docs/demo_script_phase4.md`. Evidence: `copilot eval --phase 4` writes `docs/eval_report_phase4.md`;
+`python scripts/mutation_check_phase4.py` records that all 12 safety rules are guarded
+(`docs/phase4_mutation_checks.md`). Weak spots are listed in `docs/known_issues.md`.
+
+---
+
 ## Capability Matrix: Phase 1 vs. Phase 2 vs. Phase 3
 
 | Dimension | Phase 1 (Core Automation) | Phase 2 (Agentic Intelligence) | Phase 3 (Advanced Financial Copilot) |

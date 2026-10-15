@@ -1,5 +1,442 @@
 ## Current state
-Last completed stage: 3.18 (Phase 3 100% COMPLETE) | Blockers: none
+Last completed stage: 4.13 (Phase 4 complete) | Blockers: none | Open weak spots: see docs/known_issues.md
+
+## Proposed commits (awaiting approval; no git command was run for Phase 4)
+Checkpoint A, after Stage 4.7: "Add experiments, challenges and progress tracking"
+- migrations 004/005 and models/repos for experiments, offers, check-ins, adjustments, XP/badges, personal bests
+- src/copilot/core/{baseline,experiments,challenges,adaptive,rewards,self_competition,streaks,policy}.py and their tools/*.py
+- config/{experiments,baseline,pace,integrity,offers,streaks,phase4_safety,badges}.yaml and config/challenges/*.yaml
+- the matching tests under tests/core and tests/tools
+Checkpoint B, after Stage 4.13: "Add experiment learning loop and coaching agent"
+- everything from Stages 4.8 to 4.13: learning_loop, CoachAgent, intents and glossary, runtime jobs, CLI and API routes
+- bank/synth_v5.py, eval/harness_phase4.py, eval/sim/, eval/data/phase4_intents.json, scripts/{demo_phase4.sh,mutation_check_phase4.py,record_intent_cassette.py}
+- src/copilot/db/migrations/006_phase4_hardening.sql, tests/conftest.py, tests/cassettes/, tests/cli/test_cli_phase4_journey.py and the other new tests
+- docs: README, decisions, known_issues, open_questions, phase4_alignment, phase4_api_contract, demo_script_phase4, eval_report_phase4, phase4_mutation_checks, capability_matrix, architecture_agentic, learning_agents
+Excluded: .env (secrets, git-ignored), data/, *.db, __pycache__.
+
+## Stage 4.13: Hardening, documentation, exit checklist: DONE
+Goal: make the twelve safety rules provably guarded, close the documentation, walk the exit checklist.
+Built: per-connection lock around the savepoint and a registration lock (found by a flaky test under load); unique index so weekly offers are idempotent; rest/quiet weeks withheld before any model call; mutation checks for all twelve rules; README Phase 4 section, decisions (4.11 to 4.13), known issues, open questions, API contract and alignment updates.
+Evidence:
+```
+$ python scripts/mutation_check_phase4.py
+...
+rule 11  caught      a tool named like a money transfer is registered
+rule 12  caught      learning may lower a hard-floor alert
+18 of 18 breaks caught
+$ ruff check .
+All checks passed!
+$ pytest -q
+1184 passed in 81.44s
+```
+Weak spots (also in docs/known_issues.md): intent accuracy on held-out phrasing 75.0% against a pre-declared 80% (FAIL left visible, not tuned on held-out); detection of a real 35% cut 51.7% with K=6 and 18.3% false alarms (theory: 1 in 7 = 14.3%); terminal answer to "what worked" is terse; `copilot progress` has no --clock.
+
+## Stage 4.12: Evaluation harness, golden scenarios, synthetic data v5: DONE
+Goal: measure the plan's claims with pre-declared targets, dev seeds [42, 101, 2024] and held-out seeds [999, 12345, 88888].
+Built: bank/synth_v5.py, eval/harness_phase4.py, eval/sim/simulator.py (persists offers; IPS/SNIPS), 27 golden scenarios, intent cassettes, `copilot eval --phase 4`, docs/eval_report_phase4.md.
+Evidence (docs/eval_report_phase4.md, held-out):
+```
+False 'beyond usual range' on null windows   18.3% (rank-only 19.2%)   PASS (<= 14.3% + 6.4 points)
+A real ~35% cut told apart from noise        detected 51.7%, false alarms 18.3% (x2.8)   PASS
+Thompson regret below random (held-out)      13.39 vs 27.27   PASS
+Intent accuracy on held-out phrasing         75.0%   target >= 80%   FAIL
+Safety-filter violations                     0   PASS
+```
+
+## Stage 4.11: CLI, API, demo: DONE
+Goal: make Phase 4 usable by a person and prove it with the real demo.
+Built: `copilot memory exception` (dated ranges), tool/API additions (`week_start`, confirm-integrity, review wording, `llm.path`), CLI fixes found by running the real journey (run now commits; offers generate from the CLI; Reason column; feedback teaches the learning loop once; abandon adds the failure weight), scripts/demo_phase4.sh, corrected docs/demo_script_phase4.md.
+Evidence:
+```
+$ bash scripts/demo_phase4.sh /tmp/demo.db   (exit 0)
+Accepted offer 'off_...'. Started active experiment 'exp_...'.
+adjustments: pause / exception_overlap_auto_pause / auto_applied_pause ; extend / exception_overlap_extend / proposed
+review: "lower than all 6 of your previous comparable 10-day periods", rank p-value 14.28%
+learning: challenge_template / delivery_cap  alpha 3.0  beta 2.0  p 0.6000
+sim (seed 42): thompson reward 40.00 regret 0.21 ; random reward 29.00 regret 11.21
+$ pytest tests/cli/test_cli_phase4_journey.py -q
+4 passed
+```
+
+
+## Stage 4.10: Agent integration: DONE
+Goal: Implement Phase 4 intents, minimal plan templates, CoachAgent specialist, planner capability and policy matrices, runtime jobs, skills manifests and wrappers, narration templates, refusals for betting/lotteries, timeline read model integration, and MCP read-only guardrails.
+Built:
+- `src/copilot/core/intent.py`: Added 5 Phase 4 intents (`start_experiment`, `experiment_status`, `what_worked`, `challenge_suggestions`, `progress_summary`) with word-boundary regexes, entity resolution, and extended refusal gate with `BETTING_GAMBLING` blocking peer money challenges.
+- `config/plan_templates.yaml`: Minimal deterministic tool execution templates for Phase 4 intents (no write tools in read plans).
+- `config/planner_capabilities.yaml` & `config/policy.yaml`: Registered read tools as `planner_selectable: true`, write tools as `planner_selectable: false` with `{agent: deny, user: allow}`, and runtime jobs with `{agent: allow, user: allow}`.
+- `config/skills/` & `src/copilot/skills/tools.py`: Added skill manifests and executable tool wrappers for `design_experiment_from_goal`, `weekly_checkin`, `review_experiment`, and `suggest_challenges`.
+- `src/copilot/workflow/specialists.py`: Integrated `CoachAgent` specialist handling `"coaching"` and `"experiments"` questions with graceful degradation on failure.
+- `src/copilot/runtime/runner.py` & `config/runtime.yaml`: Wired 6 Phase 4 runtime jobs (`create_checkins`, `create_due_reviews`, `expire_offers`, `run_adaptive_detectors`, `weekly_offers`, `award_xp_and_badges`) with period-keyed idempotency.
+- `config/explanation_templates.yaml` & `config/mcp.yaml`: Added non-causal explanation templates without pressure phrases; restricted MCP tool exposure strictly to read tools (`list_experiments`, `experiment_progress`, `get_user_progress`, `get_personal_bests`, `list_offers`).
+- `src/copilot/core/timeline.py` & `src/copilot/models/agentic.py`: Extended timeline read model with Phase 4 timeline kinds and pinned pending adjustment proposals to `pending_approvals`.
+- `tests/workflow/test_agent_integration_phase4.py`: 9 integration tests verifying intent accuracy, betting refusals, plan minimality, adversarial plan rejection, CoachAgent execution, graceful degradation, runtime job idempotency, MCP read-only filtering, and timeline integration.
+Files:
+- src/copilot/core/intent.py
+- config/plan_templates.yaml
+- config/planner_capabilities.yaml
+- config/policy.yaml
+- config/runtime.yaml
+- config/explanation_templates.yaml
+- config/mcp.yaml
+- config/skills/design_experiment_from_goal.yaml
+- config/skills/weekly_checkin.yaml
+- config/skills/review_experiment.yaml
+- config/skills/suggest_challenges.yaml
+- src/copilot/skills/tools.py
+- src/copilot/workflow/specialists.py
+- src/copilot/runtime/runner.py
+- src/copilot/core/timeline.py
+- src/copilot/models/agentic.py
+- src/copilot/models/phase3.py
+- src/copilot/config/phase3.py
+- src/copilot/core/challenges.py
+- src/copilot/tools/challenges.py
+- src/copilot/tools/rewards.py
+- src/copilot/db/repo_phase4.py
+- tests/workflow/test_agent_integration_phase4.py
+- docs/decisions.md
+- STATUS.md
+Adaptations applied (0.7): none
+Tests: 1065 / 1065 passed | Lint: pass
+Evidence:
+```
+tests/workflow/test_agent_integration_phase4.py ......... [100%]
+============================== 9 passed in 2.13s ==============================
+===================== 1065 passed in 69.73s (0:01:09) =======================
+All checks passed!
+```
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 4.9: Offer policy, simulator and off-policy evaluation: DONE
+Goal: Implement Thompson sampling with seeded draws, Monte Carlo propensity estimation, rest-week detection, decision-level simulator with latent drift personas, offline off-policy estimators (IPS and SNIPS), and CLI sim run.
+Built:
+- `src/copilot/core/policy.py`: Thompson sampling offer selection (`select_offers_thompson`) with Beta posterior draws, normalized value weighting (`compute_value_weight`), Monte Carlo propensity estimation (integer bp in [1, 10000]), deterministic greedy (`select_offers_greedy`) and uniform random (`select_offers_random`) baselines, protective rest-week rule (`is_user_in_rest_weeks`, 14-day pause after 2 consecutive failures), and master dispatcher (`select_challenge_offers`).
+- `eval/sim/personas.py`: Latent personas (`ThriftyCook`, `BusyCommuter`, `FickleDrifter`) with drift after week 26, best fixed arm and slate helpers, and dev/held-out seeds.
+- `eval/sim/simulator.py`: 52-week offline simulation loop with interaction logging, posterior updates, and cumulative regret tracking.
+- `eval/sim/off_policy.py`: Standard IPS (`estimate_ips`) and Self-Normalized IPS (`estimate_snips`) with standard errors, confidence intervals, and Kish's Effective Sample Size.
+- `src/copilot/cli/sim.py`: `copilot sim run` command with Rich table and JSON output registered into `src/copilot/cli/main.py`.
+- `tests/core/test_policy_and_sim.py`: 9 comprehensive tests verifying seed reproducibility, propensity bounds, rest-week pauses, essential category exclusion, simulator determinism, Thompson regret lower than random (13.94 vs 24.05 on dev seeds), off-policy SNIPS error bounds on held-out seeds, and CLI invocation.
+- `docs/eval_report_phase4.md`: Drafted evaluation section with regret benchmarks and off-policy estimation metrics.
+Files:
+- src/copilot/core/policy.py
+- eval/sim/personas.py
+- eval/sim/simulator.py
+- eval/sim/off_policy.py
+- src/copilot/cli/sim.py
+- src/copilot/cli/main.py
+- tests/core/test_policy_and_sim.py
+- docs/eval_report_phase4.md
+- docs/decisions.md
+- STATUS.md
+Adaptations applied (0.7): none
+Tests: 1056 / 1056 passed | Lint: pass
+Evidence:
+```
+============================= test session starts =============================
+tests/core/test_policy_and_sim.py ......... [100%]
+============================== 9 passed in 13.54s ==============================
+====================== 1056 passed in 128.30s (0:02:08) =======================
+All checks passed!
+```
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 4.8: Learning loop into memory and recommendations: DONE
+Goal: Implement template posterior updates, experiment_outcome behavioural memory creation with decay and evidence links, non-causal advice citations, unhelpful template suppression, repeating experiment options for contribution plans, and failure candidate exporter.
+Built:
+- `src/copilot/core/learning_loop.py`: Beta conjugate posterior engine (`get_template_posterior`, `update_template_posterior`), behavioural outcome memory writer (`record_experiment_outcome_memory`), non-causal advice formatter (`format_outcome_memory_advice_evidence`, `assert_no_causal_claims`), advice template suppression (`is_template_suppressed_in_advice`), active outcome memory queries (`get_active_outcome_memories`), contribution plan options extractor (`get_contribution_plan_experiment_options`), failure candidate exporter (`export_phase4_failure_candidates`), and post-review hook (`process_post_review_learning`).
+- `src/copilot/models/phase3.py`: Added `challenge_template` to `FeedbackStat.subject_kind`, `experiment_outcome` to `MemoryItem.kind`, and `review`, `experiment` to `MemoryEvidence.ref_kind`.
+- `src/copilot/db/migrations/005_phase4_schema.sql`: Upgraded `feedback_stats`, `memory_items`, and `memory_evidence` tables to support phase 4 types.
+- `config/memory.yaml`: Added `experiment_outcome: 180` half-life days.
+- `tests/core/test_learning_loop.py`: 9 comprehensive tests verifying posterior math, memory writing and decay, non-causal advice validation, unhelpful suppression, forgotten exclusion, contribution-plan options, failure export, and integrated review lifecycle.
+Files:
+- src/copilot/core/learning_loop.py
+- src/copilot/models/phase3.py
+- src/copilot/core/memory.py
+- src/copilot/db/migrations/005_phase4_schema.sql
+- config/memory.yaml
+- tests/core/test_learning_loop.py
+- docs/decisions.md
+- STATUS.md
+Adaptations applied (0.7): none
+Tests: 1047 / 1047 passed | Lint: pass
+Evidence:
+```
+tests/core/test_learning_loop.py ......... [100%]
+============================== 9 passed in 0.47s ==============================
+All checks passed!
+```
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+### [GIT CHECKPOINT A] (PROPOSED COMMIT - DO NOT EXECUTE GIT COMMAND)
+- Proposed commit message: `Add experiments, challenges and progress tracking`
+- Exact files in checkpoint:
+  - `config/experiments.yaml`
+  - `config/baseline.yaml`
+  - `config/challenges/*.yaml`
+  - `config/offers.yaml`
+  - `config/rewards.yaml`
+  - `config/badges.yaml`
+  - `config/streaks.yaml`
+  - `config/pace.yaml`
+  - `config/integrity.yaml`
+  - `config/phase4_safety.yaml`
+  - `config/policy.yaml`
+  - `config/planner_capabilities.yaml`
+  - `src/copilot/config/phase4.py`
+  - `src/copilot/db/migrations/005_phase4_schema.sql`
+  - `src/copilot/models/phase4.py`
+  - `src/copilot/db/repo_phase4.py`
+  - `src/copilot/core/metrics.py`
+  - `src/copilot/core/baseline.py`
+  - `src/copilot/core/experiments.py`
+  - `src/copilot/tools/experiments.py`
+  - `src/copilot/core/challenges.py`
+  - `src/copilot/core/adaptive.py`
+  - `src/copilot/tools/adjustments.py`
+  - `src/copilot/core/self_competition.py`
+  - `src/copilot/core/rewards.py`
+  - `src/copilot/workflow/nodes.py`
+  - `tests/config/test_phase4_config.py`
+  - `tests/db/test_phase4_repo.py`
+  - `tests/core/test_baseline.py`
+  - `tests/core/test_experiments_lifecycle.py`
+  - `tests/tools/test_experiments_tools.py`
+  - `tests/core/test_challenges_and_offers.py`
+  - `tests/core/test_adaptive.py`
+  - `tests/tools/test_adjustments_tools.py`
+  - `tests/core/test_self_competition.py`
+  - `tests/core/test_rewards.py`
+  - `docs/phase4_alignment.md`
+  - `docs/decisions.md`
+  - `STATUS.md`
+
+## Stage 4.7: Progress and rewards: DONE
+Goal: Implement XP allowlist validation, daily cap enforcement, idempotent awarding, learning XP on abandonment, neutral levels, deterministic badge predicates with evidence, copy safety scanning against pressure/shame phrases, and unified progress snapshot.
+Built:
+- `src/copilot/core/rewards.py`: Static rule validation (`validate_reward_rules`), allowlisted XP awarding with 100 pt daily cap and unique constraint idempotency (`award_xp`), integrity confirmation gate (`can_award_target_met_xp`), learning XP on abandonment (`award_experiment_outcome_xp`), neutral level calculation (`calculate_user_level`), deterministic badge predicates with evidence (`check_and_award_badges`), copy safety scanner (`scan_copy_safety`), and progress aggregation (`get_user_progress`).
+- `tests/core/test_rewards.py`: 14 comprehensive tests verifying static check rejection of forbidden rules, idempotency duplicate handling, daily cap bounds, abandoned-and-reviewed learning XP, integrity confirmation gating, neutral levels, badge evaluation with evidence, copy safety scans, and progress models.
+Files:
+- src/copilot/core/rewards.py
+- src/copilot/core/self_competition.py
+- tests/core/test_rewards.py
+- docs/decisions.md
+- STATUS.md
+Adaptations applied (0.7): none
+Tests: 1038 / 1038 passed | Lint: pass
+Evidence:
+```
+tests/core/test_rewards.py .............. [100%]
+============================= 14 passed in 0.37s ==============================
+1038 passed in 118.04s (0:01:58)
+All checks passed!
+```
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+
+## Stage 4.6: Self-competition, personal bests and streaks: DONE
+Goal: Implement derived personal bests with earliest-wins tie-breaking, self-competition comparison formatting without social or shame framing, and forgiving streak calculations with 1 grace day per 7-day boundary and freezes during declared contextual exceptions in src/copilot/core/self_competition.py.
+Built:
+- `src/copilot/core/self_competition.py`: Personal bests engine (`compute_personal_bests`, `evaluate_new_personal_best` with direction-aware comparison and earliest-wins tie resolution), self-comparison message generator (`format_self_comparison` with `assert_no_social_comparison`), forgiving streak calculation (`calculate_streak_from_daily_series` with 1 grace day per 7-day boundary and exception freezes), and domain streak calculators (`calculate_tagging_streak`, `calculate_checkin_streak`, `calculate_bucket_streak`, `get_active_streaks`).
+- `tests/core/test_self_competition.py`: 9 comprehensive tests verifying lower/higher-is-better metric bests, tie break preserving earliest date, grace day allowance at exact 7-day intervals, exception freeze preservation, broken streak phrasing without loss or shame, social comparison phrase scanning, and real database integrations.
+Files:
+- src/copilot/core/self_competition.py
+- tests/core/test_self_competition.py
+- docs/decisions.md
+- STATUS.md
+Adaptations applied (0.7): none
+Tests: 1024 / 1024 passed | Lint: pass
+Evidence:
+```
+tests/core/test_self_competition.py ......... [100%]
+============================== 9 passed in 0.24s ==============================
+All checks passed!
+```
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 4.5: Adaptive challenges: DONE
+Goal: Implement 5 deterministic detectors in src/copilot/core/adaptive.py (consecutive behind check-ins, want_to_pause response, ahead at midpoint, new commitments, and contextual exceptions auto-pause + extend), adjustment tools in src/copilot/tools/adjustments.py, policy and capability mappings, and tests covering boundary conditions, proposal expiry, and human-in-the-loop opt-in governance.
+Built:
+- `src/copilot/core/adaptive.py`: 5 deterministic detectors (`detect_consecutive_behind`, `detect_want_to_pause`, `detect_ahead_at_midpoint`, `detect_new_commitment`, `detect_exception_overlap` with auto-applied pause and extension proposal), proposal lifecycle (`accept_adjustment`, `reject_adjustment`, `expire_stale_proposals`), and batch detector runner `run_adaptive_detectors`.
+- `src/copilot/tools/adjustments.py`: 5 tools registered (`list_adjustments`, `accept_adjustment`, `reject_adjustment`, `run_adaptive_detectors`, `expire_stale_proposals`).
+- `config/policy.yaml`: Opt-in governance enforcing user permission for `accept_adjustment` and `reject_adjustment` while strictly denying agent execution (`{agent: deny, user: allow}`).
+- `config/planner_capabilities.yaml`: Read tools as `planner_selectable: true`, `tool_class: read`; write tools as `planner_selectable: false`, `tool_class: write_logical`.
+- `src/copilot/workflow/nodes.py`: Dynamic tool registration hook for adjustment tools.
+- `tests/core/test_adaptive.py`: 26 comprehensive tests verifying boundary conditions, two-check-in thresholds, midpoint margins, non-automatic raise_target, auto-applied exception pauses, and proposal expirations.
+- `tests/tools/test_adjustments_tools.py`: 2 through-executor tests verifying policy denials on agent actors, user execution workflows, and audit logging.
+Files:
+- src/copilot/core/adaptive.py
+- src/copilot/tools/adjustments.py
+- src/copilot/workflow/nodes.py
+- config/policy.yaml
+- config/planner_capabilities.yaml
+- tests/core/test_adaptive.py
+- tests/tools/test_adjustments_tools.py
+- docs/decisions.md
+- STATUS.md
+Adaptations applied (0.7): none
+Tests: 1015 / 1015 passed | Lint: pass
+Evidence:
+```
+tests/core/test_adaptive.py .......................... [ 92%]
+tests/tools/test_adjustments_tools.py .. [100%]
+============================== 28 passed in 0.83s ==============================
+All checks passed!
+```
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 4.4: Challenge templates and personalisation: DONE
+Goal: Implement challenge template loader, LLM-composed challenge specification parser with strict validation and number suppression, trigger evaluation engine, parameter fitting, safety filtering against essential categories and calendar buffers, greedy offer generation, and goal gap decomposition.
+Built:
+- `src/copilot/core/challenges.py`: LLM spec validator (`LLMChallengeSpec`), 8 challenge templates loaded from YAML acting as seeds and fallback, deterministic trigger evaluator (`evaluate_triggers`), target fitting with ₹50 rounding and 50% median floor, safety filter against essential categories and calendar minimum balance buffer, greedy candidate selector, and goal gap decomposition (`decompose_goal_gap`).
+- `tests/core/test_challenges_and_offers.py`: 10 comprehensive tests covering LLM spec rejection on invalid categories/metrics/durations, hallucinated target suppression, deterministic triggers, safety filter invariant property tests, calendar buffer checks, and cooldown boundaries.
+Files:
+- src/copilot/core/challenges.py
+- tests/core/test_challenges_and_offers.py
+- docs/decisions.md
+- STATUS.md
+Adaptations applied (0.7): none
+Tests: 987 / 987 passed | Lint: pass
+Evidence:
+```
+tests/core/test_challenges_and_offers.py .......... [100%]
+============================== 10 passed in 0.98s ==============================
+All checks passed!
+```
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 4.3: Experiments lifecycle and tools: DONE
+Goal: Implement experiment lifecycle in src/copilot/core/experiments.py (design, start, pause, resume, abandon, check-in, review feedback), tools in src/copilot/tools/experiments.py, workflow registration, and tests for state machine, opt-in enforcement, and tool governance.
+Built:
+- `src/copilot/core/experiments.py`: Lifecycle engine (design with essential category protection and target floor at 50% of median, start with baseline/metric freezing, pause, resume, immediate learning review on abandonment, weekly check-in generation and answer handling, due review calculation, review feedback submission, real-time pace/progress calculation).
+- `src/copilot/tools/experiments.py`: 12 tools registered (`design_experiment`, `start_experiment`, `pause_experiment`, `resume_experiment`, `abandon_experiment`, `answer_checkin`, `submit_review_feedback`, `create_checkins`, `create_due_reviews`, `get_experiment`, `list_experiments`, `experiment_progress`).
+- `config/policy.yaml`: Opt-in governance enforcing user permission while denying agent write tools (`start_experiment`, `pause_experiment`, `abandon_experiment`).
+- `config/planner_capabilities.yaml`: Read tools as `planner_selectable: true`, `tool_class: read`; write tools as `planner_selectable: false`, `tool_class: write_logical`.
+- `src/copilot/db/repo_phase4.py`: Multi-tenant queries for starting experiments, updating check-in responses, and saving review feedback.
+- `tests/core/test_experiments_lifecycle.py`: 7 tests covering essential category restrictions, target floors, lifecycle transitions, baseline freezing, review delays, kind abandonment, and check-in auto-pause proposals.
+- `tests/tools/test_experiments_tools.py`: 2 end-to-end tool execution tests verifying policy denials on agent actors, user execution workflows, and audit logging.
+Files:
+- src/copilot/core/experiments.py
+- src/copilot/tools/experiments.py
+- src/copilot/db/repo_phase4.py
+- src/copilot/models/phase4.py
+- src/copilot/db/migrations/005_phase4_schema.sql
+- src/copilot/workflow/nodes.py
+- config/policy.yaml
+- config/planner_capabilities.yaml
+- tests/core/test_experiments_lifecycle.py
+- tests/tools/test_experiments_tools.py
+- docs/decisions.md
+- STATUS.md
+Adaptations applied (0.7): none
+Tests: 977 / 977 passed | Lint: pass
+Evidence:
+```
+tests/core/test_experiments_lifecycle.py ....... [ 77%]
+tests/tools/test_experiments_tools.py .. [100%]
+============================== 977 passed in 51.85s ==============================
+All checks passed!
+```
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 4.2: Metric catalogue and baseline engine: DONE
+Goal: Implement 8 pure-function metrics in src/copilot/core/metrics.py, candidate window generator, baseline calculation with lower-middle median, rank-p exact calculation, outcome boundaries, linear pace with integer rounding, and integrity notes in src/copilot/core/baseline.py; test boundaries, exclusions, rank-p math, higher-is-better mirroring, and properties.
+Built:
+- `src/copilot/core/metrics.py`: Pure-function metrics (`category_spend`, `merchant_group_spend`, `txn_count`, `no_spend_days`, `bucket_adherence_days`, `goal_allocation`, `checkin_rate`, `tagging_completeness`) with half-open IST window conversion and commit/transfer/duplicate exclusions.
+- `src/copilot/core/baseline.py`: Baseline calculation ($K \ge 3$, lower-middle median for even counts), window exclusion filtering (account date, contextual exceptions, existing experiments), deterministic outcome evaluation with exact rank-$p$, linear pace with basis points tolerance, and integrity notes with $50\%$ winning margin threshold.
+- `tests/core/test_baseline_and_metrics.py`: 13 comprehensive tests covering all boundary conditions, exact rank-$p$ arithmetic, window exclusions, even-count median rules, integrity thresholds, and mathematical invariants.
+Files:
+- src/copilot/core/metrics.py
+- src/copilot/core/baseline.py
+- tests/core/test_baseline_and_metrics.py
+- docs/decisions.md
+- STATUS.md
+Adaptations applied (0.7): none
+Tests: 968 / 968 passed | Lint: pass
+Evidence:
+```
+tests/core/test_baseline_and_metrics.py ............. [100%]
+============================= 13 passed in 0.29s ==============================
+All checks passed!
+```
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 4.1: Schema and models: DONE
+Goal: Implement migration 005_phase4_schema.sql for Section 4 tables, structured & table Pydantic models in src/copilot/models/phase4.py, and multi-tenant repository functions in src/copilot/db/repo_phase4.py; test constraints, append-only triggers, uniqueness, and migrations.
+Built:
+- `src/copilot/db/migrations/005_phase4_schema.sql`: 8 STRICT tables (`experiments`, `experiment_checkins`, `experiment_reviews`, `adjustment_proposals`, `offers`, `xp_events`, `badge_awards`, `streak_freezes`) with indexes and triggers.
+- `src/copilot/models/phase4.py`: Pydantic models for structured entities and table records.
+- `src/copilot/db/repo_phase4.py`: Multi-tenant repository functions filtered strictly by `user_id = ?`.
+- `tests/db/test_phase4_schema.py`: 8 tests verifying round-trips, tenant isolation, check-in/review constraints, append-only trigger protection on `xp_events`, badge uniqueness, and migration idempotency on Phase 3 data.
+Files:
+- src/copilot/db/migrations/005_phase4_schema.sql
+- src/copilot/models/phase4.py
+- src/copilot/db/repo_phase4.py
+- tests/db/test_phase4_schema.py
+- docs/decisions.md
+- STATUS.md
+Adaptations applied (0.7): none
+Tests: 955 / 955 passed | Lint: pass
+Evidence:
+```
+tests/db/test_phase4_schema.py ........ [100%]
+============================== 8 passed in 0.26s ==============================
+All checks passed!
+```
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
+## Stage 4.0: Discover, align, adapt: DONE
+Goal: Read code and docs; fill docs/phase4_alignment.md; list Phase 3 stages and status; record baseline test run; add 10 Phase 4 config skeletons with Pydantic validation (experiments, baseline, challenges catalogue, offers, rewards, badges, streaks, pace, integrity, safety); test boundaries and safety validators.
+Built:
+- `docs/phase4_alignment.md`: Full Phase 4 alignment document auditing adaptation table, Phase 3 stages, and baseline test suite.
+- `config/experiments.yaml`, `config/baseline.yaml`, `config/offers.yaml`, `config/rewards.yaml`, `config/badges.yaml`, `config/streaks.yaml`, `config/pace.yaml`, `config/integrity.yaml`, `config/phase4_safety.yaml`.
+- `config/challenges/`: 8 challenge templates (`weekday_home_cooking`, `delivery_cap`, `no_spend_weekend`, `subscription_review`, `bucket_week`, `goal_boost`, `tag_everything_week`, `weekly_money_checkin`).
+- `src/copilot/config/phase4.py`: Pydantic models with `extra="forbid"`, duration boundary checks, baseline window constraints, and static reward allowlist verification.
+- `tests/config/test_phase4_config.py`: 5 tests verifying boundary values and safety invariants.
+Files:
+- docs/phase4_alignment.md
+- config/experiments.yaml
+- config/baseline.yaml
+- config/offers.yaml
+- config/rewards.yaml
+- config/badges.yaml
+- config/streaks.yaml
+- config/pace.yaml
+- config/integrity.yaml
+- config/phase4_safety.yaml
+- config/challenges/weekday_home_cooking.yaml
+- config/challenges/delivery_cap.yaml
+- config/challenges/no_spend_weekend.yaml
+- config/challenges/subscription_review.yaml
+- config/challenges/bucket_week.yaml
+- config/challenges/goal_boost.yaml
+- config/challenges/tag_everything_week.yaml
+- config/challenges/weekly_money_checkin.yaml
+- src/copilot/config/phase4.py
+- tests/config/test_phase4_config.py
+- docs/decisions.md
+- STATUS.md
+Adaptations applied (0.7): none
+Tests: 947 / 947 passed | Lint: pass
+Evidence:
+```
+tests/config/test_phase4_config.py ..... [100%]
+============================== 5 passed in 0.10s ==============================
+All checks passed!
+```
+Defaults chosen (open_questions.md): none
+Live checks pending: none
+
 
 ## [GIT CHECKPOINT B]
 Status: PENDING USER INSTRUCTION (zero git commands executed per constraints)

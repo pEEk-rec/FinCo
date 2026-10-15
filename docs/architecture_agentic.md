@@ -215,3 +215,16 @@ The following invariants must be preserved across all future extensions of the c
 3. **Multi-Tenant Isolation:** All database tables include a `user_id` column, and every query, memory retrieval, and calendar projection filters on `user_id`.
 4. **Single-Loop Routing Integrity:** Single-domain intents must never pay the latency and token overhead of multi-agent decomposition; they must route directly to the single loop.
 5. **Human Primacy:** No state mutation affecting financial goals, budget allocations, or categorization rules may be applied without user consent.
+
+## Phase 4 additions
+
+- **New tools** (all through `execute_tool`): offers, accept/dismiss, experiment lifecycle, check-ins,
+  reviews, `confirm_review_integrity`, adjustments, XP/badges, `record_contextual_exception` with
+  optional day ranges. Write tools are `agent: deny, user: allow`, are not planner-selectable and
+  are not exposed over MCP; only read tools are.
+- **Specialist:** `CoachAgent` answers coaching and experiment questions with minimal plans of read
+  tools; a failed tool degrades to a partial answer instead of an error.
+- **Intent reading:** model first, rules validate and fall back (`core/intent.py`), with a redacted-
+  question response cache and a glossary prompt (`config/intent_glossary.yaml`).
+- **Concurrency:** one SQLite connection may be shared by threads, so `execute_tool` takes a
+  per-connection lock around the savepoint, and tool registration is locked.

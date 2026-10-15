@@ -1,0 +1,11 @@
+# Streaks Configuration (PLAN_PHASE4 Section 1.3, Section 5.6)
+
+grace_days_per_7_days: 1
+freeze_reasons:
+  - "grace"
+  - "exception"
+
+streak_types:
+  - "checkin_streak"
+  - "tagging_streak"
+  - "bucket_streak"
