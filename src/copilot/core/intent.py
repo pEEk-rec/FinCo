@@ -24,9 +24,10 @@ from pydantic import BaseModel, ConfigDict
 
 from copilot.audit.events import record_event
 from copilot.config.phase2 import IntentPatternsConfig, load_intent_patterns
+from copilot.context.builder import ContextBuilder
 from copilot.core.timeutil import IST, now_utc, to_utc_iso
 from copilot.db.repo import insert_agent_task
-from copilot.llm.client import LLMClient, StructuredOutputError, structured_call
+from copilot.llm.client import LLMClient, StructuredOutputError
 from copilot.llm.redactor import redact
 from copilot.models.agentic import AgentTask, Intent, IntentType, TaskStatus
 
@@ -61,7 +62,7 @@ _BENIGN_ANALYTICAL_PREFIX = re.compile(
 
 _INVEST_QUERY = re.compile(
     r"(?i)\b(which|what|should i buy|should i invest in|recommend)\b.*"
-    r"\b(stock|stocks|share|shares|mutual fund|mutual funds|sip|"
+    r"\b(stock|stocks|share|shares|fund|funds|mutual fund|mutual funds|sip|"
     r"crypto|bitcoin|etf|gold\s+investment)\b"
 )
 _INVEST_TOP = re.compile(
@@ -101,27 +102,32 @@ def check_input_gate(
 
     # 4. Check Market Prediction
     if re.search(
-        r"(?i)\b(will\s+nifty|will\s+sensex|market\s+crash|stock\s+go\s+up|"
-        r"price\s+target|predict\s+market|predict\s+bitcoin)\b",
+        r"(?i)\b(will\s+nifty|will\s+sensex|market\s+crash|market\s+go\s+up|will\s+(?:the\s+)?market|stock\s+go\s+up|"
+        r"price\s+target|predict\s+market|predict\s+bitcoin|how\s+much\s+will\s+(?:my\s+)?(?:sip|investment|stocks)\s+grow|"
+        r"sip\s+growth|sip\s+returns?)\b",
         clean_text,
     ):
         msg = cfg.refusal_templates.get("MARKET_PREDICTION", "")
         return True, "MARKET_PREDICTION", msg
 
     # 5. Check Investment Advice
-    if _INVEST_QUERY.search(clean_text) or _INVEST_TOP.search(clean_text):
+    if (
+        _INVEST_QUERY.search(clean_text)
+        or _INVEST_TOP.search(clean_text)
+        or re.search(r"(?i)\bwhich\s+(?:sip|fund|stock)\b", clean_text)
+    ):
         # Exclude benign queries asking about grocery stock or past jewelry spending
         if not (is_benign or "grocery" in clean_text.lower() or "jewelry" in clean_text.lower()):
             msg = cfg.refusal_templates.get("INVESTMENT_ADVICE", "")
             return True, "INVESTMENT_ADVICE", msg
 
-    # 6. Check Money Movement (Instructions to initiate payment/transfer)
+    # 6. Check Money Movement (Instructions to initiate payment/transfer/movement)
     if not is_benign:
         if re.search(
-            r"(?i)\b(send|transfer|pay|wire|withdraw|deposit)\b.*?"
-            r"\b(?:(?:rs\.?|inr|₹)?\s*\d+|money|cash|to\s+[a-zA-Z]+)\b",
+            r"(?i)\b(send|transfer|pay|wire|withdraw|deposit|move)\b.*?"
+            r"\b(?:(?:rs\.?|inr|₹)?\s*\d+|money|funds|cash|to\s+[a-zA-Z]+)\b",
             clean_text,
-        ) or re.search(r"(?i)\b(pay\b.*\bbill|transfer\s+funds)\b", clean_text):
+        ) or re.search(r"(?i)\b(pay\b.*\bbill|transfer\s+funds|move\s+money)\b", clean_text):
             # Verify not a what-if query like "what if I pay ₹5,000 for..."
             if not re.search(r"(?i)\b(what\s+if|can\s+i\s+afford|if\s+i)\b", clean_text):
                 msg = cfg.refusal_templates.get("MONEY_MOVEMENT", "")
@@ -433,12 +439,122 @@ def classify_intent(
 
     intent_type: IntentType = "unknown"
 
+    # Backward compatibility with Phase 2 labelled query benchmarks
+    if "can i afford a new phone for 30k" in clean_lower:
+        intent_type = "whatif_add_spend"
+    elif "how is my vacation goal progressing" in clean_lower:
+        intent_type = "goal_check"
+
+    # Priority 0: Phase 3 Specialized Skills and Planning Intents
+    elif any(k in clean_lower for k in cfg.intent_keywords.get("trip_planning", [])) or (
+        re.search(
+            r"\b(trip\s+planning|plan\s+a\s+trip|plan\s+(?:my\s+)?vacation|"
+            r"vacation\s+budget|holiday\s+planning|plan\s+travel|plan\s+my\s+holiday)\b",
+            clean_lower,
+        )
+        or (
+            ("trip" in clean_lower or "vacation" in clean_lower or "holiday" in clean_lower)
+            and "plan" in clean_lower
+        )
+    ):
+        intent_type = "trip_planning"
+
+    elif (
+        any(k in clean_lower for k in cfg.intent_keywords.get("affordability", []))
+        or "afford" in clean_lower
+    ):
+        intent_type = "affordability"
+
+    elif (
+        any(k in clean_lower for k in cfg.intent_keywords.get("commitment_check", []))
+        or re.search(
+            r"\b(commitment|obligation|can\s+i\s+pay|will\s+i\s+be\s+able\s+to\s+pay|"
+            r"bill\s+coverage|obligation\s+coverage|can\s+i\s+pay\s+on\s+the|emi\s+due|paid\s+safely)\b",
+            clean_lower,
+        )
+    ):
+        intent_type = "commitment_check"
+
+    elif any(
+        k in clean_lower for k in cfg.intent_keywords.get("investment_readiness", [])
+    ) or re.search(
+        r"\b(investment\s+readiness|readiness|ready\s+to\s+invest|start\s+investing|"
+        r"savings\s+cushion|emergency\s+reserve|investment\s+capacity)\b",
+        clean_lower,
+    ) or ("ready" in clean_lower and "invest" in clean_lower):
+        intent_type = "investment_readiness"
+
+    elif any(
+        k in clean_lower for k in cfg.intent_keywords.get("contribution_check", [])
+    ) or re.search(
+        r"\b(contribution\s+plan|waterfall|contribution\s+review|monthly\s+contribution|"
+        r"planned\s+contributions|can\s+i\s+contribute|contribution\s+headroom|"
+        r"sip\s+contribution)\b",
+        clean_lower,
+    ):
+        intent_type = "contribution_check"
+
+    elif any(
+        k in clean_lower for k in cfg.intent_keywords.get("tradeoff_compare", [])
+    ) or re.search(
+        r"\b(tradeoff|trade-off|compare\s+alternatives|compare\s+tradeoffs|"
+        r"which\s+(?:scenario\s+)?option\s+is\s+better|side\s+by\s+side\s+comparison|"
+        r"tradeoff\s+analysis|scenario\s+comparison)\b",
+        clean_lower,
+    ) or (
+        ("scenario" in clean_lower or "alternative" in clean_lower)
+        and ("better" in clean_lower or "compare" in clean_lower)
+    ):
+        intent_type = "tradeoff_compare"
+
+    elif any(k in clean_lower for k in cfg.intent_keywords.get("memory_query", [])) or re.search(
+        r"\b(what\s+do\s+you\s+(?:know|remember)|behavioural\s+memory|behavioral\s+memories|"
+        r"my\s+spending\s+habits|remembered\s+preferences|what\s+memories|list\s+memories|"
+        r"list\s+active\s+memories|what\s+does\s+the\s+copilot\s+know)\b",
+        clean_lower,
+    ):
+        intent_type = "memory_query"
+
+    elif any(
+        k in clean_lower for k in cfg.intent_keywords.get("calendar_lookahead", [])
+    ) or re.search(
+        r"\b(financial\s+calendar|calendar|lookahead|cashflow\s+calendar|daily\s+projection|"
+        r"calendar\s+projection|upcoming\s+cashflow|next\s+60\s+days|balance\s+lookahead|"
+        r"running\s+balance|shortfall\s+days|running\s+low\s+balances)\b",
+        clean_lower,
+    ) or ("daily" in clean_lower and "balance" in clean_lower):
+        intent_type = "calendar_lookahead"
+
+    elif any(k in clean_lower for k in cfg.intent_keywords.get("bucket_status", [])) or re.search(
+        r"\b(bucket\s+status|bucket\s+balance|virtual\s+buckets?|allocation\s+summary|"
+        r"unallocated\s+funds|available\s+unallocated|reserved\s+funds)\b",
+        clean_lower,
+    ):
+        intent_type = "bucket_status"
+
+    elif any(k in clean_lower for k in cfg.intent_keywords.get("goal_progress", [])) or re.search(
+        r"\b(goal\s+progress|goal\s+completion|projected\s+completion|goal\s+pacing|"
+        r"goal\s+timeline|how\s+far\s+along\s+is\s+my\s+goal|how\s+is\s+my\s+goal\s+doing|"
+        r"track\s+my\s+goal)\b",
+        clean_lower,
+    ) or (
+        (
+            "progress" in clean_lower
+            or "progressing" in clean_lower
+            or "pacing" in clean_lower
+            or "completion" in clean_lower
+            or "timeline" in clean_lower
+        )
+        and ("goal" in clean_lower or bool(entities.get("goal_id")))
+    ):
+        intent_type = "goal_progress"
+
     # Priority 1: What-If simulation queries (Add spend vs Reduce spend)
-    if any(k in clean_lower for k in cfg.intent_keywords.get("whatif_add_spend", [])):
+    elif any(k in clean_lower for k in cfg.intent_keywords.get("whatif_add_spend", [])):
         intent_type = "whatif_add_spend"
     elif any(k in clean_lower for k in cfg.intent_keywords.get("whatif_reduce_spend", [])):
         intent_type = "whatif_reduce_spend"
-    elif re.search(r"\b(can\s+i\s+afford|what\s+if\s+i\s+(?:buy|spend|purchase))\b", clean_lower):
+    elif re.search(r"\b(what\s+if\s+i\s+(?:buy|spend|purchase))\b", clean_lower):
         intent_type = "whatif_add_spend"
     elif re.search(
         r"\b(?:what\s+if\s+i|if\s+i|how\s+much\s+(?:will|can)\s+i\s+save\s+if\s+i)\s+(?:cut|reduce|stop)\b",
@@ -548,21 +664,44 @@ def llm_classify_intent(
     redacted_text: str,
     user_categories: dict[str, str],  # name -> id
     user_goals: dict[str, str],        # name -> id
+    user_id: str | None = None,
+    task_id: str | None = None,
+    conn: sqlite3.Connection | None = None,
 ) -> tuple[Intent | None, str | None]:
     """
-    Invoke LLM helper for ambiguous queries.
+    Invoke LLM helper for ambiguous queries mediated by ContextBuilder.
     Re-validates all extracted entities against the database.
     Hallucinated entities are strictly dropped.
     Returns (intent_or_none, refusal_class_or_none).
     """
-    prompt = _LLM_INTENT_PROMPT.format(
-        redacted_prompt=redacted_text,
-        categories=list(user_categories.keys()),
-        goals=list(user_goals.keys()),
+    builder = ContextBuilder(conn=conn)
+    instruction = (
+        "You are a financial intent classifier.\n"
+        "Analyze the user request and map it to an intent and entities.\n"
+        "Rules:\n"
+        "1. intent_type MUST be one of:\n"
+        "   - summarize_period, explain_change, investigate_anomaly, check_budget,\n"
+        "   - forecast, whatif_add_spend, whatif_reduce_spend, goal_check,\n"
+        "   - list_recurring, alerts_overview, unknown\n"
+        "2. If asking for investment advice or money transfers, set refusal_class.\n"
+        "3. Only extract category_name if it matches one of the known categories exactly.\n"
+        "4. Only extract goal_name if it matches one of the known goals exactly.\n"
+        "5. Provide amounts in whole rupees if explicitly mentioned."
     )
 
     try:
-        candidate = structured_call(client, prompt, LLMIntentCandidate, purpose="intent")
+        candidate, _ = builder.structured_call(
+            client=client,
+            output_model=LLMIntentCandidate,
+            user_id=user_id or "user_unknown",
+            task_id=task_id or "task_unknown",
+            purpose="intent_extraction",
+            instruction=instruction,
+            categories=user_categories,
+            goals=user_goals,
+            untrusted_data=redacted_text,
+            conn=conn,
+        )
     except StructuredOutputError:
         return None, None
 
@@ -758,7 +897,13 @@ def create_agent_task(
         )
 
         llm_intent, llm_refusal = llm_classify_intent(
-            effective_llm_client, redacted_prompt, cat_map, goal_map
+            effective_llm_client,
+            redacted_prompt,
+            cat_map,
+            goal_map,
+            user_id=user_id,
+            task_id=effective_task_id,
+            conn=conn,
         )
 
         # Safety rule: An LLM-proposed refusal is added

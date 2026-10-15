@@ -1,0 +1,33 @@
+# Financial Commitments Configuration (PLAN_PHASE3 Section 5.1, Section 1.3)
+
+amount_tolerance_bp: 500  # 5% variance for match
+date_tolerance_days: 3    # +/- 3 days for matching
+suggestion_min_occurrences: 2
+
+allowed_certainties:
+  - firm
+  - estimated
+
+allowed_directions:
+  - outflow
+  - inflow
+
+allowed_kinds:
+  - fee
+  - bill
+  - rent
+  - travel
+  - allowance
+  - income
+  - subscription
+  - emi
+  - investment_contribution
+  - goal_contribution
+  - other
+
+allowed_schedule_kinds:
+  - once
+  - weekly
+  - monthly
+  - yearly
+  - every_n_days

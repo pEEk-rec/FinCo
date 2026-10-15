@@ -64,18 +64,18 @@ Finance Copilot ingests bank statements, classifies messy UPI transactions, disc
 
 ---
 
-## Capability Matrix: Phase 1 vs. Phase 2
+## Capability Matrix: Phase 1 vs. Phase 2 vs. Phase 3
 
-| Dimension | Phase 1 (Core Automation) | Phase 2 (Agentic Intelligence) |
-|---|---|---|
-| **Query Understanding** | Structured CLI arguments only | Natural language intent routing with slot filling & refusal firewall |
-| **Workflow Execution** | Fixed sequential LangGraph DAG | Dynamic autonomous planner with deterministic `PlanValidator` |
-| **Spend Analysis** | Aggregations and category sums | Causal decomposition (fixed vs variable, rate vs volume) with hypothesis ranking |
-| **What-If Planning** | None (static state only) | Counterfactual simulation engine with exact conservation of paise |
-| **Goal Tracking** | Not supported | Multi-goal tracking with feasibility forecasting and what-if impact analysis |
-| **Budget Alerts** | Hard static percentage thresholds | Multi-signal adaptive alerts with confidence damping and noise suppression |
-| **Explanation Safety** | Finding-citation validation | Causal claim blocker, consequence simulation gate, hedged template fallback |
-| **Auditability** | Tabular audit event log | Unified activity timeline merging audit events, plan steps, and simulations |
+| Dimension | Phase 1 (Core Automation) | Phase 2 (Agentic Intelligence) | Phase 3 (Advanced Financial Copilot) |
+|---|---|---|---|
+| **Query Understanding** | Structured CLI arguments only | Natural language intent routing with slot filling & refusal firewall | Automated multi-domain intent routing to multi-agent supervisor |
+| **Workflow Execution** | Fixed sequential LangGraph DAG | Dynamic autonomous planner with deterministic `PlanValidator` | Supervisor + parallel specialists with Reflexion-style reviewer |
+| **Cashflow & Planning** | Aggregations and category sums | Causal spend decomposition & what-if counterfactual simulations | 60-day projected calendar, virtual buckets, waterfall contributions |
+| **Health & Readiness** | Basic balance checks | Static goal feasibility forecasting | Comprehensive readiness assessment, emergency reserve & debt runway |
+| **Memory System** | Stateless | In-session ephemeral conversation state | Dual-tier memory with Bayesian confidence, recency decay & forgetting |
+| **Protocol & Skills** | Internal CLI only | Internal tool registry | Model Context Protocol (MCP) server & executable compound skills |
+| **Budget Alerts** | Hard static percentage thresholds | Multi-signal adaptive alerts with confidence damping | Festival & seasonal exceptions, 30-day advice suppression cooldown |
+| **Safety & Governance** | Schema checks & integer paise | Consequence rule & causal claim firewall | Zero money movement, two-phase approval gates, audit choke point |
 
 ---
 

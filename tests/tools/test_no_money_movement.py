@@ -3,10 +3,15 @@
 import pytest
 
 from copilot.tools.alerts import register_alert_tools
+from copilot.tools.buckets import register_bucket_tools
+from copilot.tools.calendar import register_calendar_tools
+from copilot.tools.commitments import register_commitment_tools
 from copilot.tools.contracts import SideEffect
 from copilot.tools.financial import register_financial_tools
 from copilot.tools.goals import register_goals_tools
 from copilot.tools.investigation import register_investigation_tools
+from copilot.tools.memory import register_memory_tools
+from copilot.tools.readiness import register_readiness_tools
 from copilot.tools.registry import clear_registry, list_specs, register
 from copilot.tools.whatif import register_whatif_tools
 
@@ -35,8 +40,15 @@ def real_registry():
     register_whatif_tools(register)
     register_investigation_tools(register)
     register_alert_tools(register)
+    register_commitment_tools(register)
+    register_bucket_tools(register)
+    register_calendar_tools(register)
+    register_readiness_tools(register)
+    register_memory_tools(register)
     yield list_specs()
     clear_registry()
+
+
 
 
 def test_registry_is_not_empty(real_registry):

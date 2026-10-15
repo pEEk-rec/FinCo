@@ -1,0 +1,10 @@
+{
+  "name": "laptop_purchase",
+  "description": "User evaluates one-off purchase of a laptop for 3000000 paise (Rs. 30,000)",
+  "inputs": {
+    "amount_paise": 3000000,
+    "category_id": "c_shopping"
+  },
+  "expected_status": "ok",
+  "expected_outputs_contain": ["get_calendar", "run_whatif", "check_commitment_coverage", "evaluate_goal_impact"]
+}

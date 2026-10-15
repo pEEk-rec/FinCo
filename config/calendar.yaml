@@ -1,0 +1,5 @@
+# Financial Calendar Projection Configuration (PLAN_PHASE3 Section 5.4, Section 1.3)
+
+default_horizon_days: 60
+max_horizon_days: 180   # Hard limit <= 180 days
+min_buffer_paise: 100000  # ₹1,000 buffer minimum

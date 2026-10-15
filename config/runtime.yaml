@@ -1,0 +1,29 @@
+# Agent Runtime & Scheduled Jobs Configuration (PLAN_PHASE3 Section 5.15)
+
+loop_interval_seconds: 60
+lease_duration_seconds: 300
+max_retries: 3
+backoff_base_seconds: 2
+
+jobs:
+  rollover_buckets:
+    schedule: "daily@00:05"
+    enabled: true
+  refresh_memories:
+    schedule: "daily@01:00"
+    enabled: true
+  evaluate_alerts:
+    schedule: "every_60_minutes"
+    enabled: true
+  coverage_scan:
+    schedule: "daily@06:00"
+    enabled: true
+  suggest_commitments:
+    schedule: "daily@07:00"
+    enabled: true
+  expire_drafts:
+    schedule: "daily@00:10"
+    enabled: true
+  monthly_close:
+    schedule: "monthly@1st_02:00"
+    enabled: true

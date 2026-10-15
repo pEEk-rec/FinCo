@@ -1,0 +1,11 @@
+{
+  "name": "goa_trip",
+  "description": "Plan 6-month savings and cashflow for Rs. 30,000 Goa trip",
+  "inputs": {
+    "target_amount_paise": 3000000,
+    "target_date": "2027-04-01",
+    "category_id": "c_travel"
+  },
+  "expected_status": "ok",
+  "expected_outputs_contain": ["get_calendar", "plan_contributions", "compare_tradeoffs"]
+}

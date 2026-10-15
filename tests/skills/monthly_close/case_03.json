@@ -1,0 +1,7 @@
+{
+  "name": "close_without_period",
+  "description": "Monthly close without explicit period falling back to clock previous period",
+  "inputs": {},
+  "expected_status": "ok",
+  "expected_outputs_contain": ["rollover_buckets", "refresh_memories", "evaluate_alerts", "get_allocation_summary"]
+}

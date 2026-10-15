@@ -4,11 +4,15 @@ refusal_classes:
   INVESTMENT_ADVICE:
     - "(?i)\\b(which|what|should i buy|recommend)\\b.*\\b(stock|share|mutual fund|sip|crypto|bitcoin|etf|gold)\\b"
     - "(?i)\\b(best|top)\\b.*\\b(stocks|funds|investments)\\b"
+    - "(?i)\\bwhich\\s+(?:sip|fund|stock)\\b"
   MONEY_MOVEMENT:
     - "(?i)\\b(send|transfer|pay|wire|withdraw|deposit)\\b.*\\b(money|rupees|rs|inr|cash|to)\\b"
     - "(?i)\\b(pay\\s+my\\s+bill|transfer\\s+funds)\\b"
+    - "(?i)\\bmove\\s+money\\s+to\\s+(?:my\\s+)?(?:savings|account|bank)\\b"
+    - "(?i)\\bmove\\s+money\\b"
   MARKET_PREDICTION:
     - "(?i)\\b(will\\s+nifty|will\\s+sensex|market\\s+crash|stock\\s+go\\s+up|price\\s+target)\\b"
+    - "(?i)\\b(how\\s+much\\s+will\\s+my\\s+sip\\s+grow|sip\\s+growth|expected\\s+sip\\s+return)\\b"
   SENSITIVE_DATA_SUBMISSION:
     - "(?i)\\b(otp|cvv|pin|password|card\\s+number)\\b"
     - "\\b\\d{4}[-\\s]?\\d{4}[-\\s]?\\d{4}[-\\s]?\\d{4}\\b"
@@ -16,9 +20,9 @@ refusal_classes:
     - "(?i)\\b(weather|recipe|movie|joke|sports\\s+score)\\b"
 
 refusal_templates:
-  INVESTMENT_ADVICE: "I cannot provide specific investment advice, stock picks, or fund recommendations. I can, however, help you analyze your past savings rate, track budget allocations, or simulate how much monthly surplus you have available."
-  MONEY_MOVEMENT: "I am an analytical copilot and do not have permission to initiate payments, transfer money, or execute transactions. You can review your transaction history, check budgets, or simulate what-if purchase scenarios."
-  MARKET_PREDICTION: "I cannot predict financial market movements or macroeconomic indices. I can analyze your personal income, cashflow trends, and historical spending patterns."
+  INVESTMENT_ADVICE: "I cannot provide investment advice. FinCo cannot recommend specific funds, stocks, or SIP products. I can assess your investment readiness, calculate surplus headroom, and evaluate commitment coverage."
+  MONEY_MOVEMENT: "FinCo does not move money, cannot move money, execute bank transfers, initiate payments, or lock funds. I provide logical budgeting, bucket tracking, and forward-looking cashflow projections."
+  MARKET_PREDICTION: "FinCo does not project investment returns, compound interest, or market index growth. Balances never grow by assumption in our planning model."
   SENSITIVE_DATA_SUBMISSION: "For your security, never enter OTPs, CVVs, passwords, or full debit card numbers. Financial analysis only requires historical transaction records and category limits."
   OUT_OF_SCOPE: "I specialize strictly in personal finance, budget tracking, cashflow forecasting, and goal analysis."
 
@@ -58,7 +62,6 @@ intent_keywords:
   whatif_add_spend:
     - "what if i buy"
     - "what if i spend"
-    - "can i afford"
     - "if i purchase"
   whatif_reduce_spend:
     - "what if i cut"
@@ -81,3 +84,206 @@ intent_keywords:
     - "notifications"
     - "warnings"
     - "any issues"
+
+  # Phase 3 Intent Types (PLAN_PHASE3 Section 5.10)
+  goal_progress:
+    - "goal progress"
+    - "how is my goal doing"
+    - "goal completion"
+    - "projected completion"
+    - "how far along is my goal"
+    - "goal pacing"
+    - "goal timeline"
+    - "track my goal"
+
+  commitment_check:
+    - "can i pay the fees"
+    - "can i pay my"
+    - "commitment coverage"
+    - "will i be able to pay"
+    - "can i pay rent"
+    - "bill coverage"
+    - "obligation coverage"
+    - "pay on the"
+
+  calendar_lookahead:
+    - "calendar"
+    - "lookahead"
+    - "cashflow calendar"
+    - "daily projection"
+    - "next 60 days"
+    - "financial calendar"
+    - "upcoming cashflow"
+    - "balance lookahead"
+
+  bucket_status:
+    - "bucket"
+    - "virtual bucket"
+    - "bucket balance"
+    - "bucket status"
+    - "allocation summary"
+    - "unallocated funds"
+    - "available unallocated"
+    - "reserved funds"
+
+  investment_readiness:
+    - "readiness"
+    - "investment readiness"
+    - "ready to invest"
+    - "am i ready to invest"
+    - "savings cushion"
+    - "can i start investing"
+    - "investment capacity"
+    - "readiness check"
+
+  contribution_check:
+    - "contribution plan"
+    - "waterfall"
+    - "contribution review"
+    - "monthly contribution"
+    - "fits in budget"
+    - "contribution headroom"
+    - "planned contributions"
+    - "can i contribute"
+
+  tradeoff_compare:
+    - "tradeoff"
+    - "trade-off"
+    - "compare alternatives"
+    - "compare tradeoffs"
+    - "which option is better"
+    - "side by side comparison"
+    - "tradeoff analysis"
+    - "scenario comparison"
+
+  affordability:
+    - "can i afford a"
+    - "can i afford to buy"
+    - "can i afford this"
+    - "affordability check"
+    - "afford new laptop"
+    - "can we afford"
+    - "can i afford"
+    - "afford purchase"
+
+  trip_planning:
+    - "trip planning"
+    - "plan a trip"
+    - "plan my vacation"
+    - "vacation budget"
+    - "holiday planning"
+    - "plan travel expense"
+    - "trip savings"
+    - "planning a trip"
+
+  memory_query:
+    - "what do you know about my"
+    - "what do you remember"
+    - "my spending habits"
+    - "remembered preferences"
+    - "behavioural memory"
+    - "my patterns"
+    - "what memories"
+    - "list memories"
+
+labelled_examples:
+  goal_progress:
+    - "How is my emergency fund goal progressing?"
+    - "Show me my goal progress for the laptop savings."
+    - "What is the projected completion date of my car goal?"
+    - "Track my goal progress for retirement fund."
+    - "How far along is my goal for vacation?"
+    - "Give me an update on my goal completion pace."
+    - "Check goal timeline and progress for wedding."
+    - "Is my bike goal on track with current monthly progress?"
+
+  commitment_check:
+    - "Can I pay the fees on the 5th?"
+    - "Will I be able to pay rent next month?"
+    - "Check commitment coverage for my upcoming electricity bill."
+    - "Can I pay my tuition fee without dipping into buffer?"
+    - "Check if my school fee obligation is covered."
+    - "Will my insurance premium commitment be paid safely?"
+    - "Can I pay my EMI due on the 10th?"
+    - "Check commitment coverage for all upcoming bills."
+
+  calendar_lookahead:
+    - "Show me my financial calendar for the next 60 days."
+    - "What does my daily cashflow lookahead look like?"
+    - "Project daily running balance for the upcoming two months."
+    - "Give me a calendar lookahead of expected inflows and outflows."
+    - "Check upcoming cashflow projection on the calendar."
+    - "What is my calendar projection through December?"
+    - "Show lookahead for shortfall days in the next 90 days."
+    - "View financial calendar with running low balances."
+
+  bucket_status:
+    - "What is my dining bucket balance?"
+    - "Show me the status of my virtual buckets."
+    - "How much unallocated funds do I have available?"
+    - "Check bucket status for groceries and shopping."
+    - "What is the total reserved funds across all buckets?"
+    - "Give me an allocation summary of my buckets."
+    - "Is my entertainment bucket depleted or low?"
+    - "List virtual buckets and their unspent balances."
+
+  investment_readiness:
+    - "Am I ready to invest in mutual funds?"
+    - "Check my investment readiness assessment."
+    - "Do I have enough emergency reserve and cushion to start investing?"
+    - "What is my investment readiness level right now?"
+    - "Evaluate if I am ready to start a new monthly investment."
+    - "Assess investment readiness against positive cashflow criteria."
+    - "Can I start investing or do I need more savings cushion?"
+    - "Run readiness check on my financial history."
+
+  contribution_check:
+    - "Can I contribute ₹5,000 monthly towards my new goal?"
+    - "Review my monthly contribution waterfall plan."
+    - "Do my planned contributions fit in the low inflow scenario?"
+    - "How much contribution headroom do I have after essentials?"
+    - "Check contribution plan feasibility for the next 6 months."
+    - "Will my ₹10,000 monthly SIP contribution fit comfortably?"
+    - "Evaluate contribution review against the priority goals."
+    - "Show waterfall of funded and shortfall contributions."
+
+  tradeoff_compare:
+    - "Compare trade-offs between buying a bike vs saving for trip."
+    - "Compare tradeoffs for pausing my goal vs reducing dining spend."
+    - "Which scenario option is better for my emergency fund?"
+    - "Run a side by side tradeoff analysis on my two plans."
+    - "Compare tradeoff results between 6-month and 12-month horizon."
+    - "Tradeoff comparison of paying loan early vs investing."
+    - "Compare alternatives for adjusting my vacation date."
+    - "Which alternative satisfies all hard constraints in tradeoff?"
+
+  affordability:
+    - "Can I afford a ₹30,000 laptop next month?"
+    - "Can I afford to buy a new smartphone for ₹25,000?"
+    - "Affordability check for a ₹15,000 course fee."
+    - "Can we afford spending ₹40,000 on furniture this weekend?"
+    - "Check if I can afford a ₹50,000 camera purchase."
+    - "Can I afford this ₹20,000 watch without breaking commitments?"
+    - "Is a ₹10,000 flight ticket affordable for me right now?"
+    - "Can I afford a ₹35,000 television next week?"
+
+  trip_planning:
+    - "Plan a trip to Goa for ₹30,000 in December."
+    - "Help me with trip planning for my vacation to Manali."
+    - "Trip planning: can I save ₹50,000 for travel by November?"
+    - "Plan my vacation budget and goal for the upcoming holiday."
+    - "Trip planning for a 5-day holiday in Kerala."
+    - "How should I plan travel expense for Ladakh trip?"
+    - "Trip planning with bucket allocation and calendar buffer."
+    - "Plan my holiday trip savings of ₹45,000 by summer."
+
+  memory_query:
+    - "What do you know about my spending habits?"
+    - "What do you remember about my restaurant expenses?"
+    - "List memories and patterns you have observed about me."
+    - "Show remembered preferences and exceptions."
+    - "What behavioral memories are currently active?"
+    - "What do you remember regarding my weekend spending?"
+    - "List active memories for dining and shopping."
+    - "What does the copilot know about my festival spend?"
+

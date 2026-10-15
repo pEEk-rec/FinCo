@@ -56,6 +56,45 @@ def ensure_tools_registered() -> None:
 
         register_alert_tools()
 
+    if get_tool("create_commitment") is None:
+        from copilot.tools.commitments import register_commitment_tools
+
+        register_commitment_tools()
+
+    if get_tool("create_bucket") is None:
+        from copilot.tools.buckets import register_bucket_tools
+
+        register_bucket_tools()
+
+    if get_tool("get_calendar") is None:
+        from copilot.tools.calendar import register_calendar_tools
+
+        register_calendar_tools()
+
+    if get_tool("assess_investment_readiness") is None:
+        from copilot.tools.readiness import register_readiness_tools
+
+        register_readiness_tools()
+
+    if get_tool("plan_contributions") is None:
+        from copilot.tools.contributions import register_contributions_tools
+
+        register_contributions_tools()
+
+    if get_tool("list_memories") is None:
+        from copilot.tools.memory import register_memory_tools
+
+        register_memory_tools()
+
+    if get_tool("affordability_check") is None:
+        from copilot.skills.tools import register_skill_tools
+
+        register_skill_tools()
+
+
+
+
+
 
 def _get_exec_ctx(
     state: AgentState,

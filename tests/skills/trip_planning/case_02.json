@@ -1,0 +1,10 @@
+{
+  "name": "weekend_getaway",
+  "description": "Plan 3-month savings for Rs. 15,000 weekend trip",
+  "inputs": {
+    "target_amount_paise": 1500000,
+    "target_date": "2027-01-15"
+  },
+  "expected_status": "ok",
+  "expected_outputs_contain": ["get_calendar", "plan_contributions", "compare_tradeoffs"]
+}

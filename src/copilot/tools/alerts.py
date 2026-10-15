@@ -23,6 +23,7 @@ from copilot.core.alerts import (
 )
 from copilot.core.anomalies import detect_anomalies
 from copilot.core.errors import ErrorCode, ToolFailure
+from copilot.core.memory import get_active_contextual_exception
 from copilot.core.timeutil import (
     IST,
     from_utc_iso,
@@ -229,6 +230,19 @@ def evaluate_alerts_handler(
                 budget_status = "warning"
         projected_exceed = limit > 0 and fc_expected > limit
 
+        # Check active contextual exception for this category and period
+        # (PLAN_PHASE3 Section 5.8 & 5.9)
+        active_exc = get_active_contextual_exception(ctx.conn, ctx.user_id, cat_id, period, now)
+        active_exc_dict = None
+        if active_exc:
+            active_exc_dict = {
+                "id": active_exc.id,
+                "reason": (active_exc.statement_json or {}).get("reason", "exception"),
+                "category": cat_id,
+                "period": period,
+                "statement": active_exc.statement_json,
+            }
+
         breakdown = evaluate_category_alert_signals(
             category_id=cat_id,
             spent_paise=spent,
@@ -246,13 +260,45 @@ def evaluate_alerts_handler(
             config=config,
             current_day=current_day,
             days_in_month=days_in_month,
+            active_exception=active_exc_dict,
         )
 
-        if breakdown.severity is None:
+        # Apply Bounded Feedback Learning (PLAN_PHASE3 Section 5.16)
+        from copilot.core.learning import (
+            apply_learning_to_alert,
+            get_learned_multiplier,
+            is_hard_floor_alert,
+        )
+
+        subj_key = f"budget_risk:{cat_id}"
+        m, p, a_m, b_m = get_learned_multiplier(
+            ctx.conn, ctx.user_id, "alert_kind", subj_key
+        )
+        alert_ctx = {
+            "budget_status": budget_status,
+            "spent_paise": spent,
+            "limit_paise": limit,
+            "goals_affected": goals_affected,
+        }
+        is_hard_floor = is_hard_floor_alert(alert_ctx)
+        adj_score_bp, adj_sev, learning_note = apply_learning_to_alert(
+            breakdown.score_bp, breakdown.severity, m, is_hard_floor, config
+        )
+
+        if adj_sev is None:
             # Score below info tier -> no alert
             continue
 
         why_text = build_why_text(breakdown.components)
+        if learning_note:
+            why_text += f" ({learning_note.capitalize()}.)"
+
+        breakdown.components["learning"] = {
+            "multiplier": m,
+            "p": round(p, 4),
+            "is_hard_floor": is_hard_floor,
+            "note": learning_note,
+        }
         dedup_key = f"{ctx.user_id}:{period}:budget_risk:{cat_id}"
 
         # Preference checks
@@ -270,13 +316,13 @@ def evaluate_alerts_handler(
                     metadata={
                         "category_id": cat_id,
                         "period": period,
-                        "score_bp": breakdown.score_bp,
+                        "score_bp": adj_score_bp,
                         "reason": "muted",
                     },
                     clock=ctx.clock,
                 )
                 continue
-            if sev_rank[breakdown.severity] < sev_rank.get(cat_pref.min_severity, 1):
+            if sev_rank[adj_sev] < sev_rank.get(cat_pref.min_severity, 1):
                 suppressed_count += 1
                 record_event(
                     ctx.conn,
@@ -288,7 +334,7 @@ def evaluate_alerts_handler(
                     metadata={
                         "category_id": cat_id,
                         "period": period,
-                        "score_bp": breakdown.score_bp,
+                        "score_bp": adj_score_bp,
                         "reason": "min_severity",
                     },
                     clock=ctx.clock,
@@ -307,7 +353,7 @@ def evaluate_alerts_handler(
                     metadata={
                         "category_id": cat_id,
                         "period": period,
-                        "score_bp": breakdown.score_bp,
+                        "score_bp": adj_score_bp,
                         "reason": "max_open_alerts",
                     },
                     clock=ctx.clock,
@@ -361,13 +407,13 @@ def evaluate_alerts_handler(
                     continue
             elif existing.status == "open":
                 # Check for in-place escalation
-                if sev_rank[breakdown.severity] > sev_rank[existing.severity]:
+                if sev_rank[adj_sev] > sev_rank[existing.severity]:
                     repo.update_alert_in_place(
                         ctx.conn,
                         ctx.user_id,
                         existing.id,
-                        breakdown.score_bp,
-                        breakdown.severity,
+                        adj_score_bp,
+                        adj_sev,
                         breakdown.components,
                         why_text,
                     )
@@ -382,8 +428,8 @@ def evaluate_alerts_handler(
                         metadata={
                             "alert_id": existing.id,
                             "old_severity": existing.severity,
-                            "new_severity": breakdown.severity,
-                            "score_bp": breakdown.score_bp,
+                            "new_severity": adj_sev,
+                            "score_bp": adj_score_bp,
                         },
                         clock=ctx.clock,
                     )
@@ -400,8 +446,8 @@ def evaluate_alerts_handler(
             kind="budget_risk",
             subject_key=cat_id,
             period=period,
-            score_bp=breakdown.score_bp,
-            severity=breakdown.severity,
+            score_bp=adj_score_bp,
+            severity=adj_sev,
             components=breakdown.components,
             why_text=why_text,
             status="open",
@@ -423,8 +469,8 @@ def evaluate_alerts_handler(
                 "alert_id": alert_id,
                 "category_id": cat_id,
                 "period": period,
-                "severity": breakdown.severity,
-                "score_bp": breakdown.score_bp,
+                "severity": adj_sev,
+                "score_bp": adj_score_bp,
             },
             clock=ctx.clock,
         )
@@ -482,9 +528,80 @@ def decide_alert_handler(
 
     if action == "acknowledge":
         new_status = "acknowledged"
+        try:
+            from copilot.core.learning import record_feedback
+
+            record_feedback(
+                ctx.conn,
+                user_id=ctx.user_id,
+                subject_kind="alert_kind",
+                subject_key=f"{alert.kind}:{alert.subject_key}",
+                signal="useful",
+                clock=ctx.clock,
+                run_id=ctx.run_id,
+            )
+        except Exception:
+            pass
     elif action == "dismiss":
         new_status = "dismissed"
         dismiss_reason = reason or "User dismissed"
+        is_contextual = False
+        if reason:
+            r_clean = reason.strip().lower()
+            if r_clean not in (
+                "user dismissed",
+                "dismissed",
+                "no reason",
+                "none",
+                "dismiss",
+                "",
+            ):
+                is_contextual = True
+
+        if is_contextual:
+            # Contextual dismissal goes to memory as an exception, NOT to learning!
+            try:
+                from copilot.core.memory import record_contextual_exception
+
+                clean_r = reason.strip()
+                label = clean_r.split(":")[0].strip().lower() if ":" in clean_r else clean_r.lower()
+                if label not in (
+                    "festival",
+                    "travel",
+                    "one_off_purchase",
+                    "medical",
+                    "family_event",
+                    "other",
+                ):
+                    label = "other"
+
+                record_contextual_exception(
+                    ctx.conn,
+                    user_id=ctx.user_id,
+                    category=alert.subject_key,
+                    period=alert.period,
+                    reason=label,
+                    clock=now,
+                    run_id=ctx.run_id,
+                )
+            except Exception:
+                pass
+        else:
+            # Generic dismissal without reason is negative feedback
+            try:
+                from copilot.core.learning import record_feedback
+
+                record_feedback(
+                    ctx.conn,
+                    user_id=ctx.user_id,
+                    subject_kind="alert_kind",
+                    subject_key=f"{alert.kind}:{alert.subject_key}",
+                    signal="not_useful",
+                    clock=ctx.clock,
+                    run_id=ctx.run_id,
+                )
+            except Exception:
+                pass
     elif action == "snooze":
         new_status = "snoozed"
         days = snooze_days or 7
@@ -552,6 +669,22 @@ def set_alert_preference_handler(
         max_open_alerts=max_open_alerts,
     )
     repo.set_alert_preference(ctx.conn, pref)
+
+    if muted and category_id:
+        try:
+            from copilot.core.learning import record_feedback
+
+            record_feedback(
+                ctx.conn,
+                user_id=ctx.user_id,
+                subject_kind="alert_kind",
+                subject_key=f"budget_risk:{category_id}",
+                signal="not_useful",
+                clock=ctx.clock,
+                run_id=ctx.run_id,
+            )
+        except Exception:
+            pass
     record_event(
         ctx.conn,
         ctx.user_id,

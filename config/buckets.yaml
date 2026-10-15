@@ -1,0 +1,20 @@
+# Virtual Buckets Configuration (PLAN_PHASE3 Section 5.3, Section 1.3)
+
+low_threshold_bp: 2000  # balance below 20% of allocated is flagged 'low'
+draft_ttl_days: 7       # reallocation drafts expire after 7 days
+
+allowed_kinds:
+  - spending
+  - goal
+  - commitment
+  - flexible
+
+allowed_period_policies:
+  - reset_monthly
+  - accumulate
+
+default_period_policy:
+  spending: reset_monthly
+  goal: accumulate
+  commitment: accumulate
+  flexible: reset_monthly

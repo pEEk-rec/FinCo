@@ -1,4 +1,4 @@
-# Goal-Aware Reasoning Configuration (PLAN_PHASE2 Section 5.5)
+# Goal-Aware Reasoning Configuration (PLAN_PHASE2 Section 5.5 & PLAN_PHASE3 Section 5.2)
 
 max_horizon_months: 60
 surplus_lookback_months: 3
@@ -7,3 +7,11 @@ allowed_priorities:
   - 1
   - 2
   - 3
+
+# Phase 3 Additions (PLAN_PHASE3 Section 1.3, 5.2)
+projection_months: 3
+allowed_progress_sources:
+  - manual
+  - bucket
+  - account
+default_progress_source: manual

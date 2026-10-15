@@ -7,6 +7,7 @@ saved as a draft, which the user can later approve or reject.
 """
 
 import json
+import logging
 import uuid
 from typing import TYPE_CHECKING, Literal
 
@@ -22,6 +23,8 @@ from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
 
 if TYPE_CHECKING:
     from copilot.tools.executor import ExecutionContext
+
+logger = logging.getLogger(__name__)
 
 _PROMPT = """You are a financial advisor. Write short, clear advice based on these findings.
 
@@ -153,7 +156,10 @@ def draft_advice_handler(ctx: "ExecutionContext", findings: list[Finding]) -> Dr
                 }
             )
 
-    return DraftAdviceOutput(advice_items=items)
+    from copilot.core.learning import order_advice_by_utility
+
+    ordered_items = order_advice_by_utility(ctx.conn, ctx.user_id, items)
+    return DraftAdviceOutput(advice_items=ordered_items)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -180,7 +186,8 @@ def decide_advice_handler(
 ) -> DecideAdviceOutput:
     """Record a user's decision on a draft and audit it."""
     row = ctx.conn.execute(
-        "SELECT status FROM advice_items WHERE id = ? AND user_id = ?", (advice_id, ctx.user_id)
+        "SELECT status, evidence_json FROM advice_items WHERE id = ? AND user_id = ?",
+        (advice_id, ctx.user_id),
     ).fetchone()
 
     if not row:
@@ -218,6 +225,39 @@ def decide_advice_handler(
         after_data={"status": decision},
         clock=ctx.clock,
     )
+
+    # Record bounded feedback learning signal (PLAN_PHASE3 Section 5.16)
+    try:
+        from copilot.core.learning import record_feedback
+
+        evidence = {}
+        if row[1]:
+            try:
+                evidence = json.loads(row[1]) if isinstance(row[1], str) else row[1]
+            except Exception:
+                evidence = {}
+        f_kind = str(evidence.get("kind", "recommendation"))
+        subject = str(
+            evidence.get("category_id")
+            or evidence.get("merchant_name")
+            or evidence.get("goal_id")
+            or "global"
+        )
+        subject_key = f"{f_kind}:{subject}"
+        signal: Literal["useful", "not_useful"] = (
+            "useful" if decision == "approved" else "not_useful"
+        )
+        record_feedback(
+            ctx.conn,
+            user_id=ctx.user_id,
+            subject_kind="advice_kind",
+            subject_key=subject_key,
+            signal=signal,
+            clock=ctx.clock,
+            run_id=ctx.run_id,
+        )
+    except Exception as exc:
+        logger.debug("Failed to record learning feedback for advice: %s", exc)
 
     return DecideAdviceOutput(advice_id=advice_id, status=decision)
 

@@ -152,6 +152,47 @@ class DeterministicPlanner:
                     if intent.category_id:
                         args["category_id"] = intent.category_id
 
+                elif tool_name == "affordability_check":
+                    args = {"amount_paise": intent.amount_paise or 100000}
+                    if intent.category_id:
+                        args["category_id"] = intent.category_id
+
+                elif tool_name == "trip_planning":
+                    next_yr = year + 1
+                    args = {
+                        "target_amount_paise": intent.amount_paise or 2000000,
+                        "target_date": projection.get("target_date") or f"{next_yr:04d}-06-01",
+                    }
+                    if intent.category_id:
+                        args["category_id"] = intent.category_id
+
+                elif tool_name == "contribution_review":
+                    args = {"horizon_months": intent.horizon_months or 6}
+
+                elif tool_name == "get_goal_progress":
+                    args = {"goal_id": intent.goal_id or projection.get("goal_id") or "g1"}
+
+                elif tool_name == "check_commitment_coverage":
+                    args = {"horizon_days": 60}
+
+                elif tool_name == "get_calendar":
+                    args = {"horizon_days": 60}
+
+                elif tool_name == "get_bucket_status":
+                    args = {}
+
+                elif tool_name == "get_allocation_summary":
+                    args = {}
+
+                elif tool_name == "assess_investment_readiness":
+                    args = {}
+
+                elif tool_name == "compare_tradeoffs":
+                    args = {"horizon_months": 12, "alternatives": []}
+
+                elif tool_name == "list_memories":
+                    args = {}
+
                 for step_args in variants or [args]:
                     steps.append(
                         PlanStep(

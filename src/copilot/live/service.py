@@ -30,8 +30,8 @@ from copilot.api.state import ApiState
 from copilot.audit.events import record_event
 from copilot.core.categorisation import load_aliases, load_rules, normalize_merchant
 from copilot.core.config import load_settings
-from copilot.core.pipeline import get_categories, get_overrides, run_categorization_pipeline
 from copilot.core.money import rupees_to_paise
+from copilot.core.pipeline import get_categories, get_overrides, run_categorization_pipeline
 from copilot.core.timeutil import now_utc, to_utc_iso
 from copilot.db.repo import (
     get_account,

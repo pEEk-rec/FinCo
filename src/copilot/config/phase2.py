@@ -50,6 +50,7 @@ class IntentPatternsConfig(BaseModel):
     refusal_classes: dict[str, list[str]]
     refusal_templates: dict[str, str]
     intent_keywords: dict[str, list[str]]
+    labelled_examples: dict[str, list[str]] = Field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -106,6 +107,13 @@ class GoalsConfig(BaseModel):
     surplus_lookback_months: int = 3
     min_history_months_for_surplus: int = 2
     allowed_priorities: list[int] = Field(default_factory=lambda: [1, 2, 3])
+
+    # Phase 3 extensions (PLAN_PHASE3 Section 0.7 merge)
+    projection_months: int = 3
+    allowed_progress_sources: list[str] = Field(
+        default_factory=lambda: ["manual", "bucket", "account"]
+    )
+    default_progress_source: str = "manual"
 
 
 # ---------------------------------------------------------------------------------------------

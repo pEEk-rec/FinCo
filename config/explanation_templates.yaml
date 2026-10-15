@@ -4,12 +4,30 @@ recommendation_templates:
   spend_decision: "Based on your current run-rate of {spent_inr} and simulated monthly surplus of {surplus_inr}, this purchase leaves {remaining_inr} in projected buffer."
   reduce_spend: "Reducing spend in {category} by {target_reduction_inr} improves your projected surplus to {projected_surplus_inr} and keeps your {goal_name} on track."
   budget_adjustment: "Your {category} budget of {limit_inr} is projected to be exceeded by {exceed_inr}. Consider adjusting your limit or pacing variable discretionary spend."
+  goal_progress: "Goal '{goal_name}' has reached {current_inr} of {target_inr} ({percent}%). Required monthly contribution is {required_monthly_inr}."
+  commitment_coverage: "Commitment '{commitment_name}' due on {due_date} for {amount_inr} is {status} with a projected buffer of {buffer_inr}."
+  calendar_shortfall: "Calendar lookahead projects {shortfall_days_count} shortfall days over the next {horizon_days} days. Lowest balance is {lowest_balance_inr} on {lowest_date}."
+  bucket_status: "Virtual bucket '{bucket_name}' has an allocated amount of {allocated_inr} and spent {spent_inr}, leaving a balance of {balance_inr} ({status})."
+  readiness: "Investment readiness assessment level is {level}. Criteria evaluated: positive cashflow ({positive_cashflow}), emergency reserve ({emergency_reserve}), and obligations covered ({obligations_covered})."
+  contribution_plan: "Waterfall contribution plan for {horizon_months} months funds {funded_steps_count} of {total_steps_count} steps. Planned contributions verdict: {verdict}."
+  tradeoff_result: "Trade-off analysis evaluated {alternatives_count} alternatives. Satisfies all hard constraints: {satisfied_alternatives}."
+  memory_used: "Observed behavioural memory applied: {memory_kind} for {subject_key} with confidence {confidence_bp} bp."
+  affordability: "Affordability analysis for {amount_inr}: projected calendar coverage is {calendar_status} with remaining buffer of {buffer_inr}."
+  monthly_close: "Monthly wrap-up complete: rollover released {released_count} buckets, memory confidence refreshed, and {alerts_count} active alerts evaluated."
+  trip_planning: "Trip plan for target {target_inr} by {target_date}: monthly contribution required is {required_inr} with {tradeoff_summary}."
 
 fallback_templates:
   general: "Analysis indicates current spend of {amount_inr} across recorded categories. Review your budgets to maintain cashflow buffer."
   budget_warning: "Category {category} spend is at {spent_inr} against a budget of {limit_inr} ({percent}% utilized)."
   investigation_fallback: "Spend in {category} changed by {amount_inr}. Investigation was inconclusive; unexplained change: {unexplained_inr}."
+  goal_progress_fallback: "Goal progress evaluated across active goals. Current total saved: {current_inr} towards target {target_inr}."
+  commitment_coverage_fallback: "Commitments evaluated against daily calendar balance. Minimum buffer maintained: {buffer_inr}."
+  bucket_status_fallback: "Bucket allocation summary: {reserved_inr} reserved across virtual buckets, {unallocated_inr} available unallocated."
+  readiness_fallback: "Investment readiness assessed. Emergency fund and obligation coverage reviewed against policy thresholds."
+  contribution_plan_fallback: "Contribution plan computed over {horizon_months} months following user priority waterfall."
+  tradeoff_fallback: "Tradeoff alternatives compared across completion dates, shortfall days, and constraint satisfaction."
 
 hedged_sentences:
   inconclusive_investigation: "Could not determine a definitive cause for this spend change; unexplained amount: {unexplained_inr}."
   insufficient_history: "Insufficient historical baseline data to confirm spending trend or seasonal variation."
+

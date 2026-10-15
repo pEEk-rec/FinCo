@@ -566,6 +566,59 @@ def test_seasonal_or_timing(
     return "neutral", 0, 0, [ev]
 
 
+def test_known_exception(
+    target_txns: list[Transaction],
+    baseline_txns: list[Transaction],
+    total_change_paise: int,
+    category_id: str,
+    period: str,
+    active_exception: dict[str, Any] | None,
+    investigation_id: str,
+    user_id: str,
+) -> tuple[HypothesisStatus, int, int, list[EvidenceItem]]:
+    """
+    Test hypothesis 9: known_exception (PLAN_PHASE3 Section 5.8 & 5.9).
+    Supported when an active contextual exception covers the subject for this period.
+    """
+    t_spend = _filter_spend_txns(target_txns)
+    if not active_exception:
+        ev = EvidenceItem(
+            id=str(uuid.uuid4()),
+            investigation_id=investigation_id,
+            user_id=user_id,
+            hypothesis_code="known_exception",
+            test_code="check_active_contextual_exception",
+            result="contradicts",
+            strength_bp=0,
+            numbers={"active_exception_found": False},
+            txn_ids=[t.id for t in t_spend],
+        )
+        return "contradicted", 0, 0, [ev]
+
+    reason = active_exception.get("reason", "contextual_exception")
+    mem_id = active_exception.get("id", "mem_exception")
+    score_bp = 9000
+    contrib = max(total_change_paise, sum(t.amount_paise for t in t_spend) if t_spend else 0)
+
+    ev = EvidenceItem(
+        id=str(uuid.uuid4()),
+        investigation_id=investigation_id,
+        user_id=user_id,
+        hypothesis_code="known_exception",
+        test_code="check_active_contextual_exception",
+        result="supports",
+        strength_bp=score_bp,
+        numbers={
+            "active_exception_found": True,
+            "reason": reason,
+            "memory_id": mem_id,
+            "explained_paise": contrib,
+        },
+        txn_ids=[t.id for t in t_spend],
+    )
+    return "supported", score_bp, contrib, [ev]
+
+
 # -------------------------------------------------------------------------------------------------
 # Investigation Synthesis & Evaluation
 # -------------------------------------------------------------------------------------------------
@@ -585,9 +638,11 @@ def run_investigation_suite(
     needs_clarification: bool = False,
     history_months: int = 3,
     all_baseline_txns: list[Transaction] | None = None,
+    active_exception: dict[str, Any] | None = None,
+    conn: Any | None = None,
 ) -> Investigation:
     """
-    Execute full investigation suite across all 8 catalogue hypotheses.
+    Execute full investigation suite across all 9 catalogue hypotheses.
 
     Enforces deterministic scoring, data sufficiency checks, and outcome synthesis.
     """
@@ -595,10 +650,39 @@ def run_investigation_suite(
     decomp = decompose_spend_change(baseline_txns, target_txns)
     total_change = decomp.total_change_paise
 
+    cat_id = subject_ref.get("category_id") or subject_ref.get("category") or "general"
+    if active_exception is None and conn is not None:
+        try:
+            from copilot.core.memory import get_active_contextual_exception
+            active_exc_item = get_active_contextual_exception(conn, user_id, cat_id, period)
+            if active_exc_item:
+                active_exception = {
+                    "id": active_exc_item.id,
+                    "reason": (active_exc_item.statement_json or {}).get("reason", "exception"),
+                    "category": cat_id,
+                    "period": period,
+                    "statement": active_exc_item.statement_json,
+                }
+        except Exception:
+            pass
+
     hypotheses: list[Hypothesis] = []
     evidence_items: list[EvidenceItem] = []
 
     tests = [
+        (
+            "known_exception",
+            lambda: test_known_exception(
+                target_txns,
+                baseline_txns,
+                total_change,
+                cat_id,
+                period,
+                active_exception,
+                inv_id,
+                user_id,
+            ),
+        ),
         (
             "one_off_large",
             lambda: test_one_off_large(target_txns, baseline_txns, total_change, inv_id, user_id),

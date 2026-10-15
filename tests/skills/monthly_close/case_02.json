@@ -1,0 +1,9 @@
+{
+  "name": "idempotent_repeat_close",
+  "description": "Repeat close execution asserting zero-double allocation and idempotency",
+  "inputs": {
+    "period": "2026-09"
+  },
+  "expected_status": "ok",
+  "expected_outputs_contain": ["rollover_buckets", "refresh_memories", "evaluate_alerts", "get_allocation_summary"]
+}

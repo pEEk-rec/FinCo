@@ -11,8 +11,8 @@ from langgraph.types import Command
 
 from copilot.api.state import ApiState
 from copilot.core.answers import compose_answer, narrate
-from copilot.db.repo import list_categories
 from copilot.core.timeutil import now_utc, to_utc_iso
+from copilot.db.repo import list_categories
 from copilot.workflow.agent_graph import build_planner_agent_graph
 
 log = logging.getLogger("copilot.api.agent")

@@ -312,6 +312,140 @@ def build_timeline(
                 )
             )
 
+    # 8. Commitments
+    commitments_query = (
+        "SELECT id, name, direction, kind, amount_paise, certainty, schedule_kind, "
+        "status, created_at FROM commitments WHERE user_id = ? ORDER BY created_at ASC"
+    )
+    for r in conn.execute(commitments_query, (user_id,)).fetchall():
+        row = dict(r)
+        amt_str = f"₹{(row.get('amount_paise') or 0) / 100:.2f}"
+        raw_entries.append(
+            TimelineEntry(
+                ts=row["created_at"],
+                kind="commitment",
+                title=f"Commitment: {row['name']} ({row['kind']})",
+                detail=f"Amount: {amt_str}, schedule: {row['schedule_kind']}, certainty: {row['certainty']}",
+                status=row["status"],
+                ref={"commitment_id": row["id"]},
+            )
+        )
+
+    # 9. Reallocation Drafts & Buckets
+    drafts_query = (
+        "SELECT id, from_bucket_id, to_bucket_id, amount_paise, status, created_at, decided_at "
+        "FROM reallocation_drafts WHERE user_id = ? ORDER BY created_at ASC"
+    )
+    for r in conn.execute(drafts_query, (user_id,)).fetchall():
+        row = dict(r)
+        amt_str = f"₹{(row.get('amount_paise') or 0) / 100:.2f}"
+        if row["status"] == "draft":
+            entry = TimelineEntry(
+                ts=row["created_at"],
+                kind="approval_pending",
+                title="Pending Reallocation Draft",
+                detail=f"Reallocate {amt_str} between buckets",
+                status="awaiting_approval",
+                ref={"draft_id": row["id"]},
+            )
+            raw_entries.append(entry)
+            pending_approvals.append(entry)
+        else:
+            ts = row.get("decided_at") or row["created_at"]
+            raw_entries.append(
+                TimelineEntry(
+                    ts=ts,
+                    kind="allocation",
+                    title=f"Reallocation Draft {row['status'].capitalize()}",
+                    detail=f"Reallocated {amt_str} between buckets",
+                    status=row["status"],
+                    ref={"draft_id": row["id"]},
+                )
+            )
+
+    # 10. Readiness Assessments
+    readiness_query = (
+        "SELECT id, run_id, assessed_on, level, criteria_json, numbers_json "
+        "FROM readiness_assessments WHERE user_id = ? ORDER BY assessed_on ASC"
+    )
+    for r in conn.execute(readiness_query, (user_id,)).fetchall():
+        row = dict(r)
+        raw_entries.append(
+            TimelineEntry(
+                ts=f"{row['assessed_on']}T00:00:00Z",
+                kind="readiness",
+                title=f"Investment Readiness: {row['level'].upper()}",
+                detail=f"Assessed readiness on {row['assessed_on']}, level: {row['level']}",
+                status=row["level"],
+                ref={"readiness_id": row["id"]},
+            )
+        )
+
+    # 11. Contribution Plans
+    cont_plans_query = (
+        "SELECT id, run_id, period_from, horizon_months, created_at "
+        "FROM contribution_plans WHERE user_id = ? ORDER BY created_at ASC"
+    )
+    for r in conn.execute(cont_plans_query, (user_id,)).fetchall():
+        row = dict(r)
+        raw_entries.append(
+            TimelineEntry(
+                ts=row["created_at"],
+                kind="contribution_plan",
+                title=f"Contribution Plan ({row['horizon_months']}M)",
+                detail=f"Waterfall plan from {row['period_from']}, horizon {row['horizon_months']} months",
+                status="completed",
+                ref={"contribution_plan_id": row["id"]},
+            )
+        )
+
+    # 12. Tradeoff Analyses
+    tradeoff_query = (
+        "SELECT id, run_id, created_at FROM tradeoff_analyses WHERE user_id = ? ORDER BY created_at ASC"
+    )
+    for r in conn.execute(tradeoff_query, (user_id,)).fetchall():
+        row = dict(r)
+        raw_entries.append(
+            TimelineEntry(
+                ts=row["created_at"],
+                kind="tradeoff",
+                title="Trade-off Analysis",
+                detail="Comparative analysis of scenario alternatives against hard constraints",
+                status="completed",
+                ref={"tradeoff_id": row["id"]},
+            )
+        )
+
+    # 13. Behavioral Memory Items (forgotten memories appear without content)
+    memory_query = (
+        "SELECT id, kind, subject_key, statement_json, status, created_at "
+        "FROM memory_items WHERE user_id = ? ORDER BY created_at ASC"
+    )
+    for r in conn.execute(memory_query, (user_id,)).fetchall():
+        row = dict(r)
+        if row["status"] == "forgotten":
+            raw_entries.append(
+                TimelineEntry(
+                    ts=row["created_at"],
+                    kind="memory",
+                    title="Memory Item Forgotten",
+                    detail="Memory item was forgotten at user request.",
+                    status="forgotten",
+                    ref={"memory_id": row["id"]},
+                )
+            )
+        else:
+            raw_entries.append(
+                TimelineEntry(
+                    ts=row["created_at"],
+                    kind="memory",
+                    title=f"Memory: {row['kind']} ({row['status']})",
+                    detail=f"Subject: {row['subject_key']}, status: {row['status']}",
+                    status=row["status"],
+                    ref={"memory_id": row["id"]},
+                )
+            )
+
     # 8. Filter by since if specified
     if since_iso:
         raw_entries = [e for e in raw_entries if e.ts >= since_iso]

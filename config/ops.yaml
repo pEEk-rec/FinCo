@@ -1,0 +1,8 @@
+# Observability & Ops Configuration (PLAN_PHASE3 Section 5.15)
+
+price_per_1k_tokens: 0.0
+currency: "USD"
+retention_days: 30
+latency_percentiles:
+  - 50
+  - 95

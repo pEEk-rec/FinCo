@@ -1,0 +1,26 @@
+name: affordability_check
+version: 1
+description: Can the user afford a one-off or recurring spend without breaking commitments or priority goals?
+inputs:
+  amount_paise: required
+  category_id: optional
+  date: optional
+  recurring_months: optional
+preconditions:
+  - has_transactions
+steps:
+  - get_calendar:
+      horizon_days: 60
+  - run_whatif:
+      kind: add_spend
+      amount_paise: $amount_paise
+  - check_commitment_coverage:
+      window: 60
+  - evaluate_goal_impact:
+      amount_paise: $amount_paise
+outputs:
+  - calendar_coverage
+  - simulation_result
+  - goal_feasibility
+narration_template: affordability_v1
+eval_cases: tests/skills/affordability_check/

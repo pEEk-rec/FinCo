@@ -23,6 +23,8 @@ tools:
   decide_advice:               {agent: deny, user: allow}
   create_goal:                 {agent: needs_approval, user: allow}
   update_goal:                 {agent: needs_approval, user: allow}
+  record_goal_contribution:    {agent: needs_approval, user: allow}
+  get_goal_progress:           {decision: allow}
   list_goals:                  {decision: allow}
   evaluate_goal_impact:        {decision: allow}
   run_whatif:                  {decision: allow}
@@ -38,3 +40,58 @@ tools:
   approve_consent:             {agent: deny, user: allow}
   revoke_consent:              {agent: deny, user: allow}
   build_monthly_review:        {agent: deny, user: allow}
+
+  create_commitment:           {agent: needs_approval, user: allow}
+  update_commitment:           {agent: needs_approval, user: allow}
+  pause_commitment:            {agent: needs_approval, user: allow}
+  end_commitment:              {agent: needs_approval, user: allow}
+  accept_commitment:           {agent: needs_approval, user: allow}
+  reject_commitment:           {agent: needs_approval, user: allow}
+  suggest_commitments:         {agent: allow, user: allow}
+  list_commitments:            {decision: allow}
+  get_commitment_status:       {decision: allow}
+
+  create_bucket:               {agent: needs_approval, user: allow}
+  update_bucket:               {agent: needs_approval, user: allow}
+  archive_bucket:              {agent: needs_approval, user: allow}
+  map_category_to_bucket:      {agent: needs_approval, user: allow}
+  allocate_to_bucket:          {agent: needs_approval, user: allow}
+  release_from_bucket:         {agent: needs_approval, user: allow}
+  reassign_between_buckets:    {agent: needs_approval, user: allow}
+  draft_reallocation:          {agent: allow, user: allow}
+  create_reallocation_draft:   {agent: allow, user: allow}
+  decide_reallocation:         {agent: deny, user: allow}
+  decide_reallocation_draft:   {agent: deny, user: allow}
+  apply_reallocation:          {agent: deny, user: allow}
+  apply_reallocation_draft:    {agent: deny, user: allow}
+  list_buckets:                {decision: allow}
+  get_bucket_status:           {decision: allow}
+  get_allocation_summary:      {decision: allow}
+
+  get_calendar:                {decision: allow}
+  check_commitment_coverage:   {decision: allow}
+
+  assess_investment_readiness: {decision: allow}
+  get_readiness_assessment:    {decision: allow}
+
+  plan_contributions:          {decision: allow}
+  compare_tradeoffs:           {decision: allow}
+
+  list_memories:               {decision: allow}
+  explain_memory:              {decision: allow}
+  confirm_memory:              {agent: deny, user: allow}
+  reject_memory:               {agent: deny, user: allow}
+  edit_memory_statement:       {agent: deny, user: allow}
+  forget_memory:               {agent: deny, user: allow}
+  refresh_memories:            {agent: allow, user: allow}
+  record_contextual_exception: {agent: needs_approval, user: allow}
+  rollover_buckets:            {agent: allow, user: allow}
+  investigate_month_change:    {decision: allow}
+
+  # Skills
+  affordability_check:         {decision: allow}
+  monthly_close:               {decision: allow}
+  trip_planning:               {decision: allow}
+  contribution_review:         {decision: allow}
+  explain_month_change:        {decision: allow}
+  run_skill:                   {decision: allow}

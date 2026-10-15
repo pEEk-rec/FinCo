@@ -1,0 +1,12 @@
+# Bounded Feedback Learning Configuration (PLAN_PHASE3 Section 5.16)
+
+prior_alpha: 2
+prior_beta: 2
+eta: 0.5
+m_min: 0.5
+m_max: 1.5
+
+hard_floor_severities:
+  - exceeded
+  - not_covered
+  - off_track

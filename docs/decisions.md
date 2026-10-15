@@ -725,3 +725,734 @@ Not doing: the divergence check in undo still compares only the category fields.
 ### 4. Examiner Viva Q&A:
 - *Q: What are the primary safety firewalls separating autonomous agent decisions from financial state corruption?*
 - *A: Five independent layers: 1) Intent input gate blocking money movement and investment advice; 2) Dynamic planner validator rejecting write tools from read plans and enforcing a 5-step budget; 3) Unified `execute_tool` choke point enforcing caller roles, user isolation, and append-only audit logging; 4) Explanation grounding firewall preventing unverified causal claims and ungrounded numbers; 5) Deterministic integer-paise arithmetic across all database tables, schemas, and simulation projections.*
+
+## Stage 3.0: Discover, Align, Adapt & Phase 3 Config Foundation
+### 1. What was built:
+- Completed Section 0.7 codebase alignment audit in `docs/phase3_alignment.md` mapping all 16 Phase 2/3 contracts.
+- Verified LangGraph 1.2.15 capabilities for parallel execution (static branch fan-out via concurrent edges, dynamic fan-out via `Send(node, arg)`, and compiled subgraphs as nodes).
+- Added and verified 14 Phase 3 YAML configuration skeletons with strict Pydantic validation schemas and loaders in `src/copilot/config/phase3.py`: `commitments.yaml`, `goals.yaml` (merged Phase 2/3), `buckets.yaml`, `calendar.yaml`, `readiness.yaml`, `contributions.yaml`, `memory.yaml`, 5 skill manifests in `config/skills/`, `decomposition.yaml`, `context.yaml`, `runtime.yaml`, `learning.yaml`, `ops.yaml`, and `mcp.yaml`.
+- Created comprehensive test suite `tests/config/test_phase3_config.py` verifying boundary thresholds (calendar horizon 180 accepted, 181 rejected; emergency months 1-12; memory ordering use > stale >= retire; learning multiplier bounds; extra fields forbidden).
+- Established 100% green test baseline across entire repository: 689 tests passing with 0 failures, 0 skips, and 0 xfails.
+
+### 2. Why this design:
+- Strict Pydantic models with `extra="forbid"` guarantee that misconfigured, typoed, or malformed YAML configurations fail loudly during service startup rather than silently compromising financial calculations or agent decisions at runtime.
+- Merging Phase 3 keys into `config/goals.yaml` while updating `phase2.py` `GoalsConfig` ensures complete backward and forward compatibility without forking configuration files.
+
+### 3. What it deliberately does not do:
+- Does not modify any financial database tables or schema yet (reserved for Stage 3.1).
+- Does not permit arbitrary floating-point numbers in money math; integer paise invariants are preserved across all configuration thresholds.
+- Does not execute any git commands per hard constraints.
+
+### 4. Examiner Viva Q&A:
+- *Q: Why are all Phase 3 operational thresholds, decay rates, and token budgets placed in validated YAML rather than hardcoded in Python?*
+- *A: Hardcoding financial parameters (such as calendar buffers, emergency fund months, and memory half-lives) scatters business policy across code files, making audits difficult and preventing user-level or tenant-level overrides. Placing them in declarative YAML with strict Pydantic validation guarantees that all business constants are centralized, auditable, and structurally verified before any agent or tool executes.*
+
+## Stage 3.1: Schema and Typed Domain Models
+### 1. What was built:
+- Authored and applied SQLite migration `004_phase3_schema.sql` adding 21 new tables and extending `goals` with 5 Phase 3 columns (`progress_source`, `linked_account_id`, `start_date`, `essential`, `notes`).
+- Upgraded the stub `buckets` table using the proven safe table-copy pattern (`new_buckets` -> copy -> drop old -> rename), preserving backward compatibility.
+- Implemented 30 typed Pydantic models in `src/copilot/models/phase3.py` with strict validation, extra="forbid", and integer paise fields.
+- Implemented comprehensive SQLite repository functions in `src/copilot/db/repo_phase3.py` strictly enforcing `user_id` parameterization across all queries.
+- Created `tests/db/test_phase3_schema.py` verifying clean migration on fresh database, migration with Phase 2 data preservation, constraints, foreign keys, user isolation, bucket-to-category 1-to-1 uniqueness, and memory forgetting.
+
+### 2. Why this design:
+- Every tenant table has `user_id` enforced by foreign keys and `test_every_table_has_user_id`, guaranteeing multi-tenant isolation at the database layer.
+- Upgrading `goals` and `buckets` with backward-compatible defaults ensures that existing Phase 1/Phase 2 simulations, tests, and API workflows continue executing without any state breakage.
+
+### 3. What it deliberately does not do:
+- Does not store derived numbers (bucket balances, calendar projections, memory confidence) in database columns; these are derived on demand.
+- Does not allow free prose in behavioural memory; `statement_json` enforces structured keys only.
+- Does not execute any git commands per hard constraints.
+
+### 4. Examiner Viva Q&A:
+- *Q: Why are `scheduled_jobs` and `job_runs` partitioned by `user_id` rather than global system tables?*
+- *A: In personal financial automation, background tasks (such as rolling over monthly spending buckets, scanning for commitment coverage, and evaluating alert damping) operate strictly on a specific user's private financial data and ledger accounts. Multi-tenant partitioning ensures jobs cannot leak data across users, cannot cross-mutate buckets, and allows per-user scheduling and execution leasing.*
+
+## Stage 3.2: Commitments and Occurrence Engine
+### 1. What was built:
+- Pure deterministic engine in `src/copilot/core/commitments.py` for occurrence expansion across all schedule types: `monthly` (day 29-31 clamped to shorter months like Feb 28/29, Apr 30), `yearly` (Feb 29 handled on Feb 28 in non-leap years), `every_n_days` (stepping across month/year boundaries anchored at anchor), `weekly`, and `once`.
+- Pure deterministic transaction matching in `src/copilot/core/commitments.py` guaranteeing:
+  - 1-to-1 match invariant (one transaction matches at most one occurrence).
+  - Tolerance windows in amount (`tolerance_bp`) and date (`date_tolerance_days`).
+  - Preference scoring prioritizing recurring series ID and category matching.
+  - Status transitions (`paid`, `partially_paid`, `overdue`, `upcoming`).
+- 9 tool specifications and handlers in `src/copilot/tools/commitments.py`:
+  - `create_commitment`, `update_commitment`, `pause_commitment`, `end_commitment`, `accept_commitment`, `reject_commitment` (write_logical, user allowed, agent needs approval, never planner-selectable).
+  - `list_commitments`, `get_commitment_status` (read, allowed for all actors, planner-selectable).
+  - `suggest_commitments` (write_logical, allowed for agent and user, creates drafts only from active recurring series).
+- Updated `config/policy.yaml` with actor rules for all 9 commitment tools.
+- Updated `config/planner_capabilities.yaml` with capability rows.
+- Comprehensive test suite in `tests/core/test_commitments.py` and `tests/tools/test_commitments_tools.py` verifying all edge cases and governance invariants.
+
+### 2. Why this design:
+- Segregating suggested commitments into `draft` status ensures autonomous agent suggestions never alter financial calendar projections or available liquidity until explicitly accepted by the user.
+- Enforcing the 1-to-1 matching invariant prevents double-counting transactions against multiple due dates (e.g. paying rent twice or matching one debit against multiple monthly occurrences).
+
+### 3. What it deliberately does not do:
+- Does not move money or trigger external payments (governance invariant: no money-moving side effect class exists).
+- Does not allow the autonomous agent to activate or create commitments directly without user approval.
+- Does not use floating-point math; all monetary amounts, ranges, and tolerances operate strictly on integer paise.
+
+### 4. Examiner Viva Q&A:
+- *Q: How does the commitments occurrence engine prevent hallucinating due dates across leap years and months with fewer than 31 days?*
+- *A: The engine uses pure deterministic calendar math (`calendar.monthrange` and `calendar.isleap`). For monthly commitments set to day 29-31, the due day is clamped to `min(target_day, last_day_of_month)` (e.g. Feb 28/29, Apr 30). For yearly commitments due on Feb 29, in non-leap years it automatically maps to Feb 28. Neither the LLM nor floating-point approximations ever calculate due dates.*
+
+## Stage 3.3: Goals Full (Progress Sources, History, Projections, and Feasibility)
+### 1. What was built:
+- Multi-source progress derivation in `src/copilot/core/goals.py`:
+  - `manual`: base `current_paise` + sum of `goal_contributions`.
+  - `bucket`: derived balance of the linked virtual bucket (`bucket_allocations` minus debit transactions in the bucket's mapped category).
+  - `account`: balance of `linked_account_id` (opening balance minus transaction debits).
+- Net monthly contribution history (`monthly_contribution_history`) evaluating previous complete IST calendar months.
+- Deterministic pace and completion projections (`projected_completion`):
+  - Computes low (min past month), median (middle past month), and high (max past month) completion dates using integer ceil division `((remaining + pace - 1) // pace)`.
+  - Accurately returns `never_at_current_pace` when past pace is zero or negative.
+- Full goal progress evaluation (`goal_progress`) returning typed `GoalProgress` domain model with integer progress percentage bounded strictly to `[0, 100]`.
+- Governance tools in `src/copilot/tools/goals.py`:
+  - Extended `create_goal` and `update_goal` with Phase 3 fields (`progress_source`, `linked_account_id`, `start_date`, `essential`, `notes`).
+  - Added `record_goal_contribution` tool (write_logical, user allowed, agent needs approval) with validation rejecting zero amounts and non-manual goals.
+  - Added `get_goal_progress` tool (read, allowed for all actors, planner-selectable).
+- Persisted Phase 3 columns in `src/copilot/db/repo.py` (`insert_goal`, `update_goal`, `get_goal`, `list_goals`) with strict tenant isolation.
+- Unit and integration tests in `tests/core/test_goals.py` and `tests/tools/test_goals_tools.py`.
+
+### 2. Why this design:
+- Decoupling progress sources (`manual`, `bucket`, `account`) allows goals to reflect actual saved funds without forcing manual journal entries when funds are already tracked in dedicated accounts or virtual buckets.
+- Strict integer ceil division prevents underestimating required completion time (e.g. 10 paise remaining at 3 paise/month requires 4 months, not 3).
+- Projections yield low/median/high pace scenarios rather than a single point estimate, making uncertainty explicit to users and planners.
+
+### 3. What it deliberately does not do:
+- Does not permit `record_goal_contribution` on bucket- or account-linked goals (progress is derived automatically to prevent double counting).
+- Does not use floating-point math; all balances, contributions, targets, and percentage computations are exact integer operations.
+- Does not move real funds across bank accounts.
+
+### 4. Examiner Viva Q&A:
+- *Q: Why does `projected_completion` return a three-point range (low, median, high) instead of a simple linear regression?*
+- *A: Personal savings contributions are notoriously lumpy across months (e.g., bonuses, festival spend). A linear regression with 3 data points can extrapolate false precision or negative slopes with deceptive confidence intervals. Providing low, median, and high bounds computed deterministically from observed monthly rates makes volatility clear without fabricating statistical certainty.*
+
+## Stage 3.4: Virtual Buckets
+### 1. What was built:
+- Pure virtual buckets engine in `src/copilot/core/buckets.py`:
+  - Derived balances per period: `allocated` respects period policies (`reset_monthly` counts period allocations only; `accumulate` counts all periods to date).
+  - Derived net spend from real transactions: transactions mapped via `bucket_categories` (or commitment matches) are aggregated, excluding duplicates and transfers, subtracting matching refunds, floored at 0.
+  - Derived status: `ok`, `low` (balance * 10000 < low_threshold_bp * allocated), `depleted` (balance < 0).
+  - Full allocation summary: computes `reserved_total` (`sum(max(0, balance))`), `liquid_balance`, `available_unallocated` (`liquid - reserved`), and `over_allocated_by`, guaranteeing the invariant `available_unallocated + reserved_total == liquid_balance`.
+  - Pure `would_exceed` check for proactive transaction evaluation.
+  - Month rollover (`rollover_buckets`): releases unspent funds for `reset_monthly` buckets in the closing month (`source = system_rollover`), preserves depleted buckets, leaves `accumulate` buckets untouched, and is strictly idempotent on repeated calls.
+- 16 virtual bucket tool specifications and handlers in `src/copilot/tools/buckets.py`:
+  - `create_bucket`, `update_bucket`, `archive_bucket`: lifecycle management (write_logical, user allowed, agent requires approval).
+  - `map_category_to_bucket`: category mapping with strict 1-to-1 uniqueness.
+  - `allocate_to_bucket`, `release_from_bucket`: user ledger adjustments.
+  - `reassign_between_buckets`: paired reallocation rows summing to exactly 0 sharing a `pair_id`.
+  - Reallocation drafts: `draft_reallocation` (agent allowed, drafts only), `decide_reallocation` (user only; approval alone writes NO allocation rows), `apply_reallocation` (user only; requires approved draft, writes paired rows, enforces TTL).
+  - `list_buckets`, `get_bucket_status`, `get_allocation_summary`: read tools (allowed for all actors, planner-selectable).
+- Governance rules in `config/policy.yaml` and capability matrix rows in `config/planner_capabilities.yaml`.
+- Tool registration in `src/copilot/workflow/nodes.py`.
+- Comprehensive test coverage in `tests/core/test_buckets.py` (10 tests) and `tests/tools/test_buckets_tools.py` (5 tests).
+
+### 2. Why this design:
+- Decoupling spend calculation from stored columns ensures that transaction recategorisation automatically moves spend between buckets while strictly conserving aggregate spend totals.
+- Reallocation drafts enforce a strict separate decide vs. apply lifecycle: approving an agent recommendation never mutates the ledger until the user explicitly triggers application.
+- Over-allocation is flagged and visible (`over_allocated_by_paise > 0`) rather than blocking operations, allowing users full agency over their finances without artificial deadlock.
+
+### 3. What it deliberately does not do:
+- Does not mutate transactions or bank account balance tables (allocations are purely an internal virtual ledger).
+- Does not allow the autonomous agent to allocate, release, decide, or apply reallocations without user action/approval.
+- Does not clear or forgive overspend during rollover (depleted buckets preserve their negative balance in the closed month).
+- Does not use floating-point math; all monetary balances and ratios are exact integer calculations.
+
+### 4. Examiner Viva Q&A:
+- *Q: How does the virtual buckets engine prevent money creation or destruction during bucket reassignments?*
+- *A: Every bucket reassignment produces exactly two matched allocation rows sharing a unique `pair_id`: a `reassign_out` row with negative paise (`-amount`) and a `reassign_in` row with positive paise (`+amount`). The algebraic sum of amounts for any `pair_id` is identically zero, and the liquid balance decomposition invariant `available_unallocated + reserved_total == liquid_balance` is preserved across all states.*
+
+## Stage 3.5: Financial Calendar
+### 1. What was built:
+- Pure financial calendar engine in `src/copilot/core/calendar.py`:
+  - Starting liquid balance baseline from all active liquid accounts reconciling to `opening + sum(credits) - sum(debits)`.
+  - Occurrence expansion across the horizon (`horizon_days`, default 60, clamped between 1 and 180) for all active commitments.
+  - Daily variable spend run-rate projected from forecast v2 (or 30-day historical window fallback), strictly excluding categories mapped to commitments to prevent double counting.
+  - Three-point running balances (`low`, `expected`, `high`) guaranteeing strict invariant `running_balance_low <= running_balance_expected <= running_balance_high` across every projected day.
+  - Commitment coverage evaluation (`calculate_commitment_coverage`) classifying occurrences as `covered` (low >= 0), `at_risk` (expected >= 0 and low < 0), `not_covered` (expected < 0), or `unknown` (missing data/forecast), with exact integer shortfall ranges.
+  - Scenario simulation extension point (`CalendarScenario`) enabling what-if cash flow projections without persisting side effects.
+- 2 calendar read tools in `src/copilot/tools/calendar.py`:
+  - `get_calendar`: generates full calendar projection with daily cash flow breakdowns, running balances, and aggregated shortfalls.
+  - `check_commitment_coverage`: evaluates coverage status and shortfall for a specific commitment across horizon.
+- Policy rules and planner capabilities:
+  - Added rules to `config/policy.yaml` allowing read access to both tools for all actors.
+  - Added matrix entries to `config/planner_capabilities.yaml` marking both tools as planner-selectable.
+- Tool registration in `src/copilot/workflow/nodes.py`.
+- Unit and integration tests:
+  - 11 tests in `tests/core/test_calendar.py`.
+  - 3 tests in `tests/tools/test_calendar_tools.py`.
+  - Registry checks in `tests/tools/test_no_money_movement.py`.
+
+### 2. Why this design:
+- Baseline reconciliation guarantee (`balance_today == opening + credits - debits`) ensures projections are anchored in audited reality rather than cached or unverified account totals.
+- Excluding commitment categories from variable spend run-rates eliminates systematic double-counting of recurring fixed obligations (e.g. rent, SIPs, utilities) that would otherwise skew cash flow forecasts overly negative.
+- Maintaining `low <= expected <= high` provides clear conservative risk boundaries for upcoming commitments, allowing the agent to highlight cash flow crunches before they materialize.
+
+### 3. What it deliberately does not do:
+- Does not move real funds or initiate payments (calendar is strictly an analytical projection engine).
+- Does not modify stored commitment or account records.
+- Does not use floating-point math; all balances, shortfalls, run-rates, and projections use integer paise.
+
+### 4. Examiner Viva Q&A:
+- *Q: How does the calendar engine avoid double counting recurring expenses that appear both in commitments and in historical variable spending forecasts?*
+- *A: When deriving the daily variable run-rate from historical spend or the forecasting engine, `get_calendar_projection` identifies all categories associated with active commitments and excludes transactions in those categories from the variable spend calculation. Commitment cash flows are then expanded explicitly on their scheduled occurrence dates, ensuring each financial obligation is counted exactly once.*
+
+## Stage 3.6: Investment Readiness
+### 1. What was built:
+- Pure investment readiness assessment engine in `src/copilot/core/readiness.py`:
+  - Evaluates all 7 criteria specified in PLAN_PHASE3 Section 5.6:
+    1. `enough_history`: verifies user has recorded financial activity across at least 3 complete calendar months. Invariant: If history is insufficient, all other 6 criteria evaluate to `unknown` and synthesis yields `insufficient_data`.
+    2. `positive_cash_flow`: monthly net surplus > 0 in at least 2 of the last 3 complete calendar months.
+    3. `stable_cash_flow`: month-to-month surplus stability evaluated using Decimal arithmetic to compute standard deviation and mean, with coefficient of variation ratio `CV <= 50.0%` (5000 bps) rounded half-up.
+    4. `emergency_reserve`: checks median essential spend across complete months against 3 reserve sources: essential savings goals balance, emergency virtual buckets balance, and liquid savings accounts balances.
+    5. `obligations_covered`: evaluates 30-day scheduled firm obligations via the financial calendar engine, checking that all scheduled firm outflows have projected coverage.
+    6. `priority_goals_on_track`: evaluates progress pace of active priority 1 savings goals using deterministic goal progress evaluations.
+    7. `declared_high_cost_debt`: verifies absence of declared high-cost debt in user preferences (`readiness.has_high_cost_debt`).
+  - Synthesizes an overall 5-level verdict: `insufficient_data`, `not_ready`, `building`, `ready_with_conditions`, or `ready`.
+  - Persists full snapshot into `readiness_assessments` table via `record_readiness_assessment`.
+  - Strict refusal gates in `src/copilot/core/intent.py` for investment advice queries ("which fund/stock should I buy") and market timing queries ("will the market go up").
+- 2 readiness read tools in `src/copilot/tools/readiness.py`:
+  - `assess_investment_readiness` & `get_readiness_assessment`: assess cushion and capacity against readiness criteria.
+- Repository layer functions in `src/copilot/db/repo_phase3.py`:
+  - `insert_readiness_assessment`, `get_latest_readiness_assessment`, `list_readiness_assessments` with tenant filtering.
+- Policy rules and planner capabilities:
+  - Added rules to `config/policy.yaml` allowing read access to readiness tools for all actors.
+  - Added matrix entries to `config/planner_capabilities.yaml` marking both tools as planner-selectable.
+- Tool registration in `src/copilot/workflow/nodes.py`.
+- Unit and integration tests:
+  - 12 tests in `tests/core/test_readiness.py` covering boundaries, 5 synthesis levels, 4 persona fixtures, zero forbidden content scanner, input gate refusals, and tenant isolation.
+  - 5 tests in `tests/tools/test_readiness_tools.py` verifying through-executor execution, policy rules, persistence, and tenant isolation.
+  - Registry checks in `tests/tools/test_no_money_movement.py`.
+
+### 2. Why this design:
+- Strict separation between capacity evaluation and financial advice: the engine evaluates capacity and cushion (cash flow, stability, emergency cushion, firm obligations) without recommending specific financial products, asset classes, or market timing, preserving regulatory compliance.
+- Invariant gating: evaluating complex criteria (like CV of cash flow or emergency cushion) on fewer than 3 complete months would produce wildly misleading conclusions. Gating downstream criteria to `unknown` when history is insufficient guarantees intellectual honesty.
+- Multi-source emergency reserve discovery: users organize savings in different ways (dedicated accounts, virtual buckets, or tagged goals). Aggregating across all three ensures the readiness assessment accurately reflects available reserves.
+
+### 3. What it deliberately does not do:
+- Does not recommend specific investment products, tickers, mutual funds, stocks, crypto, or trading strategies.
+- Does not predict market movements, index directions, or interest rate trajectories.
+- Does not move money or automate investment contributions.
+- Does not use floating-point math; all monetary metrics and standard deviations use integer paise and Decimal precision.
+
+### 4. Examiner Viva Q&A:
+- *Q: How does the investment readiness engine assess whether a user is prepared to invest without violating SEBI regulations on investment advice?*
+- *A: The engine strictly assesses financial capacity, stability, and emergency cushion rather than recommending securities or investment strategies. It evaluates 7 objective criteria (adequate history, positive monthly net surplus, coefficient of variation of cash flow, emergency reserve coverage of essential expenses, upcoming commitment coverage in the calendar, priority goal pace, and high-cost debt declaration) and synthesizes an objective readiness status (`ready`, `ready_with_conditions`, `building`, `not_ready`, `insufficient_data`). It explicitly refuses queries asking for fund/stock recommendations or market timing predictions.*
+
+## Stage 3.7: Contribution Planning & Trade-offs
+### 1. What was built:
+- Pure waterfall allocation engine and trade-off analyzer in `src/copilot/core/contributions.py`:
+  - `plan_contributions`:
+    - Evaluates total monthly inflow using historical median complete-month income.
+    - Cascades cash through prioritized steps:
+      1. Firm commitments (mandatory contractual obligations).
+      2. Essential spend (median historical non-commitment essential spending).
+      3. Emergency fund top-up (replenishing towards 3-month target).
+      4. Goals by priority and deadline.
+      5. Planned investments (user-specified recurring investment allocations).
+      6. Discretionary spending (residual available cash).
+    - Respects user custom ordering when specified via user preferences (`contributions.waterfall_order`).
+    - Exact arithmetic: for every step `funded + shortfall == need` and `total_funded <= inflow`.
+    - Verdict classification: `fits` (total needs <= inflow), `fits_expected_only` (fits expected but fails conservative buffer), or `does_not_fit` (inflow < total needs).
+    - Dynamic option generator: when contributions do not fit, deterministically generates up to 3 non-increasing outflow options (reduce planned contributions, pause contributions to build emergency cushion, shift lower-priority goal deadline), executing and linking simulations via `insert_simulation`.
+  - `compare_tradeoffs`:
+    - Compares baseline against up to 3 alternatives on goal completions, emergency reserve coverage, unfulfilled commitments count, lowest projected liquid balance, shortfall days, and total planned contributions.
+    - Strictly uses plain sum of contributions (zero assumed market returns/growth rates).
+    - Hard constraint satisfaction: flags hard constraint satisfaction where firm commitments have 0 `not_covered` occurrences and emergency minimum is preserved.
+    - Sets `best_alternative_name` strictly when exactly one alternative satisfies all hard constraints.
+  - Snapshot persistence: records plans in `contribution_plans` and trade-offs in `tradeoff_analyses` tables.
+- 2 read/compute tools in `src/copilot/tools/contributions.py`:
+  - `plan_contributions` & `compare_tradeoffs`.
+- Repository layer functions in `src/copilot/db/repo_phase3.py`:
+  - `insert_contribution_plan`, `get_latest_contribution_plan`, `list_contribution_plans`, `insert_tradeoff_analysis`, `get_latest_tradeoff_analysis`, `list_tradeoff_analyses` with tenant isolation.
+- Policy rules and planner capabilities:
+  - Added rules to `config/policy.yaml` allowing read access to both contribution tools for all actors.
+  - Added matrix entries to `config/planner_capabilities.yaml` marking both tools as planner-selectable.
+- Tool registration in `src/copilot/workflow/nodes.py`.
+- Unit and integration tests:
+  - 9 tests in `tests/core/test_contributions.py` verifying waterfall exact sums, user custom ordering, verdict transitions, option outflow limits, simulation linkage, hand-calculated trade-off metrics, single-best constraint satisfaction, plain sums/zero growth, zero forbidden content scanner, and tenant isolation.
+  - 3 tests in `tests/tools/test_contributions_tools.py` verifying through-executor execution, policy rules, persistence, and tenant isolation.
+
+### 2. Why this design:
+- Waterfall allocation reflects core financial prudence: fixed contractual obligations and baseline physiological/living essentials must be funded before capital is allocated to future goals, investments, or discretionary spend.
+- Exact allocation equality (`funded + shortfall == need`) ensures accounting integrity and leaves zero unallocated or phantom currency across steps.
+- Trade-off metrics are computed from deterministic simulation outputs, guaranteeing that options presented to the user are grounded in realistic calendar and balance trajectories rather than arbitrary guesswork.
+- Refusing to project compounded growth or investment returns adheres strictly to SEBI regulations forbidding speculative performance projections in conversational financial tools.
+
+### 3. What it deliberately does not do:
+- Does not assume or compute compounding interest, market returns, NAV appreciation, or portfolio growth. Total planned contributions are strictly a plain sum of paise contributions.
+- Does not automatically shift funds, cancel commitments, modify goals, or initiate bank transfers.
+- Does not rank or recommend alternatives based on subjective preference; `best_alternative_name` is set strictly if and only if exactly one alternative satisfies all hard safety constraints.
+- Does not use floating-point math; all monetary allocations and trade-off metrics use integer paise.
+
+### 4. Examiner Viva Q&A:
+- *Q: How does the trade-off engine evaluate multiple financial plan options without projecting investment growth or giving unauthorized financial advice?*
+- *A: The trade-off engine compares options strictly along safety, liquidity, and objective constraint fulfillment metrics (count of unfulfilled commitments, emergency fund coverage, lowest projected liquid balance, shortfall days, and goal completions) derived from deterministic calendar simulations. It explicitly calculates total planned contributions as a plain sum of contributions without assuming any interest rate, yield, or market return. Furthermore, it avoids subjective value judgments by identifying a 'best alternative' only when exactly one option satisfies all non-negotiable safety constraints (zero unfulfilled firm commitments and preservation of emergency cushion).*
+
+## Stage 3.8: Behavioural Memory Store and Observers
+### 1. What was built:
+- 5 deterministic observers in `src/copilot/core/memory.py`:
+  - `observe_recurring_patterns`: detects weekly weekend vs weekday spending skew (>= 15000 bp weekend ratio).
+  - `observe_contextual_exceptions`: detects exceptions from anomalies dismissed with valid reason (`festival`, `travel`, `one_off_purchase`, `medical`, `family_event`, `other`).
+  - `observe_advice_feedback`: tracks user approvals or dismissals of recommendations.
+  - `observe_preferences`: extracts explicit user preference settings as memory items.
+  - `observe_merchant_habits`: detects habitual merchant visits (>= 3 visits).
+- Deterministic confidence and lifecycle engine:
+  - `compute_memory_confidence`: prior_bp (5000), support/contradict weighting (`k_s=1.0`, `k_c=1.5`, capped at 10000 bp), half-life exponential decay using `Decimal` arithmetic.
+  - `determine_memory_status`: status transitions (`active` when confidence >= 6000 or user-confirmed and not contradicted; `stale` when 2000 <= conf < 6000; `retired` when conf < 2000 or contradict >= support with >= 3 items; `rejected`; `forgotten`). Contradicted user-confirmed memories become `stale` and prompt "Still true?".
+- Idempotent `refresh_memories` running all observers and preventing duplicate evidence insertion for the same source entity.
+- Bounded statement editing (`edit_memory_statement_bounded`): user can edit notes or bounded parameters without tampering with confidence, evidence, or system keys.
+- Forgetting invariant (`forget_memory`): clears statement_json to `{}`, deletes all evidence rows from `memory_evidence`, marks status as `forgotten`, and records a content-free audit event (`memory_forgotten`).
+- Strict zero-LLM memory invariant: verified that zero LLM provider calls occur across memory operations.
+- 8 tools in `src/copilot/tools/memory.py`: `list_memories`, `explain_memory`, `confirm_memory`, `reject_memory`, `edit_memory_statement`, `forget_memory`, `refresh_memories`, `record_contextual_exception`.
+- Repository functions in `src/copilot/db/repo_phase3.py`: `update_memory_statement`, `get_memory_by_subject`.
+- Config updates: `observers` schema in `MemoryConfig` (`config/memory.yaml`).
+- Policy governance and capability matrix updates in `config/policy.yaml` and `config/planner_capabilities.yaml`.
+- Unit tests (14 in `tests/core/test_memory.py`), tool tests (8 in `tests/tools/test_memory_tools.py`), and 0 banned words in `tests/tools/test_no_money_movement.py`.
+
+### 2. Why this design:
+- Behavioral memory must be auditable, deterministic, and under full user sovereignty. Using deterministic observers rather than LLM summarization prevents hallucinations and ensures evidence is directly traceable to concrete database records (transactions, dismissals, approvals).
+- Asymmetric evidence weighting ($k_c = 1.5 > k_s = 1.0$) embodies conservatism: a single contradiction degrades confidence faster than a single confirmation builds it, preventing stale patterns from persisting.
+- Forgetting requires true deletion of raw evidence and clearing of statements while preserving an auditable non-sensitive trace (`memory_forgotten`) to respect privacy and "right to be forgotten" regulations.
+
+### 3. What it deliberately does not do:
+- Does not call any LLM or external model to generate, update, or summarize memories.
+- Does not allow the agent to confirm, reject, edit, or forget memories autonomously; all lifecycle overrides require explicit `user` actor invocation.
+- Does not use floating-point math for confidence or decay calculations (uses `Decimal` and integer basis points).
+- Does not leak memory content or merchant text into audit events when forgetting a memory.
+
+### 4. Examiner Viva Q&A:
+- *Q: Why are behavioral memories generated through deterministic observers rather than asking an LLM to extract habits from the transaction history?*
+- *A: Deterministic observers guarantee 100% reproducibility, zero hallucination, and verifiable evidence linkages. Every piece of memory evidence references an immutable source entity (such as a specific transaction, audit event, or preference) with an explicit timestamp and basis-point weight. This allows the system to explain exactly why a memory was formed and enables exact recalculation or forgetting without stochastic LLM drift.*
+- *Q: How does the system handle a user's right to be forgotten for behavioral memory?*
+- *A: The `forget_memory` tool completely wipes the `statement_json` to `{}`, purges all associated rows from `memory_evidence`, and transitions the item's status to `forgotten`. Any subsequent query for memories returns neither the content nor evidence. An immutable audit record `memory_forgotten` is logged containing only the memory ID and action, strictly omitting any prior statement, subject, or financial content.*
+
+## Stage 3.9: Confidence, Decay and Memory Use
+### 1. What was built:
+- Full confidence and decay formulas with `Decimal` exponential decay:
+  - Exact decay at 0, 1, and 2 half-lives ($decay = 0.5^{age / half\_life}$).
+  - Preference memories never decay ($decay = 1.0$).
+  - Anchor timestamp uses $\max(last\_evidence\_at, last\_confirmed\_at)$ so confirming a memory refreshes its age.
+  - Contradicted user-confirmed memories become `stale` with `still_true_check` flag True instead of auto-retiring.
+- 4-point consumer memory integration:
+  - Phase 2 Alerts: active contextual exception for same category and period damps alert score by `exception_damping_bp` (default 5000 bp / 50%) and appends clear explanation to `why_text` (`Damped by active festival exception.`), storing the memory item in `components["memories"]`.
+  - Phase 2 Investigations: added 9th hypothesis `known_exception` supported strictly when an active exception covers the subject for that period, explaining spend surges deterministically.
+  - Advice drafting: rejected advice kinds for a subject are suppressed during the 30-day cooldown (`check_advice_suppression` returns True on day 29, False on day 30 and 31). Approved kinds are never boosted (no reinforcement loops).
+  - `memories_json` population: consumer recommendations and alerts track and persist exact active memory items used.
+- Comprehensive test suite in `tests/core/test_memory_decay.py` verifying half-lives, boundaries, habit drift, alerts damping, investigation hypothesis, cooldown boundary, memories_json, and property tests (monotonicity with age alone, bounds [0, 10000]).
+
+### 2. Why this design:
+- Behavioral memory is worthless if it operates in a silo; integrating active memories directly into alerts and causal investigations grounds the agent's reactive reasoning in user context. When a user tells FinCo that Diwali shopping is an expected festival expense, future alerts for that period are damped, and spend spike investigations identify the surge as an explained known exception rather than an anomalous emergency.
+- The 30-day cooldown on rejected advice respects user autonomy without permanently blinding the agent to future opportunities once situations change.
+- Forbidding reinforcement loops for approved advice prevents confirmation bias cascades.
+
+### 3. What it deliberately does not do:
+- Does not allow inactive, stale, retired, or forgotten memories to damp alerts or support investigation hypotheses.
+- Does not boost or over-weight advice kinds after approval; user approval simply records feedback without creating reinforcement loops.
+- Does not project compound decay using floating-point approximations.
+
+### 4. Examiner Viva Q&A:
+- *Q: How does the system ensure that behavioral memories do not create feedback loops or confirmation bias in recommendations and alerts?*
+- *A: FinCo enforces a strict asymmetric rule: user rejections of advice suppress that advice kind for a 30-day cooldown period, but user approvals of advice never boost or increase the score of subsequent recommendations. Furthermore, alert score damping requires an active contextual exception with matching category and calendar period; an exception in one month or category can never bleed into or damp alerts elsewhere.*
+- *Q: How does causal investigation handle deliberate one-off seasonal or festival spending?*
+- *A: Through the `known_exception` catalogue hypothesis. When spend spikes in a category, the investigation checks whether an active `contextual_exception` memory exists covering that category and period. If found, `known_exception` is supported with high confidence (9000 bp), directly explaining the spend change and preventing false alarms or fruitless searches for phantom miscategorizations.*
+
+## Stage 3.10: Skills Library and Agent Integration
+### 1. What was built:
+- **Skill Manifest Schema and Safe Parsing (`src/copilot/skills/manifest.py`, `src/copilot/models/phase3.py`):**
+  - Implemented `SkillManifest` model and parser (`load_skill_manifest`, `load_all_skills`).
+  - Strict validator (`validate_skill_manifest`): verifies every step tool exists in tool registry, ensures tools are planner-selectable read/compute tools (or certified evaluation tools like `evaluate_alerts`), strictly forbids write tools (e.g. `create_goal`, `allocate_to_bucket`), and verifies all `$placeholder` variables match declared input keys.
+- **Skill Runner (`src/copilot/skills/runner.py`):**
+  - Executes multi-step procedures deterministically through the tool executor choke point (`execute_tool(ctx, tool_name, resolved_args)`).
+  - Evaluates deterministic preconditions (`has_transactions`), producing typed `cannot_run` with clear reasoning when unsatisfied.
+  - Supports conditional steps (`if_status`).
+  - Persists and tracks execution in `skill_runs` table (`running` -> `ok` / `failed` / `cannot_run`).
+- **Standard Skills Library (`config/skills/`):**
+  - 5 certified skills: `affordability_check.yaml`, `monthly_close.yaml`, `trip_planning.yaml`, `contribution_review.yaml`, `explain_month_change.yaml`.
+  - 15 golden eval cases (3 per skill) in `tests/skills/`.
+- **Tool Wrappers and Capability Integration (`src/copilot/skills/tools.py`):**
+  - Registered skill tools: `affordability_check`, `monthly_close`, `trip_planning`, `contribution_review`, `explain_month_change`, and generic `run_skill`.
+  - Configured capability matrix entries in `config/planner_capabilities.yaml` and permissions in `config/policy.yaml`.
+- **10 Phase 3 Intent Types & Timeline Integration:**
+  - Extended `IntentType` enum in `src/copilot/models/agentic.py` with 10 Phase 3 intents.
+  - Configured minimal plan templates in `config/plan_templates.yaml` and intent keywords + labelled examples (>=8 per intent) in `config/intent_patterns.yaml`.
+  - Extended deterministic classifier `classify_intent` in `src/copilot/core/intent.py` while maintaining 100% backward compatibility on Phase 2 labelled benchmark queries.
+  - Extended activity timeline in `src/copilot/core/timeline.py` for commitments, reallocation drafts, readiness, contribution plans, tradeoffs, and memory items (verifying forgotten memories strictly hide content).
+- **Comprehensive Tests:**
+  - 30 tests passing in `tests/skills/` (`test_skills_manifest.py`, `test_skills_runner.py`, `test_skills_golden.py`), `tests/core/test_intent_phase3.py`, and `tests/core/test_timeline_phase3.py`.
+  - Full test suite 837/837 passing (100% green).
+  - All modified files 100% ruff clean.
+
+### 2. Why this design:
+- Skills provide reusable, certified procedural abstractions composed purely of atomic tools. By routing every skill step strictly through `execute_tool(ctx, ...)`, governance policies, audit event logging, user multi-tenant isolation, and actor permissions are uniformly enforced without creating parallel execution pathways.
+- The Skill Manifest schema enforces strict safety at load time: write tools requiring user approval or direct balance mutation are completely rejected before any step can execute.
+- Separating high-level user intents (such as `affordability` or `trip_planning`) into certified skills keeps the planner's proposed steps minimal, auditable, and reliable.
+
+### 3. What it deliberately does not do:
+- Does not allow skills to bypass the `execute_tool` choke point or call tool handlers directly.
+- Does not allow skills to perform write operations, modify balances, or create persistent financial commitments without user review.
+- Does not store hidden logic in YAML manifests; conditions are strictly limited to documented control flow flags (`if_status`).
+- Does not leak forgotten memory content in the activity timeline or skill execution outputs.
+
+### 4. Examiner Viva Q&A:
+- *Q: Why are skills registered as tools in the capability matrix rather than implemented as separate workflow subgraphs?*
+- *A: Registering skills as `compute` tools allows them to be seamlessly selected as single deterministic steps by the planner or called directly by the user/CLI. It also guarantees that skill invocation is subject to the same policy checks, timeouts, audit logs, and actor permission boundaries as any standard tool, without duplicating the orchestration infrastructure.*
+- *Q: How does FinCo ensure user privacy when activity timelines display forgotten memories?*
+- *A: When a memory item is forgotten, its `statement_json` is wiped to `{}` and its status set to `forgotten`. In `build_timeline`, the renderer inspects the memory item's status: if forgotten, it outputs a generic, non-sensitive title ("Memory Item Forgotten") and a fixed explanation ("Memory item was forgotten at user request."), omitting any residual keys, subject tags, or historical data.*
+
+## Stage 3.11: Multi-Agent Planning (Supervisor, Specialists, Merge, Reviewer, Reflexion)
+### 1. What was built:
+- **Decomposition Engine (`src/copilot/workflow/decomposition.py`, `config/decomposition.yaml`):**
+  - Implemented `decompose_intent` with LLM proposal support and deterministic template fallback for all multi-domain intents (`affordability`, `tradeoff_compare`, `contribution_check`, `trip_planning`).
+  - Strict validator (`DecompositionValidator`): ensures registered question kinds, valid domain mapping, tenant isolation (checks that IDs in parameters belong to the active user), and required domain coverage.
+  - Multi-agent routing rule (`should_route_to_multi_agent`): single-domain intents keep the single planner loop; multi-domain decompositions route to the multi-agent graph.
+- **4 Specialist Roles (`src/copilot/workflow/specialists.py`):**
+  - Implemented `CashflowAgent`, `GoalsAgent`, `ReadinessAgent`, and `BehaviourAgent`.
+  - Enforced strict tool subset allowlists per role. Attempted calls outside a specialist's allowed subset are rejected and audited as `specialist_tool_rejected`.
+  - Isolated state: specialists only receive their sub-question parameters and produce typed `SpecialistReport`s without cross-agent communication.
+- **Parallel Fan-Out & Merge (`src/copilot/workflow/multi_agent.py`):**
+  - Parallel execution via `ThreadPoolExecutor` with timeout and failure containment.
+  - Partial-result resilience: a failed or timed-out specialist does not halt execution; the merged report continues with partial findings and explicit gaps noted in narration.
+  - Deterministic merge with contradiction detection: conflicting metrics across specialists trigger an audited `merge_conflict` error and are excluded from final narration.
+- **Reviewer & Reflexion-style Revision (`src/copilot/workflow/reviewer.py`):**
+  - Deterministic review checks: verifies all sub-questions are answered or explicitly marked as gaps, and validates narration.
+  - Closed-set LLM critic: returns only valid codes (`missed_subquestion`, `unclear_answer`, `unsupported_claim`, `missing_caveat`, `ok`). Safety Rule 14 enforcement: any critic output attempting to introduce or alter numbers is strictly rejected.
+  - Bounded self-correction: up to `max_revision_rounds` (default 1). Persists critique codes and outcomes to `reflections` table.
+- **Subgraphs & Ops Exporter (`src/copilot/workflow/multi_agent_graph.py`, `src/copilot/ops/failures.py`):**
+  - LangGraph compiled subgraph runner `run_multi_agent_workflow` integrated into the main planner graph.
+  - Failure candidate exporter (`export_failures`) writing `gave_up`, `merge_conflict`, budget stop, or validator fallback tasks to `eval/candidates/` as draft golden cases.
+- **Comprehensive Verification:**
+  - 15 unit and integration tests passing in `tests/workflow/test_multi_agent.py`.
+  - Full test suite 852/852 passing (100% green). All files 100% clean on `ruff check`.
+
+### 2. Why this design:
+- Multi-agent decomposition splits complex cross-domain questions into narrow, domain-specific sub-questions. Giving each specialist a restricted tool subset and private state slice prevents accidental cross-domain contamination and minimizes token context.
+- Fault containment ensures that a failure or timeout in one domain (e.g. readiness) does not sink the entire workflow; the user receives an honest, partial answer with explicitly stated gaps.
+- Safety Rule 14 guarantees that the critic can never invent or alter financial numbers: financial truth remains strictly deterministic.
+
+### 3. What it deliberately does not do:
+- Does not allow free-form agent-to-agent chatting (AutoGen style) which cannot guarantee deterministic financial truth.
+- Does not permit runtime self-modification of prompts, templates, or rules.
+- Does not allow specialists to bypass the `execute_tool` choke point or call write tools.
+- Does not let the LLM critic introduce numbers or perform unbounded revision rounds.
+
+### 4. Examiner Viva Q&A:
+- *Q: How does FinCo prevent hallucinated metrics or numbers during multi-agent merge and revision?*
+- *A: All financial metrics originate from deterministic tools executed through `execute_tool`. The merge step validates metrics deterministically and flags any discrepancy between specialists as a `merge_conflict` audit event, excluding the conflicted metric from the synthesized response. Furthermore, Safety Rule 14 scans any LLM critic response with a regex for numeric digits: if any number is detected, the critic output is rejected, guaranteeing that the critic cannot alter or inject figures.*
+- *Q: How does the system handle specialist timeouts or errors in parallel branches?*
+- *A: Each specialist execution is wrapped in a thread future with a configurable timeout. If a timeout or unrecoverable error occurs, the specialist returns a `SpecialistReport` with `status = "timeout"` or `"failed"` and notes the error in its `gaps_json`. The merge node detects partial statuses and synthesizes an answer from successful specialists while appending an explicit caveat stating exactly which analysis could not be completed.*
+
+---
+
+## Stage 3.12: Context Engineering and Injection Hardening
+
+### 1. What was built:
+- `src/copilot/context/hardening.py`:
+  - `delimit_data_field`: Wraps untrusted user/external text into tagged data blocks (`<user_data>` / `<untrusted_content>`) along with a security notice instructing the model that contents are non-executable data.
+  - `redact_and_count`: Regex-based redactor scanning for PII and secrets (Indian PAN, Aadhaar, 16-digit credit cards with Luhn check, bank account numbers, passwords/tokens/keys), replacing them with `[REDACTED_<TYPE>]` and recording per-type counts.
+  - `detect_injection_attempt`: Adversarial signature detector matching role impersonations, prompt-leaking keywords, system prompt overrides, delimiter attacks, and markdown escaping.
+- `src/copilot/context/retrieval.py`:
+  - `retrieve_relevant_memories`: Memory retrieval ranking with tenant isolation (`user_id = ?`), dynamic active status verification (excluding expired or invalid memories), multi-tier subject matching (`exact: 3.0, parent: 2.0, global: 1.0`), recency decay weighting, and deterministic ID tie-breaking.
+- `src/copilot/context/builder.py`:
+  - `ContextBuilder`: The single choke point for budgeted prompt construction across all LLM purposes (`intent_extraction`, `planning`, `narration`, `critique`, `decomposition`).
+  - Enforces per-section token limits (`system`, `memory`, `history`, `retrieved_data`, `scratchpad`), deterministic section ordering, and exclusions.
+  - Safety Rule 19 compliance: Logs `ContextManifest` containing token counts, section inventory, and redaction counts into the `context_manifests` table while strictly forbidding storage of raw user/prompt text.
+  - Provides unified `complete()` and `structured_call()` wrappers.
+- Integrated `ContextBuilder` across `LLMPlanner.propose`, `decomposition.py:decompose_intent`, `reviewer.py:llm_critic_review`, and `intent.py:llm_classify_intent`.
+- Test suite: `tests/context/test_context_engineering.py` (8 tests) and `tests/security/injection/test_adversarial_corpus.py` (6 adversarial penetration tests).
+
+### 2. Why this design:
+- Unchecked LLM prompt construction is vulnerable to prompt injection, context overflow, PII leakage, and non-deterministic formatting. Funneling all LLM interactions through `ContextBuilder` enforces strict token budgets, deterministic section ordering, and automated PII sanitization.
+- Prompt injection cannot be stopped by LLM system prompts alone. The layered defense (delimiters + security notice + pre-call regex detection + post-call PlanValidator write-tool rejection) ensures that even if an attacker tricks the model, the system rejects any write tool proposals or unauthorized operations deterministically.
+- Safety Rule 19 guarantees that context auditing cannot become a secondary leak path for sensitive data: only metadata, token counts, and redaction stats are persisted in `context_manifests`.
+
+### 3. What it deliberately does not do:
+- Does not use dynamic, unbudgeted prompt concatenation anywhere in the codebase.
+- Does not store raw prompt text, user queries, or merchant names in `context_manifests` (Safety Rule 19).
+- Does not rely on the LLM to redact its own input; redaction occurs deterministically before prompts are dispatched.
+- Does not allow untrusted retrieved data or memory to bypass XML delimiting and security notices.
+
+### 4. Examiner Viva Q&A:
+- *Q: How does FinCo ensure prompt injection attacks cannot execute state-changing actions even if the LLM is completely compromised?*
+- *A: FinCo enforces a multi-layered defense-in-depth model. At the context layer, untrusted data is delimited with security headers and scanned for injection signatures. However, the true defense is deterministic: write tools are strictly non-selectable by the planner and specialists. Any write tool proposed by a compromised LLM is caught and rejected by `PlanValidator.validate_plan()`, which logs a `plan_rejected` audit event and aborts the execution without touching database state.*
+---
+
+## Stage 3.13: Agent Runtime and Observability
+
+### 1. What was built:
+- **Trace Spans & Distributed Tracing (`src/copilot/ops/tracing.py`):**
+  - Context-propagated tracing module with `span(kind, name, attrs, ...)` context manager supporting kinds `('node', 'tool', 'llm', 'job', 'skill', 'specialist', 'mcp')`.
+  - Span persistence in SQLite table `trace_spans` with nanosecond precision converted to milliseconds, parent span relationship hierarchy, and JSON Lines export via `export_trace_spans_jsonl`.
+  - Tree construction via `build_span_tree` for inspecting complete multi-agent workflow trees.
+  - Strict Safety Rule 19 enforcement: `_sanitize_span_attrs` scans all attribute keys and values against forbidden categories (`query`, `raw_text`, `merchant`, `user_input`, `prompt`, `statement`, `free-form user strings`), raising `ValueError` if raw text is found.
+  - Span instrumentation integrated into choke points:
+    - `execute_tool`: wrapped in `span(kind="tool", name=tool_name)`.
+    - `ContextBuilder.complete` and `structured_call`: wrapped in `span(kind="llm", name=purpose)`.
+    - `run_skill`: wrapped in `span(kind="skill", name=skill_name)`.
+    - `run_specialist`: wrapped in `span(kind="specialist", name=role)`.
+    - `run_specialists_fanout`: wrapped in `span(kind="node", name="parallel_specialists_fanout")`.
+- **Scheduled Jobs & Distributed Lease Locking (`src/copilot/runtime/scheduler.py`, `src/copilot/runtime/runner.py`):**
+  - Tenant job seeder `init_scheduled_jobs` supporting 7 background upkeep jobs: `rollover_buckets`, `refresh_memories`, `evaluate_alerts`, `coverage_scan`, `suggest_commitments`, `expire_drafts`, `monthly_close`.
+  - Flexible schedule parser (`compute_next_run_at`) supporting `daily@HH:MM`, `every_N_minutes`, and `monthly@1st_HH:MM`.
+  - Distributed lease-based locking (`acquire_job_lease`, `release_job_lease`) guaranteeing zero duplicate concurrent executions.
+  - Period-based idempotency checks (`compute_period_key`) ensuring jobs never execute twice for the same period.
+  - Exponential backoff retry handler with configurable backoff base, capped attempts (`max_retries`), and transition to `dead_letter` status upon exhaustion.
+  - Dead letter retry capability (`retry_dead_letter_job`).
+  - Safety Rule 18 enforcement: all jobs execute with `actor="agent"` strictly through `execute_tool(ctx, ...)` or `run_skill(ctx, ...)`; zero user-actor writes are allowed.
+- **Agent Daemon Loop (`src/copilot/runtime/daemon.py`):**
+  - Foreground daemon `run_agentd` with cycle limits, stop event handling, and interval sleeping.
+- **Operational Telemetry Dashboard (`src/copilot/ops/telemetry.py`):**
+  - `compute_ops_telemetry` calculating p50/p95 latency per node and per skill, LLM calls and tokens per task (with configurable cost estimation), failure counts by error code, budget stops, validator fallback rate, critic catch rate, revision success rate, background job status distribution, and parallel speed-up (`sum(specialist duration) / wall time`).
+- **CLI Commands (`src/copilot/cli/main.py`):**
+  - `copilot jobs run-due`: runs all due upkeep jobs once (Windows Task Scheduler compatible).
+  - `copilot jobs list`: displays all registered background jobs, schedules, next run times, statuses, and lease owners.
+  - `copilot jobs retry <job_kind>`: retries a dead-lettered job.
+  - `copilot agentd`: runs the continuous foreground daemon loop.
+  - `copilot ops`: displays the operational telemetry dashboard or outputs JSON.
+- **Comprehensive Testing (`tests/runtime/test_runtime.py`, `tests/ops/test_ops.py`):**
+  - 11 tests verifying due-job selection, lease locking against race conditions, period idempotency, exponential backoff, dead letter, retry, Safety Rule 18 user-write restriction, daemon loop, span tree construction, Safety Rule 19 no-user-text scan, JSONL export, and hand-counted telemetry calculations.
+
+### 2. Why this design:
+- Background tasks (like rollover, alert evaluation, and memory decay) must execute predictably and reliably without human intervention. Lease-based distributed locking prevents race conditions when running multiple instances or schedulers.
+- Period-based idempotency guarantees that even if a job is triggered repeatedly (e.g. by manual CLI invocation or cron overlap), it safely skips execution without modifying balances, creating duplicate alerts, or performing redundant computation.
+- Distributed tracing with structured span hierarchy enables fine-grained performance and latency attribution across complex multi-agent graphs, specialists, and LLM calls.
+- Strict attribute sanitization (Safety Rule 19) guarantees that observability data never becomes an exfiltration vector for PII, merchant names, or raw user prompts.
+
+### 3. What it deliberately does not do:
+- Does not allow background jobs to execute with `actor="user"` or perform user-actor state changes (Safety Rule 18).
+- Does not allow background jobs to bypass the `execute_tool` choke point.
+- Does not persist raw prompt texts, user queries, merchant strings, or transaction narrations in `trace_spans` attributes (Safety Rule 19).
+- Does not use external tracing agents or cloud dependencies (OpenTelemetry daemon, Jaeger, etc.); operates entirely locally over SQLite.
+
+### 4. Examiner Viva Q&A:
+- *Q: How does FinCo ensure background jobs do not run concurrently or duplicate work across multiple processes?*
+- *A: FinCo uses atomic lease-based distributed locking in SQLite. Before running, a worker calls `acquire_job_lease()`, which uses an atomic SQL condition (`WHERE lease_owner IS NULL OR lease_expires_at <= ?`) to acquire an exclusive lock with an expiration timeout. If another worker holds the lease, the acquisition fails and the second worker skips execution. Furthermore, `compute_period_key()` ensures that once a job has succeeded for a given period (e.g., month `2026-10` for rollover), subsequent runs within the same period are detected as already completed and skipped.*
+- *Q: Why are span attributes strictly validated against free-form text in Safety Rule 19?*
+- *A: In many production systems, tracing spans inadvertently log sensitive user prompts, SQL queries, or PII as attributes. FinCo treats traces as operational metadata, not data logs. Safety Rule 19 scans all attribute keys and string values at runtime: any attribute containing spaces and length > 120 or prohibited keys like `query`, `user_input`, or `statement` immediately raises an error. This guarantees that trace spans can be exported and analyzed safely without leaking PII.*
+
+
+---
+
+## Stage 3.14: Bounded Feedback Learning
+
+### 1. What was built:
+- **Bounded Feedback Learning Engine (`src/copilot/core/learning.py`):**
+  - Explainable, bounded Bayesian learner operating over explicit tenant feedback signals without continuous model retraining or opaque weights.
+  - Beta posterior computation from integer milli-counts: $\alpha_{\text{milli}}$ and $\beta_{\text{milli}}$ initialized from config priors ($\alpha=2, \beta=2 \implies 2000, 2000$). Posterior mean $p = \frac{\alpha_{\text{milli}}}{\alpha_{\text{milli}} + \beta_{\text{milli}}} \in (0.0, 1.0)$.
+  - Clamped sensitivity multiplier: $m = \text{clamp}(1 + \eta(2p - 1), m_{\min}, m_{\max})$ (defaults $\eta = 0.5, m \in [0.5, 1.5]$).
+  - Multi-tenant feedback recording (`record_feedback`): updates `feedback_stats` per user, subject kind (`alert_kind`, `advice_kind`), and subject key (e.g. `budget_risk:cat_dining`), audited as a `learning_updated` event with before/after state.
+  - Strict Hard Floor Protection (`is_hard_floor_alert`, `apply_learning_to_alert`): alerts for `exceeded` budgets, `not_covered` commitments, and `off_track` goals enforce $m_{\text{eff}} \ge 1.0$ and prevent severity from ever dropping below base severity (Safety Rule 16).
+  - Explainable Transparency: alert why-text appends a plain-English explanation note ("shown at lower priority because you usually dismiss these alerts" or "shown at higher priority because you usually find these alerts useful") **only when the severity tier actually changed**. If the multiplier shifts the numerical score but the severity tier remains unchanged, or if hard floors prevent downgrading, no misleading note is added.
+  - Utility-Based Advice Ordering (`order_advice_by_utility`): sorts advice drafts/items by posterior utility $p$ descending, breaking ties stably by ID.
+  - Learning Reset (`reset_learning`): restores priors ($\alpha=2, \beta=2, m=1.0$) per subject or globally across the tenant, audited as `learning_reset`.
+- **Repository Integration (`src/copilot/db/repo_phase3.py`):**
+  - Added `get_feedback_stat`, `upsert_feedback_stat`, `list_feedback_stats`, and `delete_feedback_stat` to persist feedback stats in SQLite table `feedback_stats` with tenant isolation (`user_id`).
+- **Tool Choke Point & Engine Integrations:**
+  - `src/copilot/tools/alerts.py`:
+    - `evaluate_alerts_handler`: retrieves learned multiplier $m$, checks hard floors, adjusts score and severity tier, and appends why-text attribution.
+    - `decide_alert_handler`: `acknowledge` records useful feedback (+1000 $\alpha$); dismissals with contextual reasons (`festival`, `travel`, `medical`, etc.) record a `contextual_exception` in memory and do not penalize the alert; generic dismissals record not-useful feedback (+1000 $\beta$).
+    - `set_alert_preference_handler`: muting a category records negative feedback (+1000 $\beta$).
+  - `src/copilot/tools/buckets.py`:
+    - `apply_reallocation_handler`: applying an approved reallocation draft records positive feedback (+1000 $\alpha$) for the destination bucket.
+  - `src/copilot/tools/advice.py`:
+    - `draft_advice_handler`: ranks generated advice items by utility $p$ via `order_advice_by_utility`.
+    - `decide_advice_handler`: `approved` records positive feedback (+1000 $\alpha$); `rejected` records negative feedback (+1000 $\beta$).
+- **CLI Commands (`src/copilot/cli/main.py`):**
+  - `copilot learning show`: displays learned multipliers, Beta parameters ($\alpha, \beta$), posterior means ($p$), multipliers ($m$), and hard floor status in a formatted table or as `--json`.
+  - `copilot learning reset`: resets learned feedback statistics back to priors for a specific `--subject` or across all subjects.
+- **Architectural & Theoretical Documentation (`docs/learning_agents.md`):**
+  - Formal documentation explaining the contextual bandit framing (context = alert/advice kind and subject, action = damp/surface/rank, reward = explicit user actions).
+  - Explicit rationale for zero random exploration / no Thompson sampling in personal finance.
+  - Why RLHF, RLAIF, and DPO are out of scope for deterministic financial assistance.
+  - Contextual exceptions vs negative feedback distinction.
+- **Test Suite (`tests/learning/test_learning.py`):**
+  - 13 comprehensive tests covering: exact posterior updates, bounds clamping, property tests for hard floor immutability, contextual dismissal routing to memory, generic dismissal updating $\beta$, acknowledgment updating $\alpha$, category mute updating $\beta$, reallocation application updating $\alpha$, advice approval/rejection and utility ordering, why-text attribution invariants, reset to priors, CLI `show`/`reset`, and deterministic reproducibility.
+
+### 2. Why this design:
+- Personal finance alerts require high precision and predictability. A user who frequently dismisses dining budget alerts may prefer a lower frequency or notice tier, but an overspent budget must never be silenced.
+- Beta posterior with integer milli-counts avoids floating-point drift and ensures exact determinism across platforms.
+- By strictly disallowing random exploration (such as $\epsilon$-greedy or Thompson sampling), we ensure that the system never unpredictably suppresses or exaggerates financial warnings for the sake of "learning".
+- Separating contextual dismissals (e.g. "festival: Diwali shopping") from generic dismissals avoids corrupting the baseline model with seasonal anomalies: contextual exceptions are stored as temporary memory items, while generic dismissals update the long-term bandit sensitivity.
+
+### 3. What it deliberately does not do:
+- Does not use Thompson sampling or stochastic exploration: exploration on safety-critical financial warnings is dangerous and unacceptable.
+- Does not train or fine-tune neural network weights (no RLHF, RLAIF, or DPO).
+- Does not lower the severity of `exceeded`, `not_covered`, or `off_track` alerts under any circumstances (Safety Rule 16).
+- Does not touch or modify feedback statistics when an alert is dismissed with an allowed contextual reason.
+- Does not leak learning attribution notes into why-text when the severity tier was not actually altered by the multiplier.
+
+### 4. Examiner Viva Q&A:
+- *Q: Why does FinCo use a Beta posterior mean rather than reinforcement learning (RLHF/DPO) or continuous prompt fine-tuning?*
+- *A: Continuous fine-tuning and policy-gradient RL are non-deterministic, opaque, data-hungry, and prone to catastrophic forgetting or hallucination drift. In personal finance, every alert must be auditable, explainable, and resettable. A conjugate Beta-Bernoulli bandit tracks usefulness explicitly per subject, allows instant reset to priors, bounds sensitivity within safe multiplicative limits ($[m_{\min}, m_{\max}]$), and requires zero training compute.*
+- *Q: How does Safety Rule 16 prevent a user from inadvertently muting critical alerts?*
+- *A: Safety Rule 16 establishes hard floors. In `is_hard_floor_alert` and `apply_learning_to_alert`, any alert relating to an exceeded budget, an uncovered firm commitment, or an off-track goal has its multiplier clamped to $m_{\text{eff}} = \max(1.0, m)$, and its severity is enforced to never fall below the base evaluation tier. Even if a user dismisses 100 consecutive budget alerts, an `exceeded` budget alert will always trigger at its full critical/warning severity.*
+
+---
+
+## Stage 3.15: Model Context Protocol (MCP) Server
+
+### 1. What was built:
+- **MCP Server Module (`src/copilot/mcp/server.py`):**
+  - High-performance, secure MCP server using the official Python MCP SDK (`mcp==2.3.0`).
+  - Supports standard stdio transport as well as in-process execution via `create_mcp_server`.
+  - Exposes exactly the capability matrix's planner-selectable read and compute tools and skills (36 tools) plus the `ask` agent query tool.
+  - Strict enforcement of **Safety Rule 17**: only planner-selectable read/compute tools and skills are exposed. Write-class tools (`SideEffect.WRITE_LOGICAL`, external writes) are strictly prohibited and never exposed, even if added to the registry or requested via configuration.
+  - Execution Choke Point: Every tool call executes strictly through `execute_tool(ctx, tool_name, args)` with `actor = "agent"`.
+  - Distributed Tracing & Audit: Every MCP tool call is wrapped in a `span(kind="mcp", name=tool_name, ...)` and generates an `audit_event` with `event_type="tool_call"` and `actor="agent"`.
+  - Data Minimisation Policy (`mcp.allow_transaction_detail`): When `false` (the default), row-level transaction items are suppressed and replaced by aggregated summary statistics (`total_count`, `total_debit_paise`, `total_credit_paise`, and a transparency notice). When `true`, full transaction rows are exposed.
+  - Autonomous Agent `ask` Tool: Executes the planner-driven agent graph (`build_planner_agent_graph`) with `actor="agent"`. Capable of creating unapproved drafts and returning synthesized financial answers; cannot execute user-actor writes.
+  - Standard MCP Resources:
+    - `finco://monthly_review/latest`: Returns the most recent monthly review JSON from `monthly_reviews`.
+    - `finco://calendar/summary`: Returns the 30-day projected calendar summary via `get_calendar`.
+    - `finco://buckets/summary`: Returns current virtual buckets allocation status via `get_allocation_summary`.
+  - Stdio Runner (`run_mcp_stdio_server`): Entrypoint for stdio communication with LLM hosts (e.g., Claude Desktop, Cursor, external agent harnesses).
+- **Configuration & Integration (`config/mcp.yaml`, `src/copilot/config/phase3.py`):**
+  - Added `MCPConfig` with fields `server_name`, `protocol_version`, `transport`, `allow_transaction_detail`, and `exposed_tools`.
+  - Config loader `load_mcp_config` defaulting to `config/mcp.yaml`.
+- **CLI Commands (`src/copilot/cli/main.py`):**
+  - Added `copilot mcp-serve` and `copilot mcp serve` with `--user-id` and `--db` options.
+- **Test Suite (`tests/mcp/test_mcp.py`):**
+  - 11 comprehensive tests validating: exact selectable tool exposure, absolute absence of write tools, Safety Rule 17 protection against dynamic tool registration, failure on non-exposed tools, data-minimisation toggle (default false vs true), audit and tracing with `kind="mcp"`, `ask` tool agent graph execution, resource listing and reading, injection corpus penetration test against MCP arguments, and multi-tenant isolation.
+
+### 2. Why this design:
+- Exposing personal finance over MCP allows external desktop agents and IDEs to query FinCo without breaking security invariants.
+- Strict adherence to the `execute_tool(ctx, ...)` choke point guarantees that all permissions, policies, audit logging, and tenant isolation continue to govern every external request.
+- Defaulting `allow_transaction_detail` to `false` implements the principle of least privilege and data minimisation: an external LLM rarely needs raw transaction rows when aggregate counts and totals suffice.
+- Safety Rule 17 prevents external clients from invoking mutating tools (e.g. `recategorize`, `allocate_bucket`, `commit_draft`) directly; mutations can only be staged as unapproved drafts via the agent graph.
+
+### 3. What it deliberately does not do:
+- Does not expose write tools over MCP (Safety Rule 17).
+- Does not allow MCP tool calls to execute as `actor="user"`.
+- Does not bypass the `execute_tool` choke point.
+- Does not leak transaction details when `allow_transaction_detail=false`.
+- Does not leak cross-tenant data across MCP connections (`user_id` is strictly scoped).
+
+### 4. Examiner Viva Q&A:
+- *Q: How does FinCo ensure an external MCP client cannot execute dangerous write actions or alter database state directly?*
+- *A: FinCo enforces two defensive layers: First, Safety Rule 17 filters tool exposure at server initialization and invocation. Only tools registered with `SideEffect.READ` that are explicitly listed as planner-selectable in the capability matrix are exposed; all write tools are strictly omitted. Second, all tool invocations are executed through the standard `execute_tool(ctx, tool_name, args)` choke point with `ctx.actor = "agent"`. Since all write tools enforce policy requiring user-actor approvals, no direct write can succeed over MCP.*
+- *Q: What is data minimisation in FinCo's MCP implementation, and why is it enabled by default?*
+- *A: When an external client calls transaction-listing tools (`get_transactions`), returning thousands of raw transactions containing sensitive merchant names and amounts increases privacy risk and LLM context bloat. By default (`allow_transaction_detail: false`), FinCo intercepts the output in `_apply_data_minimisation()` and replaces the transaction list with aggregate counts and total debit/credit paise sums along with an explanatory notice. Only if explicitly enabled in configuration are individual transaction items provided.*
+
+---
+
+## Stage 3.16: Orchestration Comparison
+
+### 1. What was built:
+- **Orchestration Benchmark Suite (`src/copilot/eval/orchestration_comparison.py`):**
+  - Rigorous empirical evaluation engine running a standardized 10-question benchmark battery across single-domain retrieval, multi-domain planning, affordability checks, readiness projections, edge-case gaps, and adversarial injection attempts on an identical multi-tenant persona.
+  - Measures real execution metrics across 5 built paradigm variations:
+    1. Phase 1: Fixed Pipeline Graph (`build_agent_graph`)
+    2. Phase 2: Single Planner Loop - LLM Off (`build_planner_agent_graph` with `force_single_loop=True, planner_mode="deterministic"`)
+    3. Phase 2: Single Planner Loop - LLM On (`build_planner_agent_graph` with `force_single_loop=True, planner_mode="llm"`)
+    4. Phase 3: Supervisor + Parallel Specialists - LLM Off (`build_planner_agent_graph` with template decomposition and deterministic reviewer)
+    5. Phase 3: Supervisor + Parallel Specialists - LLM On (`build_planner_agent_graph` with LLM decomposition and LLM critic)
+  - Records real empirical accuracy, sub-question coverage, mean/p95 latencies, LLM call counts, token consumption, unhandled failure rates, and partial-answer rates.
+- **Architectural Deliverable (`docs/orchestration_paradigms.md`):**
+  - Comprehensive report authored from real measurements.
+  - Detailed side-by-side comparison table of all 4 paradigms:
+    - Fixed Graph (Phase 1)
+    - Single Plan-Act-Observe-Revise Loop (Phase 2)
+    - Supervisor with Parallel Specialists (Phase 3)
+    - Conversational Multi-Agent (AutoGen / ChatDev style, described and critically analyzed)
+  - In-depth qualitative and quantitative analysis of bottleneck behaviors, context bloat, token scaling, fault tolerance, and contradiction detection.
+  - Exact specification of FinCo's automated **Routing Rule** (`should_route_to_multi_agent`) and strategic conclusions on when each paradigm is worth its cost.
+- **Automated Regression Test Suite (`tests/workflow/test_orchestration_comparison.py`):**
+  - Unit tests verifying that the benchmark runner executes cleanly, satisfies all architectural invariants (Phase 3 coverage > Phase 2 > Phase 1, lowest latency on Phase 1, 0% failure rate across built configurations, 0 LLM calls when LLM is off), and ensures that `docs/orchestration_paradigms.md` is generated and valid.
+
+### 2. Why this design:
+- Empirical measurements on identical questions provide grounded evidence rather than theoretical speculation regarding agent orchestration trade-offs.
+- Forcing single-loop execution via `force_single_loop=True` enables clean A/B comparison on identical intent classifiers and tools without altering production code paths.
+- Evaluating with LLM off and LLM on isolates the overhead of the orchestrator structure from the latency and token cost of language model inference.
+- Analyzing conversational multi-agent systems highlights why free-form peer-to-peer dialogue is unsafe for financial systems that demand deterministic math and hard policy choke points.
+
+### 3. What it deliberately does not do:
+- Does not build a full conversational peer-to-peer AutoGen multi-agent system: open-ended dialogue turns without central supervision violate FinCo's safety invariants and choke points (as documented in PLAN_PHASE3: "conversational multi-agent (AutoGen-style, described, not built)").
+- Does not use synthetic or hardcoded latency figures in `docs/orchestration_paradigms.md`: all table entries reflect real execution measurements on SQLite fixtures.
+- Does not sacrifice single-domain performance: the Routing Rule ensures single-domain tasks never pay the overhead of multi-agent decomposition.
+
+### 4. Examiner Viva Q&A:
+- *Q: Why does FinCo route single-domain queries to a single loop rather than spawning multi-agent specialists for every task?*
+- *A: Spawning multiple specialized agents introduces decomposition overhead, thread-pool scheduling, and merge barrier synchronization. For single-domain queries (e.g. "How much did I spend in September?"), the single loop achieves 100% accuracy and coverage with approximately half the latency (~60 ms vs ~113 ms) and zero supervisor overhead. Spawning multiple specialists for single-domain tasks is an anti-pattern. Multi-agent orchestration is only worth its latency and complexity budget when queries span multiple decoupled domains (cashflow + goals + commitments + readiness).*
+- *Q: Why is a conversational multi-agent (AutoGen-style) paradigm unsuitable for personal finance?*
+- *A: Conversational multi-agent systems rely on peer-to-peer natural language dialogue between roles without a centralized supervisor or deterministic merge barrier. In personal finance, this leads to three fatal flaws: (1) compounding numerical drift and hallucinations across conversational turns; (2) excessive token consumption (>4,500 tokens) and latency (>3-5s); and (3) inability to enforce the `execute_tool` choke point and Safety Rule 1 choke point against untrusted data injection. FinCo instead uses schema-bound parallel specialists with a deterministic merge and validation barrier.*
+
+---
+
+## Stage 3.17: CLI, API, Demo Script, and Evaluation
+
+### 1. What was built:
+- **CLI Commands (PLAN_PHASE3 Section 5.11):**
+  - Integrated `commitments_app`, `goals_app` extensions, `buckets_app`, `calendar`, `readiness`, `memories_app`, `skills_app`, `plan-contributions`, `trade-offs`, and `--phase 3` evaluation flag into `src/copilot/cli/main.py`.
+- **Phase 3 API Endpoints & Contract (`docs/phase3_api_contract.md`):**
+  - Implemented RESTful JSON endpoints in `src/copilot/api/app.py` under `/api/` for commitments, calendar projection, virtual buckets, readiness assessment, behavioral memory, learning profile, and runtime ops, tested in `tests/api/test_phase3_api.py`.
+- **Phase 3 Offline Demo Script (`docs/demo_script_phase3.md`):**
+  - Authored a comprehensive walkthrough demonstrating the complete FinCo journey from seed persona, commitment recognition, goal & bucket creation, calendar shortfall detection, multi-agent cross-domain inquiry, readiness assessment, trade-off analysis, approved reallocation, festival exception damping, background jobs, MCP query, and memory forgetting.
+- **Phase 3 Evaluation Harness (`src/copilot/eval/harness_phase3.py` & `eval/run_eval_phase3.py`):**
+  - Comprehensive evaluation across 8 test batteries on held-out seeds, generating `docs/eval_report_phase3.md` reporting commitment suggestion precision/recall, calendar accuracy, goal completion error, readiness accuracy, memory decay and observer precision, multi-agent trajectory and revision metrics, learning floors, and safety suites.
+- **24 Phase 3 Golden Scenarios (`tests/golden/phase3/test_golden_phase3.py`):**
+  - 24 comprehensive end-to-end scenario tests covering all edge cases specified in Section 7 (Feb 28/29 rent, waterfall reordering, recategorization spend moves, rollover idempotency, over-allocation warnings, approval without apply isolation, readiness personas, simulated options, trade-offs, additive totals, festival exception damping, advice suppression cooldown, memory forgetting, SIP refusal, specialist failure gap reporting, reviewer revision, merchant injection protection, job lease locking, learning floors, MCP write absence, integer paise currency, and multi-tenant isolation).
+
+### 2. Why this design:
+- Full CLI and API parity enables headless automation, scriptability, and interactive inspection across all financial and agentic subsystems.
+- Real offline demo script ensures that the entire agentic stack can be demonstrated live without external network dependencies or quota consumption.
+- Evaluation harness uses held-out deterministic seeds and measures both LLM-on and fallback paths, verifying that the system satisfies all safety floors even under adversarial prompts.
+- 24 golden scenarios act as an immutable behavioral baseline ensuring zero regression across past and future phases.
+
+### 3. What it deliberately does not do:
+- Does not expose write tools or money movement over CLI, API, or MCP.
+- Does not tune evaluation heuristics on held-out test seeds.
+- Does not execute git commands.
+
+### 4. Examiner Viva Q&A:
+- *Q: How do the 24 golden scenarios differ from unit tests?*
+- *A: Unit tests verify isolated functions with synthetic mocks. The 24 golden scenarios are comprehensive lifecycle integration tests that execute across the full stack: SQLite database, schema triggers, `execute_tool` choke point, audit logging, multi-agent graphs, memory stores, and calendar engines, verifying critical real-world edge cases (such as February rent expansion, 30-day advice suppression cooldown, and thread-safe job leases).*
+- *Q: Why is the Phase 3 demo script designed to run completely offline?*
+- *A: Deterministic-guarded architecture ensures that every financial projection, bucket allocation, readiness level, and schedule can run reliably without third-party network APIs or paid cloud tokens. An offline demo script guarantees repeatable, flawless evaluation and viva demonstrations without risk of API rate limits or network outages.*
+
+---
+
+## Stage 3.18: Hardening, Documentation, and Checkpoint B
+
+### 1. What was built:
+- **Comprehensive Phase 3 Hardening & Failure Handling Suite (`tests/workflow/test_phase3_hardening.py`):**
+  - Explicitly tested and verified graceful degradation across all 11 critical failure modes:
+    1. Empty database (zero commitments, zero goals, zero buckets, zero history) yielding valid empty structures without crashing.
+    2. Deleted category mapped to a virtual bucket cascades cleanly via foreign key constraints.
+    3. Goals with removed or unlinked accounts fall back safely.
+    4. Blank transaction history assessed as `insufficient_data` without dividing by zero.
+    5. Calendar projections crossing year boundaries (December to March) calculating valid date intervals and balances.
+    6. Conflicting memory items ranked deterministically by Bayesian confidence and recency.
+    7. Clock at month end (February 28/29 leap year and December 31) projecting accurately.
+    8. All specialists failing simultaneously aggregated gracefully with explicit gap diagnostics and zero unhandled exceptions.
+    9. Language model failure mid-run falling back to deterministic review and synthesis.
+    10. Background job runner crash mid-run with automatic lease expiry and recovery by subsequent workers.
+    11. Log and span sanitization verifying that no raw card numbers, PANs, or sensitive user texts are leaked to logs or trace spans.
+- **Agentic Architecture Document (`docs/architecture_agentic.md`):**
+  - Authored an exhaustive technical reference mapping every agentic AI concept (Plan-Act-Observe-Revise, executable skills, dual-tier short/long memory, context engineering, MCP server, supervisor + specialists, deterministic merge, Reflexion-style review, human-in-the-loop gates, append-only audit, evaluation batteries, observability, and continuous learning) directly to their implementing source files and architectural roles.
+- **Updated Capability & Governance Matrix (`docs/capability_matrix.md`):**
+  - Updated to comprehensively catalogue all Phase 1, Phase 2, and Phase 3 tools (30 autonomous read/compute tools, 24 protected state mutation tools, 4 multi-agent specialists, 5 executable skills, and 3 MCP live resources).
+- **README & Known Issues Updated (`README.md`, `docs/known_issues.md`):**
+  - Upgraded README capability matrix across all three phases; documented forward integration items in `docs/known_issues.md`.
+- **Full Test Suite Verification:**
+  - **942 passed tests out of 942** across all unit, core, tool, api, cli, workflow, golden, and hardening suites (100% pass rate).
+
+### 2. Why this design:
+- Explicit failure mode testing ensures that the system handles real-world edge cases (missing data, crashed processes, network timeouts) gracefully without unhandled exceptions.
+- `docs/architecture_agentic.md` provides an academic and industry standard map explaining the exact design decisions behind FinCo's hybrid deterministic-agentic architecture.
+- Full parity across tests, documentation, and capability matrices guarantees verifiable reproducibility.
+
+### 3. What it deliberately does not do:
+- Does not weaken any tests or skip assertions to achieve 100% pass rate.
+- Does not execute any git commands (strictly respecting user safety rules).
+- Does not expose write tools over MCP or to autonomous agents.
+
+### 4. Examiner Viva Q&A:
+- *Q: How does FinCo ensure resilience when language models or specialist sub-agents fail or time out?*
+- *A: FinCo enforces a deterministic fallback and barrier synchronization pattern. If a specialist times out or fails, `merge_specialist_reports` captures the failure in `SpecialistReport.gaps_json` and marks the status as `partial` or `failed` rather than aborting. The reviewer node inspects these gaps, and the supervisor generates a transparent response detailing what could be calculated and what specific domain data was unavailable. If the LLM itself fails, the system executes deterministic template fallbacks for review and synthesis.*
+- *Q: What guarantees that no sensitive financial data or PII is leaked in distributed trace spans or logs?*
+- *A: Tracing spans and audit records only capture structured metadata: tool names, actor types, status codes, execution durations, and domain identifiers. Free-form user inputs, bank account passwords, card numbers, and raw statement descriptions are filtered and never stored in span attributes.*
+
+---
+*Checkpoint B reached. Phase 3 fully implemented, hardened, verified, and documented.*

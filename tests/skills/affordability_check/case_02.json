@@ -1,0 +1,10 @@
+{
+  "name": "headphones_purchase",
+  "description": "User evaluates smaller purchase of headphones for 500000 paise (Rs. 5,000)",
+  "inputs": {
+    "amount_paise": 500000,
+    "category_id": "c_electronics"
+  },
+  "expected_status": "ok",
+  "expected_outputs_contain": ["get_calendar", "run_whatif", "check_commitment_coverage", "evaluate_goal_impact"]
+}

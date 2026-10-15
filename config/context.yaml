@@ -1,0 +1,10 @@
+# Context Engineering & Token Budgets (PLAN_PHASE3 Section 5.14)
+
+token_budgets:
+  intent_extraction: 1000
+  planning: 2500
+  narration: 3000
+  critique: 1500
+
+top_k_memories: 5
+character_token_ratio: 4  # 4 characters per token estimate

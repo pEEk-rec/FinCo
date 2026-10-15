@@ -16,6 +16,7 @@ from copilot.workflow.agentic_nodes import (
     clarify_node,
     error_node,
     finalize_node,
+    multi_agent_node,
     plan_node,
     reflect_node,
     review_node,
@@ -23,6 +24,7 @@ from copilot.workflow.agentic_nodes import (
     understand_node,
 )
 from copilot.workflow.agentic_state import AgenticState
+from copilot.workflow.decomposition import should_route_to_multi_agent
 
 # -------------------------------------------------------------------------------------------------
 # Conditional Routing Functions
@@ -30,14 +32,30 @@ from copilot.workflow.agentic_state import AgenticState
 
 
 def route_after_understand(state: AgenticState) -> str:
-    """Route after understand: refused/stopped to finalize, clarification to clarify, else plan."""
+    """
+    Route after understand: refused/stopped to finalize, clarification to clarify,
+    multi-domain to multi_agent, else plan.
+    """
+
     if state.get("status") == "failed":
         return "error"
     if state.get("refusal_reason") or state.get("status") == "stopped":
         return "finalize"
     if state.get("needs_clarification"):
         return "clarify"
+    if not state.get("force_single_loop") and should_route_to_multi_agent(state.get("intent", {})):
+        return "multi_agent"
     return "plan"
+
+
+def route_after_multi_agent(state: AgenticState) -> str:
+    """Route after multi_agent: error to error, pending recs to review, else finalize."""
+    if state.get("status") == "failed":
+        return "error"
+    if state.get("pending_recommendations"):
+        return "review"
+    return "finalize"
+
 
 
 def route_after_clarify(state: AgenticState) -> str:
@@ -134,6 +152,7 @@ def build_planner_agent_graph(
     builder.add_node("review", review_node)
     builder.add_node("finalize", finalize_node)
     builder.add_node("error", error_node)
+    builder.add_node("multi_agent", multi_agent_node)
 
     # Edges
     builder.add_edge(START, "understand")
@@ -144,10 +163,22 @@ def build_planner_agent_graph(
         {
             "clarify": "clarify",
             "plan": "plan",
+            "multi_agent": "multi_agent",
             "finalize": "finalize",
             "error": "error",
         },
     )
+
+    builder.add_conditional_edges(
+        "multi_agent",
+        route_after_multi_agent,
+        {
+            "review": "review",
+            "finalize": "finalize",
+            "error": "error",
+        },
+    )
+
 
     builder.add_conditional_edges(
         "clarify",

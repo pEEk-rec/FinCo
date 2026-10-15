@@ -12,6 +12,7 @@ Every recommendation exposes:
 - explain rendering: human-readable full explanation
 """
 
+import json
 import sqlite3
 import uuid
 from typing import Any, Literal
@@ -108,6 +109,37 @@ def find_relevant_memories(
                         "muted": bool(p[3]),
                     }
                 )
+    except sqlite3.OperationalError:
+        pass
+
+    # 4. Active behavioural memories from memory_items (PLAN_PHASE3 Section 5.8 & 5.9)
+    try:
+        cur_mem = conn.execute(
+            """
+            SELECT id, kind, subject_key, statement_json, prior_bp
+            FROM memory_items
+            WHERE user_id = ? AND status = 'active'
+            ORDER BY prior_bp DESC LIMIT 10
+            """,
+            (user_id,),
+        )
+        for m in cur_mem.fetchall():
+            mid, mkind, msubj, mstmt_json, mprior = m
+            mstmt = json.loads(mstmt_json) if mstmt_json else {}
+            if category_id:
+                stmt_cat = mstmt.get("category") or mstmt.get("category_id")
+                if stmt_cat and stmt_cat != category_id and f"category:{category_id}" not in msubj:
+                    continue
+            memories.append(
+                {
+                    "kind": mkind,
+                    "id": mid,
+                    "subject_key": msubj,
+                    "statement": mstmt,
+                    "confidence_bp": mprior,
+                    "summary": f"Behavioural memory ({mkind}) on {msubj}",
+                }
+            )
     except sqlite3.OperationalError:
         pass
 

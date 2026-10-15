@@ -1,0 +1,18 @@
+name: contribution_review
+version: 1
+description: Review monthly contribution health, readiness gates, and surplus headroom against goals.
+inputs:
+  horizon_months: optional
+preconditions:
+  - has_transactions
+steps:
+  - assess_investment_readiness: {}
+  - plan_contributions:
+      horizon_months: 6
+  - list_goals: {}
+outputs:
+  - readiness_assessment
+  - contribution_plan
+  - goal_list
+narration_template: contribution_review_v1
+eval_cases: tests/skills/contribution_review/

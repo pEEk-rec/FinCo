@@ -7,6 +7,7 @@ Governance:
 """
 
 from collections.abc import Callable
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from pydantic import Field
@@ -15,7 +16,7 @@ from copilot.audit.events import record_event
 from copilot.config.phase2 import load_investigation_config
 from copilot.core.errors import ErrorCode, ToolFailure
 from copilot.core.investigation import decompose_spend_change, run_investigation_suite
-from copilot.core.timeutil import month_bounds
+from copilot.core.timeutil import IST, month_bounds, now_utc
 from copilot.db import repo
 from copilot.models.agentic import Investigation
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
@@ -87,9 +88,14 @@ def investigate_anomaly_handler(
         target_txns=target_txns,
         baseline_txns=baseline_txns,
         subject_kind="anomaly",
-        subject_ref={"anomaly_id": anomaly_id, "txn_id": target_tx.id},
+        subject_ref={
+            "anomaly_id": anomaly_id,
+            "txn_id": target_tx.id,
+            "category_id": target_tx.category_id,
+        },
         period=period,
         config=config,
+        conn=ctx.conn,
     )
 
     repo.insert_investigation(ctx.conn, inv)
@@ -129,7 +135,7 @@ def investigate_anomaly_handler(
 class ExplainChangeInput(ToolInput):
     """Input for explaining period-over-period spend changes in a category or merchant."""
 
-    period: str = Field(description="Target IST calendar month (YYYY-MM)")
+    period: str | None = Field(default=None, description="Target IST calendar month (YYYY-MM)")
     category_id: str | None = Field(default=None, description="Optional category to focus on")
     merchant: str | None = Field(default=None, description="Optional merchant name to focus on")
     baseline_period: str | None = Field(
@@ -146,13 +152,18 @@ class ExplainChangeOutput(ToolOutput):
 
 def explain_change_handler(
     ctx: "ExecutionContext",
-    period: str,
+    period: str | None = None,
     category_id: str | None = None,
     merchant: str | None = None,
     baseline_period: str | None = None,
 ) -> ExplainChangeOutput:
     """Explain why spend changed in a category or period compared to baseline."""
     config = load_investigation_config()
+
+    if period is None:
+        now_dt = ctx.clock if isinstance(ctx.clock, datetime) else now_utc()
+        ist_now = now_dt.astimezone(IST)
+        period = f"{ist_now.year:04d}-{ist_now.month:02d}"
 
     try:
         t_year = int(period[:4])
@@ -215,6 +226,7 @@ def explain_change_handler(
         subject_ref=subject_ref,
         period=period,
         config=config,
+        conn=ctx.conn,
     )
 
     repo.insert_investigation(ctx.conn, inv)
@@ -307,6 +319,19 @@ def register_investigation_tools(register_fn: Callable[[ToolSpec], None] = regis
         ToolSpec(
             name="explain_change",
             description="Explain period-over-period spend changes via deterministic decomposition.",
+            side_effect=SideEffect.READ,
+            input_model=ExplainChangeInput,
+            output_model=ExplainChangeOutput,
+            handler=explain_change_handler,
+        )
+    )
+
+    register_fn(
+        ToolSpec(
+            name="investigate_month_change",
+            description=(
+                "Investigate period-over-period spend changes via deterministic decomposition."
+            ),
             side_effect=SideEffect.READ,
             input_model=ExplainChangeInput,
             output_model=ExplainChangeOutput,

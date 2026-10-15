@@ -7,12 +7,14 @@ is audited as 'plan_rejected' and replaced with the deterministic plan.
 """
 
 import logging
+import sqlite3
 import uuid
 from typing import Any
 
 from pydantic import BaseModel, Field
 
-from copilot.llm.client import LLMClient, StructuredOutputError, structured_call
+from copilot.context.builder import ContextBuilder
+from copilot.llm.client import LLMClient, StructuredOutputError
 from copilot.models.agentic import Intent, Plan, PlanStep
 from copilot.planner.capabilities import project_tool_catalogue
 from copilot.planner.deterministic import DeterministicPlanner
@@ -48,23 +50,42 @@ class LLMPlanner:
         intent: Intent,
         state_projection: dict[str, Any] | None = None,
         tool_catalogue: list[dict[str, Any]] | None = None,
+        conn: sqlite3.Connection | None = None,
     ) -> Plan:
         """
-        Generate a plan via LLM structured call.
+        Generate a plan via LLM structured call mediated by ContextBuilder.
         Falls back to DeterministicPlanner if the client is missing or fails.
         """
         if self.client is None:
             return self.fallback.propose(task_id, user_id, intent, state_projection, tool_catalogue)
 
         catalogue = tool_catalogue or project_tool_catalogue()
-        prompt = self._build_prompt(intent, state_projection or {}, catalogue)
+        builder = ContextBuilder(conn=conn)
+        instruction = (
+            "You are a financial planning agent. "
+            "Given the following user intent and available tools,\n"
+            "propose a minimal ordered sequence of tool steps to gather evidence and "
+            "fulfill the request.\n\n"
+            "RULES:\n"
+            "1. Choose ONLY from the allowed tools listed below.\n"
+            "2. Never call tools that modify state or move money.\n"
+            "3. Provide exact parameters adhering to each tool's schema.\n"
+            "4. Keep the plan strictly minimal.\n\n"
+            "Return the proposed plan as structured JSON with a list of steps."
+        )
 
         try:
-            proposal = structured_call(
-                self.client,
-                prompt=prompt,
+            proposal, _ = builder.structured_call(
+                client=self.client,
                 output_model=LLMPlanProposal,
+                user_id=user_id,
+                task_id=task_id,
                 purpose="planning",
+                instruction=instruction,
+                intent=intent,
+                catalogue=catalogue,
+                untrusted_data=state_projection.get("raw_text") if state_projection else None,
+                conn=conn,
             )
         except (StructuredOutputError, Exception) as err:
             logger.warning("LLM planner proposal failed (%s); using deterministic plan", err)
@@ -93,26 +114,9 @@ class LLMPlanner:
         state_projection: dict[str, Any],
         catalogue: list[dict[str, Any]],
     ) -> str:
-        """Construct sanitized prompt exposing only selectable tools and high-level intent."""
-        cat_lines = []
-        for tool in catalogue:
-            cat_lines.append(
-                f"- Tool: {tool['tool_name']}\n"
-                f"  Description: {tool['short_description']}\n"
-                f"  Parameters: {tool.get('parameters', {})}"
-            )
-        catalogue_text = "\n".join(cat_lines)
-
-        intent_summary = (
-            f"Intent Type: {intent.type}\n"
-            f"Period: {intent.period}\n"
-            f"Category ID: {intent.category_id}\n"
-            f"Goal ID: {intent.goal_id}\n"
-            f"Amount Paise: {intent.amount_paise}\n"
-            f"Horizon Months: {intent.horizon_months}"
-        )
-
-        return (
+        """Construct sanitized prompt using ContextBuilder."""
+        builder = ContextBuilder()
+        instruction = (
             "You are a financial planning agent. "
             "Given the following user intent and available tools,\n"
             "propose a minimal ordered sequence of tool steps to gather evidence and "
@@ -122,7 +126,15 @@ class LLMPlanner:
             "2. Never call tools that modify state or move money.\n"
             "3. Provide exact parameters adhering to each tool's schema.\n"
             "4. Keep the plan strictly minimal.\n\n"
-            f"AVAILABLE TOOLS:\n{catalogue_text}\n\n"
-            f"INTENT DETAILS:\n{intent_summary}\n\n"
             "Return the proposed plan as structured JSON with a list of steps."
         )
+        built = builder.build(
+            user_id="system",
+            task_id="task_build",
+            purpose="planning",
+            instruction=instruction,
+            intent=intent,
+            catalogue=catalogue,
+            untrusted_data=state_projection.get("raw_text") if state_projection else None,
+        )
+        return built.prompt

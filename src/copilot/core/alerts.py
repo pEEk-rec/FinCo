@@ -166,6 +166,8 @@ def evaluate_category_alert_signals(
     *,
     current_day: int = 15,
     days_in_month: int = 30,
+    active_exception: dict[str, Any] | None = None,
+    exception_damping_bp: int = 5000,
 ) -> AlertSignalBreakdown:
     """
     Compute multi-signal score, damping, and severity for a budget/category candidate.
@@ -187,7 +189,15 @@ def evaluate_category_alert_signals(
         + w.get("goal_impact", 1500) * s_goal
     )
 
-    score_bp = min(10000, max(0, int(raw_score_bp * damping)))
+    base_score_bp = min(10000, max(0, int(raw_score_bp * damping)))
+
+    # Apply exception damping if active contextual exception is present
+    # (PLAN_PHASE3 Section 5.8 & 5.9)
+    if active_exception:
+        damped_factor = max(0.0, min(1.0, (10000 - exception_damping_bp) / 10000.0))
+        score_bp = min(10000, max(0, int(base_score_bp * damped_factor)))
+    else:
+        score_bp = base_score_bp
 
     # Determine severity
     thresholds = config.tier_thresholds_bp
@@ -209,6 +219,7 @@ def evaluate_category_alert_signals(
     )
     spent_pct = int((spent_paise / max(1, limit_paise)) * 100) if limit_paise > 0 else 0
 
+    exc_reason = active_exception.get("reason", "exception") if active_exception else None
     components = {
         "category_id": category_id,
         "spent_paise": spent_paise,
@@ -236,6 +247,9 @@ def evaluate_category_alert_signals(
         "score_bp": score_bp,
         "history_months": history_months,
         "txn_count": txn_count,
+        "damped_by_exception": active_exception is not None,
+        "exception_reason": exc_reason,
+        "memories": [active_exception] if active_exception else [],
     }
 
     return AlertSignalBreakdown(
@@ -267,16 +281,23 @@ def build_why_text(components: dict[str, Any]) -> str:
 
     if limit_rupees > 0:
         if exceed_rupees > 0:
-            return (
+            base_text = (
                 f"{cat} is {spent_pct}% of budget (₹{spent_rupees} of ₹{limit_rupees}) "
                 f"with {days_left} days left; forecast exceeds limit by ₹{exceed_rupees}; "
                 f"usual spend by day {current_day} is ₹{usual_rupees}."
             )
-        return (
-            f"{cat} is {spent_pct}% of budget (₹{spent_rupees} of ₹{limit_rupees}) "
-            f"with {days_left} days left; usual spend by day {current_day} is ₹{usual_rupees}."
+        else:
+            base_text = (
+                f"{cat} is {spent_pct}% of budget (₹{spent_rupees} of ₹{limit_rupees}) "
+                f"with {days_left} days left; usual spend by day {current_day} is ₹{usual_rupees}."
+            )
+    else:
+        base_text = (
+            f"{cat} spend is ₹{spent_rupees} on day {current_day}; "
+            f"usual spend by this day is ₹{usual_rupees}."
         )
-    return (
-        f"{cat} spend is ₹{spent_rupees} on day {current_day}; "
-        f"usual spend by this day is ₹{usual_rupees}."
-    )
+
+    if components.get("damped_by_exception"):
+        reason = components.get("exception_reason", "contextual")
+        return f"{base_text} Damped by active {reason} exception."
+    return base_text

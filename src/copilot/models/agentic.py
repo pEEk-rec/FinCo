@@ -32,6 +32,16 @@ IntentType = Literal[
     "goal_check",
     "list_recurring",
     "alerts_overview",
+    "goal_progress",
+    "commitment_check",
+    "calendar_lookahead",
+    "bucket_status",
+    "investment_readiness",
+    "contribution_check",
+    "tradeoff_compare",
+    "affordability",
+    "trip_planning",
+    "memory_query",
     "unknown",
 ]
 
@@ -145,6 +155,11 @@ class Goal(AgenticModel):
     status: GoalStatus = "active"
     created_at: UtcTimestamp
     updated_at: UtcTimestamp
+    progress_source: Literal["manual", "bucket", "account"] = "manual"
+    linked_account_id: str | None = None
+    start_date: str | None = None
+    essential: bool | int = 0
+    notes: str | None = None
 
 
 # ---------------------------------------------------------------------------------------------
@@ -306,6 +321,13 @@ TimelineKind = Literal[
     "approval_pending",
     "refusal",
     "error",
+    "commitment",
+    "allocation",
+    "readiness",
+    "memory",
+    "skill_run",
+    "tradeoff",
+    "contribution_plan",
 ]
 
 

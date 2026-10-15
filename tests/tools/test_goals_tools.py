@@ -48,6 +48,8 @@ def test_ctx():
             "tools": {
                 "create_goal": {"agent": "needs_approval", "user": "allow"},
                 "update_goal": {"agent": "needs_approval", "user": "allow"},
+                "record_goal_contribution": {"agent": "needs_approval", "user": "allow"},
+                "get_goal_progress": {"decision": "allow"},
                 "list_goals": {"decision": "allow"},
                 "evaluate_goal_impact": {"decision": "allow"},
             },
@@ -279,3 +281,141 @@ def test_evaluate_goal_impact_through_executor(test_ctx):
     # After: surplus is ₹20,000 < ₹25,000 -> off_track, shortfall ₹5,000
     assert impact.goals_after[0].status == "off_track"
     assert impact.goals_after[0].shortfall_paise == 5_000_00
+
+
+def test_create_and_update_goal_with_phase3_fields(test_ctx):
+    """create_goal and update_goal accept Phase 3 extended fields."""
+    res = execute_tool(
+        test_ctx,
+        "create_goal",
+        {
+            "name": "House Downpayment",
+            "target_paise": 50_000_000,
+            "target_date": "2028-12-31",
+            "progress_source": "manual",
+            "essential": True,
+            "notes": "Emergency buffer protected",
+        },
+    )
+    assert res.ok
+    goal = res.data.goal
+    assert goal.name == "House Downpayment"
+    assert goal.deadline == "2028-12-31"
+    assert goal.progress_source == "manual"
+    assert goal.essential is True
+    assert goal.notes == "Emergency buffer protected"
+
+    # Update Phase 3 fields
+    upd_res = execute_tool(
+        test_ctx,
+        "update_goal",
+        {
+            "goal_id": goal.id,
+            "notes": "Updated note: target revised",
+            "essential": False,
+        },
+    )
+    assert upd_res.ok
+    upd_goal = upd_res.data.goal
+    assert upd_goal.notes == "Updated note: target revised"
+    assert upd_goal.essential is False
+
+
+def test_record_goal_contribution_and_governance(test_ctx):
+    """record_goal_contribution enforces governance, validates source, and updates balance."""
+    # Create manual goal
+    res = execute_tool(
+        test_ctx,
+        "create_goal",
+        {
+            "name": "Bike",
+            "target_paise": 100_000_00,
+            "current_paise": 20_000_00,
+            "progress_source": "manual",
+        },
+    )
+    goal_id = res.data.goal.id
+
+    # Agent cannot record contribution directly
+    agent_ctx = ExecutionContext(
+        conn=test_ctx.conn,
+        user_id="u1",
+        run_id="run_agent",
+        actor="agent",
+        policy=test_ctx.policy,
+        clock=DT0,
+    )
+    res_agent = execute_tool(
+        agent_ctx,
+        "record_goal_contribution",
+        {"goal_id": goal_id, "amount_paise": 10_000_00},
+    )
+    assert not res_agent.ok
+    assert res_agent.error.code == ErrorCode.APPROVAL_REQUIRED
+
+    # User can record contribution
+    res_user = execute_tool(
+        test_ctx,
+        "record_goal_contribution",
+        {"goal_id": goal_id, "amount_paise": 15_000_00, "occurred_on": "2026-10-15"},
+    )
+    assert res_user.ok
+    assert res_user.data.goal_progress.current_paise == 35_000_00  # 20,000 + 15,000
+
+    # User cannot contribute 0
+    res_zero = execute_tool(
+        test_ctx,
+        "record_goal_contribution",
+        {"goal_id": goal_id, "amount_paise": 0},
+    )
+    assert not res_zero.ok
+    assert res_zero.error.code == ErrorCode.INVALID_INPUT
+
+    # Bucket-sourced goal rejects manual contribution
+    res_bucket_goal = execute_tool(
+        test_ctx,
+        "create_goal",
+        {
+            "name": "Bucket Goal",
+            "target_paise": 50_000_00,
+            "progress_source": "bucket",
+        },
+    )
+    bg_id = res_bucket_goal.data.goal.id
+    res_reject = execute_tool(
+        test_ctx,
+        "record_goal_contribution",
+        {"goal_id": bg_id, "amount_paise": 5_000_00},
+    )
+    assert not res_reject.ok
+    assert res_reject.error.code == ErrorCode.INVALID_INPUT
+
+
+def test_get_goal_progress_tool(test_ctx):
+    """get_goal_progress returns full GoalProgress model with pace and projected completion."""
+    res = execute_tool(
+        test_ctx,
+        "create_goal",
+        {
+            "name": "Vacation",
+            "target_paise": 60_000_00,
+            "current_paise": 30_000_00,
+            "deadline": "2026-12-31",
+        },
+    )
+    goal_id = res.data.goal.id
+
+    res_prog = execute_tool(
+        test_ctx,
+        "get_goal_progress",
+        {"goal_id": goal_id, "today": "2026-10-15"},
+    )
+    assert res_prog.ok
+    prog = res_prog.data.progress
+    assert prog.goal_id == goal_id
+    assert prog.target_paise == 60_000_00
+    assert prog.current_paise == 30_000_00
+    assert prog.remaining_paise == 30_000_00
+    assert prog.percent_bp == 5000
+    assert prog.required_monthly_paise == 10_000_00  # 30,000 / 3 months = 10,000
+

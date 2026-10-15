@@ -1,0 +1,9 @@
+{
+  "name": "standard_6m_review",
+  "description": "Standard 6-month contribution plan and readiness review",
+  "inputs": {
+    "horizon_months": 6
+  },
+  "expected_status": "ok",
+  "expected_outputs_contain": ["assess_investment_readiness", "plan_contributions", "list_goals"]
+}

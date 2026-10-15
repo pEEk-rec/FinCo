@@ -345,8 +345,9 @@ def insert_goal(conn: sqlite3.Connection, goal: Goal) -> None:
         """
         INSERT INTO goals (
             id, user_id, name, kind, target_paise, current_paise,
-            deadline, priority, status, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            deadline, priority, status, created_at, updated_at,
+            progress_source, linked_account_id, start_date, essential, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             goal.id,
@@ -360,6 +361,11 @@ def insert_goal(conn: sqlite3.Connection, goal: Goal) -> None:
             goal.status,
             goal.created_at,
             goal.updated_at,
+            getattr(goal, "progress_source", "manual") or "manual",
+            getattr(goal, "linked_account_id", None),
+            getattr(goal, "start_date", None),
+            1 if getattr(goal, "essential", False) else 0,
+            getattr(goal, "notes", None),
         ),
     )
 
@@ -370,7 +376,12 @@ def get_goal(conn: sqlite3.Connection, user_id: str, goal_id: str) -> Goal | Non
         "SELECT * FROM goals WHERE id = ? AND user_id = ?",
         (goal_id, user_id),
     ).fetchone()
-    return Goal(**dict(row)) if row else None
+    if not row:
+        return None
+    d = dict(row)
+    if "essential" in d:
+        d["essential"] = bool(d["essential"])
+    return Goal(**d)
 
 
 def list_goals(
@@ -385,7 +396,14 @@ def list_goals(
         query += " AND status = ?"
         params.append(status)
     query += " ORDER BY priority ASC, created_at ASC"
-    return [Goal(**dict(row)) for row in conn.execute(query, params).fetchall()]
+    rows = conn.execute(query, params).fetchall()
+    goals = []
+    for row in rows:
+        d = dict(row)
+        if "essential" in d:
+            d["essential"] = bool(d["essential"])
+        goals.append(Goal(**d))
+    return goals
 
 
 def update_goal(
@@ -399,6 +417,11 @@ def update_goal(
     priority: int | None = None,
     status: str | None = None,
     updated_at: str | None = None,
+    progress_source: str | None = None,
+    linked_account_id: str | None = None,
+    start_date: str | None = None,
+    essential: bool | None = None,
+    notes: str | None = None,
 ) -> bool:
     """Update goal fields; returns True if a row was updated."""
     updates: list[str] = []
@@ -424,6 +447,21 @@ def update_goal(
     if updated_at is not None:
         updates.append("updated_at = ?")
         params.append(updated_at)
+    if progress_source is not None:
+        updates.append("progress_source = ?")
+        params.append(progress_source)
+    if linked_account_id is not None:
+        updates.append("linked_account_id = ?")
+        params.append(linked_account_id)
+    if start_date is not None:
+        updates.append("start_date = ?")
+        params.append(start_date)
+    if essential is not None:
+        updates.append("essential = ?")
+        params.append(1 if essential else 0)
+    if notes is not None:
+        updates.append("notes = ?")
+        params.append(notes)
 
     if not updates:
         return False

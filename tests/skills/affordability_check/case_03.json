@@ -1,0 +1,11 @@
+{
+  "name": "recurring_fee_commitment",
+  "description": "User checks recurring spend of 200000 paise per month for 3 months",
+  "inputs": {
+    "amount_paise": 200000,
+    "category_id": "c_education",
+    "recurring_months": 3
+  },
+  "expected_status": "ok",
+  "expected_outputs_contain": ["get_calendar", "run_whatif", "check_commitment_coverage", "evaluate_goal_impact"]
+}

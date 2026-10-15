@@ -1,0 +1,22 @@
+name: trip_planning
+version: 1
+description: Comprehensive trip planning - goal progress, bucket allocation, calendar buffer, and trade-offs.
+inputs:
+  target_amount_paise: required
+  target_date: required
+  category_id: optional
+preconditions:
+  - has_transactions
+steps:
+  - get_calendar:
+      horizon_days: 90
+  - plan_contributions:
+      horizon_months: 6
+  - compare_tradeoffs:
+      alternatives: []
+outputs:
+  - calendar_projection
+  - contribution_plan
+  - tradeoff_analysis
+narration_template: trip_planning_v1
+eval_cases: tests/skills/trip_planning/

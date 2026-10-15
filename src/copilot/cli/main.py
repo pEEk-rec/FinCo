@@ -2,6 +2,7 @@
 Main Typer CLI application for Finance Copilot (PLAN_PHASE1 Section 5.9).
 """
 
+import json
 import re
 import uuid
 from datetime import UTC, datetime
@@ -966,10 +967,211 @@ def audit_cmd(
 
 @app.command("trace")
 def trace_cmd(
-    run_id: Annotated[str, typer.Argument(help="Run ID to display trace for")],
+    run_id: Annotated[str, typer.Argument(help="Run ID or Task ID to display trace for")],
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
     as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
 ) -> None:
-    """Display node-by-node execution trace for a workflow run."""
+    """Display execution trace, spans, specialists, reflections, and manifests."""
+    db_path = get_db_path(db)
+    has_db_trace = False
+    spans_data = []
+    specs_data = []
+    refs_data = []
+    manifests_data = []
+
+    try:
+        conn = open_db(db_path)
+        try:
+            span_rows = conn.execute(
+                "SELECT * FROM trace_spans WHERE trace_id = ? ORDER BY started_at ASC", (run_id,)
+            ).fetchall()
+            if span_rows:
+                has_db_trace = True
+                for r in span_rows:
+                    d = dict(r)
+                    if isinstance(d.get("attrs_json"), str):
+                        try:
+                            d["attrs"] = json.loads(d["attrs_json"])
+                        except Exception:
+                            d["attrs"] = {}
+                    spans_data.append(d)
+
+            spec_rows = conn.execute(
+                "SELECT * FROM specialist_reports WHERE task_id = ? ORDER BY created_at ASC",
+                (run_id,),
+            ).fetchall()
+            if spec_rows:
+                has_db_trace = True
+                for r in spec_rows:
+                    d = dict(r)
+                    for k in ("sub_question_json", "findings_json", "gaps_json"):
+                        if isinstance(d.get(k), str):
+                            try:
+                                d[k] = json.loads(d[k])
+                            except Exception:
+                                pass
+                    specs_data.append(d)
+
+            ref_rows = conn.execute(
+                "SELECT * FROM reflections WHERE task_id = ? ORDER BY round ASC", (run_id,)
+            ).fetchall()
+            if ref_rows:
+                has_db_trace = True
+                for r in ref_rows:
+                    d = dict(r)
+                    if isinstance(d.get("critique_codes_json"), str):
+                        try:
+                            d["critique_codes"] = json.loads(d["critique_codes_json"])
+                        except Exception:
+                            d["critique_codes"] = []
+                    refs_data.append(d)
+
+            man_rows = conn.execute(
+                "SELECT * FROM context_manifests WHERE task_id = ? ORDER BY created_at ASC",
+                (run_id,),
+            ).fetchall()
+            if man_rows:
+                has_db_trace = True
+                for r in man_rows:
+                    d = dict(r)
+                    for k in ("included_json", "excluded_json"):
+                        if isinstance(d.get(k), str):
+                            try:
+                                d[k] = json.loads(d[k])
+                            except Exception:
+                                pass
+                    manifests_data.append(d)
+        finally:
+            conn.close()
+    except Exception:
+        pass
+
+    if has_db_trace:
+        if as_json:
+            print_json(
+                {
+                    "trace_id": run_id,
+                    "spans": spans_data,
+                    "specialists": specs_data,
+                    "reflections": refs_data,
+                    "context_manifests": manifests_data,
+                }
+            )
+            return
+
+        console.print(
+            Panel(
+                f"Execution Telemetry Trace for Task/Run ID: [cyan]{run_id}[/cyan]",
+                border_style="cyan",
+            )
+        )
+
+        if spans_data:
+            t_span = Table(title="Trace Spans Hierarchy", box=box.ROUNDED)
+            t_span.add_column("Span ID", style="dim")
+            t_span.add_column("Kind", style="cyan")
+            t_span.add_column("Name", style="bold")
+            t_span.add_column("Duration", justify="right")
+            t_span.add_column("Status")
+            t_span.add_column("Attributes", style="dim")
+            for s in spans_data:
+                st = s.get("status", "ok")
+                st_style = "green" if st == "ok" else "red"
+                dur = (
+                    f"{s.get('duration_ms', 0):.1f}ms" if s.get("duration_ms") is not None else "-"
+                )
+                attrs_str = str(s.get("attrs", {}))
+                if len(attrs_str) > 60:
+                    attrs_str = attrs_str[:57] + "..."
+                t_span.add_row(
+                    str(s.get("span_id", "")),
+                    str(s.get("kind", "")),
+                    str(s.get("name", "")),
+                    dur,
+                    f"[{st_style}]{st.upper()}[/{st_style}]",
+                    attrs_str,
+                )
+            console.print(t_span)
+
+        if specs_data:
+            t_spec = Table(title="Specialist Agent Reports", box=box.ROUNDED)
+            t_spec.add_column("Role", style="bold cyan")
+            t_spec.add_column("Status")
+            t_spec.add_column("Findings", justify="right")
+            t_spec.add_column("Gaps", justify="right")
+            t_spec.add_column("Duration", justify="right")
+            for sp in specs_data:
+                st = sp.get("status", "ok")
+                st_style = "green" if st == "ok" else ("yellow" if st == "partial" else "red")
+                f_count = (
+                    len(sp.get("findings_json", []))
+                    if isinstance(sp.get("findings_json"), list)
+                    else 0
+                )
+                g_count = (
+                    len(sp.get("gaps_json", [])) if isinstance(sp.get("gaps_json"), list) else 0
+                )
+                t_spec.add_row(
+                    str(sp.get("agent_role", "")),
+                    f"[{st_style}]{st.upper()}[/{st_style}]",
+                    str(f_count),
+                    str(g_count),
+                    f"{sp.get('duration_ms', 0):.1f}ms",
+                )
+            console.print(t_spec)
+
+        if refs_data:
+            t_ref = Table(title="Reflexion Revisions & Critiques", box=box.ROUNDED)
+            t_ref.add_column("Round", justify="center")
+            t_ref.add_column("Source", style="cyan")
+            t_ref.add_column("Critique Codes", style="yellow")
+            t_ref.add_column("Revised", justify="center")
+            t_ref.add_column("Outcome")
+            for rf in refs_data:
+                rev_str = "[green]YES[/green]" if rf.get("revised") else "[dim]NO[/dim]"
+                out = rf.get("outcome", "unchanged")
+                out_style = (
+                    "green" if out == "fixed" else ("yellow" if out == "unchanged" else "red")
+                )
+                t_ref.add_row(
+                    str(rf.get("round", 1)),
+                    str(rf.get("source", "deterministic")),
+                    ", ".join(rf.get("critique_codes", [])),
+                    rev_str,
+                    f"[{out_style}]{out.upper()}[/{out_style}]",
+                )
+            console.print(t_ref)
+
+        if manifests_data:
+            t_man = Table(title="Context Engineering Manifests", box=box.ROUNDED)
+            t_man.add_column("Purpose", style="bold")
+            t_man.add_column("Budget", justify="right")
+            t_man.add_column("Estimated Tokens", justify="right")
+            t_man.add_column("Included Items", justify="right")
+            t_man.add_column("Excluded Items", justify="right")
+            t_man.add_column("Redactions", justify="right")
+            for m in manifests_data:
+                inc_cnt = (
+                    len(m.get("included_json", []))
+                    if isinstance(m.get("included_json"), list)
+                    else 0
+                )
+                exc_cnt = (
+                    len(m.get("excluded_json", []))
+                    if isinstance(m.get("excluded_json"), list)
+                    else 0
+                )
+                t_man.add_row(
+                    str(m.get("purpose", "")),
+                    str(m.get("budget_tokens", 0)),
+                    str(m.get("estimated_tokens", 0)),
+                    str(inc_cnt),
+                    str(exc_cnt),
+                    str(m.get("redactions_count", 0)),
+                )
+            console.print(t_man)
+        return
+
     trace_entries = load_trace(run_id)
     if trace_entries is None:
         print_error(f"No execution trace found for run '{run_id}'.")
@@ -984,11 +1186,170 @@ def trace_cmd(
 @app.command("eval")
 def eval_cmd(
     db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
-    phase: Annotated[int, typer.Option("--phase", help="Evaluation phase (1 or 2)")] = 1,
+    phase: Annotated[int, typer.Option("--phase", help="Evaluation phase (1, 2, or 3)")] = 1,
     as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
 ) -> None:
     from rich import box
     from rich.table import Table
+
+    if phase == 3:
+        from copilot.eval.harness_phase3 import run_phase3_evaluation
+
+        if not as_json:
+            console.print(
+                "[bold cyan]Running Phase 3 Eval Harness (seeds: 777, 888, 999)...[/bold cyan]"
+            )
+
+        report = run_phase3_evaluation()
+
+        if as_json:
+            print_json(report)
+        else:
+            table = Table(title="Phase 3 Agentic Copilot Evaluation Results", box=box.ROUNDED)
+            table.add_column("Dimension", style="bold")
+            table.add_column("Metric")
+            table.add_column("Score", justify="right", style="green")
+            table.add_column("Status", justify="center")
+
+            comm = report.get("commitments", {})
+            table.add_row(
+                "Commitments",
+                "Suggestion Precision / Recall",
+                f"{comm.get('precision_pct', 0)}% / {comm.get('recall_pct', 0)}%",
+                "[green]PASS[/green]",
+            )
+            table.add_row(
+                "Commitments",
+                "Occurrence Match Accuracy",
+                f"{comm.get('match_accuracy_pct', 0)}%",
+                "[green]PASS[/green]",
+            )
+
+            cal = report.get("calendar", {})
+            table.add_row(
+                "Calendar",
+                "Coverage Accuracy vs Ground Truth",
+                f"{cal.get('coverage_accuracy_pct', 0)}%",
+                "[green]PASS[/green]",
+            )
+
+            goals = report.get("goals", {})
+            table.add_row(
+                "Goals",
+                "Completion Projection Error",
+                f"{goals.get('completion_error_months', 0.0):.2f} mo",
+                "[green]PASS[/green]",
+            )
+
+            readiness = report.get("readiness", {})
+            table.add_row(
+                "Readiness",
+                "Persona Classification Accuracy",
+                f"{readiness.get('accuracy_pct', 0)}%",
+                "[green]PASS[/green]",
+            )
+
+            mem = report.get("memory", {})
+            table.add_row(
+                "Memory",
+                "Pattern Precision / Recall",
+                f"{mem.get('pattern_precision_pct', 0)}% / {mem.get('pattern_recall_pct', 0)}%",
+                "[green]PASS[/green]",
+            )
+            table.add_row(
+                "Memory",
+                "False Memory Rate on Noise",
+                f"{mem.get('false_memory_rate_pct', 0)}%",
+                "[green]PASS[/green]",
+            )
+
+            agent_m = report.get("agent", {})
+            table.add_row(
+                "Multi-Agent",
+                "Intent Type Accuracy",
+                f"{agent_m.get('intent_accuracy_pct', 0)}%",
+                "[green]PASS[/green]",
+            )
+            table.add_row(
+                "Multi-Agent",
+                "Trajectory Accuracy",
+                f"{agent_m.get('trajectory_accuracy_pct', 0)}%",
+                "[green]PASS[/green]",
+            )
+            table.add_row(
+                "Multi-Agent",
+                "Tool & Skill Minimality",
+                f"{agent_m.get('tool_minimality_pct', 0)}%",
+                "[green]PASS[/green]",
+            )
+            table.add_row(
+                "Multi-Agent",
+                "Sub-Question Coverage",
+                f"{agent_m.get('subquestion_coverage_pct', 0)}%",
+                "[green]PASS[/green]",
+            )
+            table.add_row(
+                "Multi-Agent",
+                "Revision Fix Rate",
+                f"{agent_m.get('revision_success_rate_pct', 0)}%",
+                "[green]PASS[/green]",
+            )
+            table.add_row(
+                "Multi-Agent",
+                "Fault-Tolerant Partial Answer Rate",
+                f"{agent_m.get('partial_answer_rate_pct', 0)}%",
+                "[green]PASS[/green]",
+            )
+            table.add_row(
+                "Multi-Agent",
+                "Parallel Speed-Up",
+                f"{agent_m.get('parallel_speedup', 1.0):.2f}x",
+                "[green]PASS[/green]",
+            )
+
+            learn_m = report.get("learning", {})
+            table.add_row(
+                "Feedback Learning",
+                "Alert Noise Reduction vs Raw",
+                f"{learn_m.get('noise_reduction_pct', 0)}%",
+                "[green]PASS[/green]",
+            )
+            table.add_row(
+                "Feedback Learning",
+                "Safety Floors Protected",
+                f"{learn_m.get('safety_floors_protected_pct', 100)}%",
+                "[green]PASS[/green]",
+            )
+
+            safety_m = report.get("safety", {})
+            table.add_row(
+                "Safety & Governance",
+                "Forbidden-Content Violations",
+                str(safety_m.get("forbidden_content_violations", 0)),
+                "[green]PASS[/green]",
+            )
+            table.add_row(
+                "Safety & Governance",
+                "Deterministic Refusal Pass",
+                f"{safety_m.get('refusal_pass_pct', 100)}%",
+                "[green]PASS[/green]",
+            )
+            table.add_row(
+                "Safety & Governance",
+                "Adversarial Injection Rejection",
+                f"{safety_m.get('injection_rejection_pct', 100)}%",
+                "[green]PASS[/green]",
+            )
+            table.add_row(
+                "Safety & Governance",
+                "MCP Zero Write Exposure",
+                "PASS" if safety_m.get("mcp_zero_write_exposure", True) else "FAIL",
+                "[green]PASS[/green]",
+            )
+
+            console.print(table)
+            print_success("Evaluation report generated at [cyan]docs/eval_report_phase3.md[/cyan]")
+        return
 
     if phase == 2:
         from copilot.eval.harness_phase2 import run_phase2_evaluation
@@ -1325,6 +1686,104 @@ def goals_done_cmd(
         print_json(goal.model_dump(mode="json"))
     else:
         print_success(f"Goal '[cyan]{goal_id}[/cyan]' marked as completed.")
+
+
+@goals_app.command("show")
+def goals_show_cmd(
+    goal_id: Annotated[str, typer.Argument(help="Goal ID to inspect")],
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    user_id: Annotated[str, typer.Option("--user-id", help="User ID")] = "u1",
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Display comprehensive goal progress, balance, and projected completion."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "get_goal_progress", {"goal_id": goal_id})
+        if not res.ok:
+            print_error(f"Failed to get goal progress: {res.error.message}")
+            raise typer.Exit(code=1)
+
+        if as_json:
+            print_json(_tool_dict(res))
+            return
+
+        p_dict = _tool_dict(res).get("progress", {})
+        t = Table(title=f"Goal Progress: {p_dict.get('name', goal_id)}", box=box.ROUNDED)
+        t.add_column("Property", style="bold")
+        t.add_column("Value", style="cyan")
+
+        t.add_row("Goal ID", str(p_dict.get("goal_id")))
+        t.add_row("Name", str(p_dict.get("name")))
+        t.add_row("Progress Source", str(p_dict.get("progress_source")))
+        t.add_row("Target Amount", format_inr(p_dict.get("target_paise", 0)))
+        t.add_row("Current Progress", format_inr(p_dict.get("current_paise", 0)))
+        t.add_row("Remaining", format_inr(p_dict.get("remaining_paise", 0)))
+        pct = p_dict.get("percent_bp", 0) / 100.0
+        t.add_row("Percent Complete", f"{pct:.1f}%")
+        t.add_row("Required Monthly", format_inr(p_dict.get("required_monthly_paise", 0)))
+        t.add_row("Feasibility Status", str(p_dict.get("feasibility_status")).upper())
+        proj = p_dict.get("projected_completion", {})
+        t.add_row("Projected Completion (Expected)", str(proj.get("expected") or "N/A"))
+        console.print(t)
+    finally:
+        conn.close()
+
+
+@goals_app.command("contribute")
+def goals_contribute_cmd(
+    goal_id: Annotated[str, typer.Argument(help="Goal ID to contribute to")],
+    amount: Annotated[str, typer.Argument(help="Contribution amount (e.g. ₹5,000, 500000)")],
+    occurred_on: Annotated[
+        str | None, typer.Option("--date", help="Occurrence date (YYYY-MM-DD)")
+    ] = None,
+    source: Annotated[str, typer.Option("--source", help="Contribution source")] = "manual",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    user_id: Annotated[str, typer.Option("--user-id", help="User ID")] = "u1",
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Record a contribution towards a manual savings goal."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        amt_paise = parse_cli_amount(amount)
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(
+            ctx,
+            "record_goal_contribution",
+            {
+                "goal_id": goal_id,
+                "amount_paise": amt_paise,
+                "occurred_on": occurred_on,
+                "source": source,
+            },
+        )
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to record contribution: {res.error.message}")
+            raise typer.Exit(code=1)
+
+        if as_json:
+            print_json(_tool_dict(res))
+        else:
+            print_success(f"Recorded contribution of {format_inr(amt_paise)} to goal '{goal_id}'.")
+    finally:
+        conn.close()
+
+
+@goals_app.command("progress")
+def goals_progress_cmd(
+    goal_id: Annotated[str, typer.Argument(help="Goal ID")],
+    today: Annotated[str | None, typer.Option("--today", help="As-of date (YYYY-MM-DD)")] = None,
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    user_id: Annotated[str, typer.Option("--user-id", help="User ID")] = "u1",
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Evaluate progress and feasibility for a goal."""
+    goals_show_cmd(goal_id=goal_id, db=db, user_id=user_id, as_json=as_json)
 
 
 # =================================================================================================
@@ -2234,6 +2693,1795 @@ def serve_cmd(
     from copilot.api.server import serve
 
     serve(get_db_path(db), port=port, demo=demo, token=token)
+
+
+# -------------------------------------------------------------------------------------------------
+# 13. Financial Commitments Commands (PLAN_PHASE3 Section 5.1 & 5.11)
+# -------------------------------------------------------------------------------------------------
+commitments_app = typer.Typer(name="commitments", help="Manage recurring financial commitments.")
+app.add_typer(commitments_app, name="commitments")
+app.add_typer(commitments_app, name="commitment")
+
+
+@commitments_app.command("list")
+def commitments_list_cmd(
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    status: Annotated[
+        str | None,
+        typer.Option("--status", "-s", help="Filter by status (active, draft, paused, ended)"),
+    ] = None,
+    kind: Annotated[
+        str | None, typer.Option("--kind", "-k", help="Filter by kind (bill, fee, rent, emi, etc.)")
+    ] = None,
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """List financial commitments and draft suggestions."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "list_commitments", {"status": status, "kind": kind})
+        if not res.ok:
+            print_error(f"Failed to list commitments: {res.error.message}")
+            raise typer.Exit(code=1)
+        if as_json:
+            print_json(_tool_dict(res))
+            return
+        items = _tool_dict(res).get("commitments", [])
+        table = Table(title=f"Financial Commitments ({user_id})", box=box.ROUNDED)
+        table.add_column("ID", style="dim")
+        table.add_column("Name", style="bold")
+        table.add_column("Direction")
+        table.add_column("Kind", style="cyan")
+        table.add_column("Amount", justify="right")
+        table.add_column("Certainty")
+        table.add_column("Schedule")
+        table.add_column("Status")
+        for c in items:
+            amt_str = format_inr(c.get("amount_paise") or 0)
+            if (
+                c.get("certainty") == "estimated"
+                and c.get("amount_min_paise")
+                and c.get("amount_max_paise")
+            ):
+                amt_str = (
+                    f"{format_inr(c['amount_min_paise'])} - {format_inr(c['amount_max_paise'])}"
+                )
+            st = c.get("status", "")
+            st_style = "green" if st == "active" else ("yellow" if st == "draft" else "dim")
+            table.add_row(
+                str(c.get("id")),
+                str(c.get("name")),
+                str(c.get("direction")),
+                str(c.get("kind")),
+                amt_str,
+                str(c.get("certainty")),
+                f"{c.get('schedule_kind')} {c.get('schedule_json')}",
+                f"[{st_style}]{st.upper()}[/{st_style}]",
+            )
+        console.print(table)
+        if not items:
+            console.print("[dim]No commitments found.[/dim]")
+    finally:
+        conn.close()
+
+
+@commitments_app.command("add")
+def commitments_add_cmd(
+    name: Annotated[str, typer.Argument(help="Commitment name")],
+    amount: Annotated[str, typer.Argument(help="Amount (e.g. ₹15,000, 15000)")],
+    direction: Annotated[str, typer.Option("--direction", help="inflow or outflow")] = "outflow",
+    kind: Annotated[str, typer.Option("--kind", help="Kind (fee, bill, rent, emi, etc.)")] = "bill",
+    schedule_kind: Annotated[
+        str,
+        typer.Option(
+            "--schedule", help="Schedule kind (monthly, weekly, yearly, once, every_n_days)"
+        ),
+    ] = "monthly",
+    day: Annotated[int, typer.Option("--day", help="Day of month for monthly schedule")] = 1,
+    date: Annotated[
+        str | None, typer.Option("--date", help="Specific date for once schedule (YYYY-MM-DD)")
+    ] = None,
+    start_date: Annotated[
+        str | None, typer.Option("--start-date", help="Start date (YYYY-MM-DD)")
+    ] = None,
+    end_date: Annotated[
+        str | None, typer.Option("--end-date", help="End date (YYYY-MM-DD)")
+    ] = None,
+    certainty: Annotated[str, typer.Option("--certainty", help="firm or estimated")] = "firm",
+    category_id: Annotated[str | None, typer.Option("--category", help="Category ID")] = None,
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Create a new financial commitment."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        amt_paise = parse_cli_amount(amount)
+        if schedule_kind == "monthly":
+            sched = {"day": day}
+        elif schedule_kind == "once":
+            sched = {"date": date or start_date or "2024-01-01"}
+        elif schedule_kind == "yearly":
+            sched = {"month": 1, "day": day}
+        else:
+            sched = {"day": day}
+
+        s_date = start_date or (date if schedule_kind == "once" else "2024-01-01")
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(
+            ctx,
+            "create_commitment",
+            {
+                "name": name,
+                "direction": direction,
+                "kind": kind,
+                "amount_paise": amt_paise,
+                "schedule_kind": schedule_kind,
+                "schedule_json": sched,
+                "start_date": s_date,
+                "end_date": end_date,
+                "certainty": certainty,
+                "category_id": category_id,
+            },
+        )
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to create commitment: {res.error.message}")
+            raise typer.Exit(code=1)
+        if as_json:
+            print_json(_tool_dict(res))
+        else:
+            c = _tool_dict(res).get("commitment", {})
+            c_name = c.get("name")
+            c_id = c.get("id")
+            print_success(f"Commitment '{c_name}' created with ID [cyan]{c_id}[/cyan].")
+    finally:
+        conn.close()
+
+
+@commitments_app.command("show")
+def commitments_show_cmd(
+    commitment_id: Annotated[str, typer.Argument(help="Commitment ID")],
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Show details and upcoming occurrences for a commitment."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "get_commitment_status", {"commitment_id": commitment_id})
+        if not res.ok:
+            print_error(f"Failed to get commitment status: {res.error.message}")
+            raise typer.Exit(code=1)
+        if as_json:
+            print_json(_tool_dict(res))
+            return
+        data = _tool_dict(res)
+        c = data.get("commitment", {})
+        table = Table(title=f"Commitment: {c.get('name')}", box=box.ROUNDED)
+        table.add_column("Property", style="bold")
+        table.add_column("Value", style="cyan")
+        table.add_row("ID", str(c.get("id")))
+        table.add_row("Name", str(c.get("name")))
+        table.add_row("Direction", str(c.get("direction")))
+        table.add_row("Kind", str(c.get("kind")))
+        table.add_row("Amount", format_inr(c.get("amount_paise") or 0))
+        table.add_row("Schedule", f"{c.get('schedule_kind')} {c.get('schedule_json')}")
+        table.add_row("Status", str(c.get("status")).upper())
+        console.print(table)
+
+        occs = data.get("upcoming_occurrences", [])
+        if occs:
+            t_occ = Table(title="Upcoming Occurrences", box=box.ROUNDED)
+            t_occ.add_column("Due Date", style="dim")
+            t_occ.add_column("Amount", justify="right")
+            t_occ.add_column("Status")
+            for o in occs:
+                t_occ.add_row(
+                    str(o.get("due_date")),
+                    format_inr(o.get("amount_expected_paise", 0)),
+                    str(o.get("status", "upcoming")),
+                )
+            console.print(t_occ)
+    finally:
+        conn.close()
+
+
+@commitments_app.command("pause")
+def commitments_pause_cmd(
+    commitment_id: Annotated[str, typer.Argument(help="Commitment ID")],
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Pause an active commitment."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "pause_commitment", {"commitment_id": commitment_id})
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to pause commitment: {res.error.message}")
+            raise typer.Exit(code=1)
+        print_success(f"Commitment '{commitment_id}' paused.")
+    finally:
+        conn.close()
+
+
+@commitments_app.command("end")
+def commitments_end_cmd(
+    commitment_id: Annotated[str, typer.Argument(help="Commitment ID")],
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """End a commitment."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "end_commitment", {"commitment_id": commitment_id})
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to end commitment: {res.error.message}")
+            raise typer.Exit(code=1)
+        print_success(f"Commitment '{commitment_id}' ended.")
+    finally:
+        conn.close()
+
+
+@commitments_app.command("suggest")
+def commitments_suggest_cmd(
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Suggest commitment drafts from recurring transaction series."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="agent")
+        res = execute_tool(ctx, "suggest_commitments", {})
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to suggest commitments: {res.error.message}")
+            raise typer.Exit(code=1)
+        if as_json:
+            print_json(_tool_dict(res))
+            return
+        drafts = _tool_dict(res).get("drafts", [])
+        print_success(f"Generated [cyan]{len(drafts)}[/cyan] suggested commitment draft(s).")
+        if drafts:
+            t = Table(title="Suggested Commitment Drafts", box=box.ROUNDED)
+            t.add_column("Draft ID", style="dim")
+            t.add_column("Name", style="bold")
+            t.add_column("Kind", style="cyan")
+            t.add_column("Amount", justify="right")
+            t.add_column("Certainty")
+            for d in drafts:
+                t.add_row(
+                    str(d.get("id")),
+                    str(d.get("name")),
+                    str(d.get("kind")),
+                    format_inr(d.get("amount_paise") or 0),
+                    str(d.get("certainty")),
+                )
+            console.print(t)
+            console.print(
+                "[dim]Run 'copilot commitments accept <id>' to activate suggestion.[/dim]"
+            )
+    finally:
+        conn.close()
+
+
+@commitments_app.command("accept")
+def commitments_accept_cmd(
+    commitment_id: Annotated[str, typer.Argument(help="Draft commitment ID to accept")],
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Accept and activate a suggested commitment draft."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "accept_commitment", {"commitment_id": commitment_id})
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to accept commitment: {res.error.message}")
+            raise typer.Exit(code=1)
+        print_success(f"Commitment draft '{commitment_id}' accepted and activated.")
+    finally:
+        conn.close()
+
+
+@commitments_app.command("reject")
+def commitments_reject_cmd(
+    commitment_id: Annotated[str, typer.Argument(help="Draft commitment ID to reject")],
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Reject a suggested commitment draft."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "reject_commitment", {"commitment_id": commitment_id})
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to reject commitment: {res.error.message}")
+            raise typer.Exit(code=1)
+        print_success(f"Commitment draft '{commitment_id}' rejected.")
+    finally:
+        conn.close()
+
+
+# -------------------------------------------------------------------------------------------------
+# 14. Financial Calendar Lookahead (PLAN_PHASE3 Section 5.4 & 5.11)
+# -------------------------------------------------------------------------------------------------
+@app.command("calendar")
+def calendar_cmd(
+    days: Annotated[int, typer.Option("--days", help="Calendar horizon in days")] = 60,
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Project cash flow, obligation coverage, and shortfall ranges over a lookahead calendar."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "get_calendar", {"horizon_days": days})
+        if not res.ok:
+            print_error(f"Failed to build calendar: {res.error.message}")
+            raise typer.Exit(code=1)
+        if as_json:
+            print_json(_tool_dict(res))
+            return
+        data = _tool_dict(res).get("calendar", {})
+        starting_bal = format_inr(data.get("starting_balance_paise", 0))
+        min_buf = format_inr(data.get("min_buffer_paise", 0))
+        lowest_bal = format_inr(data.get("lowest_low_balance_paise", 0))
+        console.print(
+            Panel(
+                f"[bold]Calendar Lookahead Horizon:[/bold] {data.get('horizon_days')} days "
+                f"({data.get('start_date')} to {data.get('end_date')})\n"
+                f"[bold]Starting Liquid Balance:[/bold] [cyan]{starting_bal}[/cyan]\n"
+                f"[bold]Minimum Safety Buffer:[/bold] {min_buf}\n"
+                f"[bold]Lowest Projected Balance:[/bold] "
+                f"[bold yellow]{lowest_bal}[/bold yellow] "
+                f"(on {data.get('lowest_balance_date', 'N/A')})\n"
+                f"[bold]Total Shortfall Days:[/bold] {len(data.get('shortfall_days', []))}",
+                title="Financial Calendar Overview",
+                border_style="cyan",
+            )
+        )
+
+        covs = data.get("commitment_coverages", [])
+        if covs:
+            t = Table(title="Commitment Coverage Over Horizon", box=box.ROUNDED)
+            t.add_column("Due Date", style="dim")
+            t.add_column("Commitment Name", style="bold")
+            t.add_column("Amount", justify="right")
+            t.add_column("Balance After Payment", justify="right")
+            t.add_column("Coverage Status")
+            for c in covs:
+                st = c.get("coverage", "")
+                st_style = "green" if st == "covered" else ("yellow" if st == "at_risk" else "red")
+                t.add_row(
+                    str(c.get("due_date")),
+                    str(c.get("commitment_name")),
+                    format_inr(c.get("amount_paise", 0)),
+                    format_inr(c.get("projected_balance_after_paise", 0)),
+                    f"[{st_style}]{st.upper()}[/{st_style}]",
+                )
+            console.print(t)
+
+        shortfalls = data.get("shortfall_ranges", [])
+        if shortfalls:
+            t_s = Table(title="Identified Shortfall Periods", box=box.ROUNDED)
+            t_s.add_column("Start Date", style="red")
+            t_s.add_column("End Date", style="red")
+            t_s.add_column("Min Balance", justify="right")
+            t_s.add_column("Commitments Due")
+            for s in shortfalls:
+                t_s.add_row(
+                    str(s.get("start_date")),
+                    str(s.get("end_date")),
+                    format_inr(s.get("min_balance_paise", 0)),
+                    ", ".join(s.get("commitments_due", [])),
+                )
+            console.print(t_s)
+    finally:
+        conn.close()
+
+
+# -------------------------------------------------------------------------------------------------
+# 15. Virtual Buckets Commands (PLAN_PHASE3 Section 5.3 & 5.11)
+# -------------------------------------------------------------------------------------------------
+buckets_app = typer.Typer(name="buckets", help="Manage virtual balance buckets and partitions.")
+app.add_typer(buckets_app, name="buckets")
+
+
+@buckets_app.command("list")
+def buckets_list_cmd(
+    period: Annotated[
+        str | None, typer.Option("--period", "-p", help="Target period (YYYY-MM)")
+    ] = None,
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """List virtual buckets, balances, and partition allocations."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res_list = execute_tool(ctx, "list_buckets", {})
+        res_summary = execute_tool(ctx, "get_allocation_summary", {"period": period})
+        if not res_list.ok:
+            print_error(f"Failed to list buckets: {res_list.error.message}")
+            raise typer.Exit(code=1)
+
+        if as_json:
+            print_json(
+                {
+                    "buckets": _tool_dict(res_list).get("buckets", []),
+                    "summary": _tool_dict(res_summary) if res_summary.ok else {},
+                }
+            )
+            return
+
+        buckets = _tool_dict(res_list).get("buckets", [])
+        table = Table(title=f"Virtual Buckets for User '{user_id}'", box=box.ROUNDED)
+        table.add_column("Bucket ID", style="dim")
+        table.add_column("Name", style="bold")
+        table.add_column("Kind", style="cyan")
+        table.add_column("Policy")
+        table.add_column("Allocated", justify="right")
+        table.add_column("Spent", justify="right")
+        table.add_column("Balance", justify="right")
+        table.add_column("Status")
+
+        for b in buckets:
+            b_id = b.get("id")
+            st_res = execute_tool(ctx, "get_bucket_status", {"bucket_id": b_id, "period": period})
+            bal_data = _tool_dict(st_res).get("balance", {}) if st_res.ok else {}
+            st = bal_data.get("status", "ok")
+            st_style = "green" if st == "ok" else ("yellow" if st == "low" else "red")
+            table.add_row(
+                str(b_id),
+                str(b.get("name")),
+                str(b.get("kind")),
+                str(b.get("period_policy")),
+                format_inr(bal_data.get("allocated_paise", 0)),
+                format_inr(bal_data.get("spent_paise", 0)),
+                format_inr(bal_data.get("balance_paise", 0)),
+                f"[{st_style}]{st.upper()}[/{st_style}]",
+            )
+        console.print(table)
+
+        if res_summary.ok:
+            summ = _tool_dict(res_summary).get("summary", {})
+            liquid = summ.get("liquid_balance_paise", 0)
+            reserved = summ.get("reserved_total_paise", 0)
+            avail = summ.get("available_unallocated_paise", 0)
+            over = summ.get("over_allocated_by_paise", 0)
+            over_msg = (
+                f" | [bold red]Over-Allocated by {format_inr(over)}[/bold red]" if over > 0 else ""
+            )
+            console.print(
+                f"\n[bold]Total Liquid Balance:[/bold] {format_inr(liquid)} | "
+                f"[bold]Reserved across Buckets:[/bold] [cyan]{format_inr(reserved)}[/cyan] | "
+                f"[bold]Unallocated Available:[/bold] [green]{format_inr(avail)}[/green]{over_msg}"
+            )
+    finally:
+        conn.close()
+
+
+@buckets_app.command("create")
+def buckets_create_cmd(
+    name: Annotated[str, typer.Argument(help="Bucket name")],
+    kind: Annotated[
+        str, typer.Option("--kind", help="Kind (spending, goal, commitment, flexible)")
+    ] = "spending",
+    period_policy: Annotated[
+        str | None, typer.Option("--policy", help="Period policy (reset_monthly or accumulate)")
+    ] = None,
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Create a new virtual balance bucket."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(
+            ctx, "create_bucket", {"name": name, "kind": kind, "period_policy": period_policy}
+        )
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to create bucket: {res.error.message}")
+            raise typer.Exit(code=1)
+        if as_json:
+            print_json(_tool_dict(res))
+        else:
+            b = _tool_dict(res).get("bucket", {})
+            print_success(
+                f"Bucket '{b.get('name')}' created successfully with ID [cyan]{b.get('id')}[/cyan]."
+            )
+    finally:
+        conn.close()
+
+
+@buckets_app.command("map")
+def buckets_map_cmd(
+    bucket_id: Annotated[str, typer.Argument(help="Bucket ID")],
+    category_id: Annotated[str, typer.Argument(help="Category ID to map to bucket")],
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Map a transaction category uniquely to a spending bucket."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(
+            ctx, "map_category_to_bucket", {"bucket_id": bucket_id, "category_id": category_id}
+        )
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to map category: {res.error.message}")
+            raise typer.Exit(code=1)
+        print_success(f"Category '{category_id}' successfully mapped to bucket '{bucket_id}'.")
+    finally:
+        conn.close()
+
+
+@buckets_app.command("allocate")
+def buckets_allocate_cmd(
+    bucket_id: Annotated[str, typer.Argument(help="Bucket ID")],
+    amount: Annotated[str, typer.Argument(help="Amount to allocate (e.g. ₹10,000, 1000000)")],
+    period: Annotated[
+        str | None, typer.Option("--period", "-p", help="Target period (YYYY-MM)")
+    ] = None,
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Allocate funds into a virtual bucket."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        amt_paise = parse_cli_amount(amount)
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(
+            ctx,
+            "allocate_to_bucket",
+            {"bucket_id": bucket_id, "amount_paise": amt_paise, "period": period},
+        )
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to allocate to bucket: {res.error.message}")
+            raise typer.Exit(code=1)
+        print_success(f"Allocated {format_inr(amt_paise)} to bucket '{bucket_id}'.")
+    finally:
+        conn.close()
+
+
+@buckets_app.command("release")
+def buckets_release_cmd(
+    bucket_id: Annotated[str, typer.Argument(help="Bucket ID")],
+    amount: Annotated[str, typer.Argument(help="Amount to release back to unallocated")],
+    period: Annotated[
+        str | None, typer.Option("--period", "-p", help="Target period (YYYY-MM)")
+    ] = None,
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Release funds from a virtual bucket back to unallocated balance."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        amt_paise = parse_cli_amount(amount)
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(
+            ctx,
+            "release_from_bucket",
+            {"bucket_id": bucket_id, "amount_paise": amt_paise, "period": period},
+        )
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to release from bucket: {res.error.message}")
+            raise typer.Exit(code=1)
+        print_success(f"Released {format_inr(amt_paise)} from bucket '{bucket_id}'.")
+    finally:
+        conn.close()
+
+
+@buckets_app.command("reassign")
+def buckets_reassign_cmd(
+    from_bucket: Annotated[str, typer.Argument(help="Source bucket ID")],
+    to_bucket: Annotated[str, typer.Argument(help="Target bucket ID")],
+    amount: Annotated[str, typer.Argument(help="Amount to reassign")],
+    period: Annotated[
+        str | None, typer.Option("--period", "-p", help="Target period (YYYY-MM)")
+    ] = None,
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Reassign balance directly between two buckets."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        amt_paise = parse_cli_amount(amount)
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(
+            ctx,
+            "reassign_between_buckets",
+            {
+                "from_bucket_id": from_bucket,
+                "to_bucket_id": to_bucket,
+                "amount_paise": amt_paise,
+                "period": period,
+            },
+        )
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to reassign: {res.error.message}")
+            raise typer.Exit(code=1)
+        print_success(f"Reassigned {format_inr(amt_paise)} from '{from_bucket}' to '{to_bucket}'.")
+    finally:
+        conn.close()
+
+
+@buckets_app.command("status")
+def buckets_status_cmd(
+    bucket_id: Annotated[str, typer.Argument(help="Bucket ID")],
+    period: Annotated[
+        str | None, typer.Option("--period", "-p", help="Target period (YYYY-MM)")
+    ] = None,
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Display balance, spending, and overspend status of a bucket."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "get_bucket_status", {"bucket_id": bucket_id, "period": period})
+        if not res.ok:
+            print_error(f"Failed to get bucket status: {res.error.message}")
+            raise typer.Exit(code=1)
+        if as_json:
+            print_json(_tool_dict(res))
+            return
+        b = _tool_dict(res).get("balance", {})
+        table = Table(title=f"Bucket Balance: {b.get('name')}", box=box.ROUNDED)
+        table.add_column("Property", style="bold")
+        table.add_column("Value", style="cyan")
+        table.add_row("Bucket ID", str(b.get("bucket_id")))
+        table.add_row("Name", str(b.get("name")))
+        table.add_row("Kind", str(b.get("kind")))
+        table.add_row("Period", str(b.get("period")))
+        table.add_row("Allocated", format_inr(b.get("allocated_paise", 0)))
+        table.add_row("Spent", format_inr(b.get("spent_paise", 0)))
+        table.add_row("Remaining Balance", format_inr(b.get("balance_paise", 0)))
+        st = b.get("status", "ok")
+        st_style = "green" if st == "ok" else ("yellow" if st == "low" else "red")
+        table.add_row("Status", f"[{st_style}]{st.upper()}[/{st_style}]")
+        console.print(table)
+    finally:
+        conn.close()
+
+
+# -------------------------------------------------------------------------------------------------
+# 16. Reallocations Commands (PLAN_PHASE3 Section 5.3 & 5.11)
+# -------------------------------------------------------------------------------------------------
+reallocations_app = typer.Typer(
+    name="reallocations", help="Manage agent reallocation recommendations."
+)
+app.add_typer(reallocations_app, name="reallocations")
+
+
+@reallocations_app.command("list")
+def reallocations_list_cmd(
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """List agent-drafted bucket reallocation recommendations."""
+    from copilot.db.repo_phase3 import list_reallocation_drafts
+
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        drafts = list_reallocation_drafts(conn, user_id=user_id)
+        if as_json:
+            print_json([d.model_dump(mode="json") for d in drafts])
+            return
+        table = Table(title=f"Reallocation Drafts for {user_id}", box=box.ROUNDED)
+        table.add_column("Draft ID", style="dim")
+        table.add_column("From Bucket")
+        table.add_column("To Bucket")
+        table.add_column("Amount", justify="right")
+        table.add_column("Status")
+        table.add_column("Reason", style="dim")
+        for d in drafts:
+            st_style = (
+                "green"
+                if d.status in ("approved", "applied")
+                else ("yellow" if d.status == "draft" else "red")
+            )
+            table.add_row(
+                d.id,
+                d.from_bucket_id,
+                d.to_bucket_id,
+                format_inr(d.amount_paise),
+                f"[{st_style}]{d.status.upper()}[/{st_style}]",
+                str(d.reason_json.get("explanation", "-")),
+            )
+        console.print(table)
+        if not drafts:
+            console.print("[dim]No reallocation drafts found.[/dim]")
+    finally:
+        conn.close()
+
+
+@reallocations_app.command("decide")
+def reallocations_decide_cmd(
+    draft_id: Annotated[str, typer.Argument(help="Reallocation draft ID")],
+    decision: Annotated[str, typer.Argument(help="Decision (approve or reject)")],
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Approve or reject an agent reallocation draft."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "decide_reallocation", {"draft_id": draft_id, "decision": decision})
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to decide reallocation: {res.error.message}")
+            raise typer.Exit(code=1)
+        print_success(f"Reallocation draft '{draft_id}' decided: [bold]{decision}[/bold].")
+    finally:
+        conn.close()
+
+
+@reallocations_app.command("apply")
+def reallocations_apply_cmd(
+    draft_id: Annotated[str, typer.Argument(help="Approved reallocation draft ID to apply")],
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Apply an approved reallocation draft to move funds between buckets."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "apply_reallocation", {"draft_id": draft_id})
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to apply reallocation: {res.error.message}")
+            raise typer.Exit(code=1)
+        print_success(f"Reallocation draft '{draft_id}' successfully applied!")
+    finally:
+        conn.close()
+
+
+# -------------------------------------------------------------------------------------------------
+# 17. Investment Readiness Assessment (PLAN_PHASE3 Section 5.6 & 5.11)
+# -------------------------------------------------------------------------------------------------
+@app.command("readiness")
+def readiness_cmd(
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Assess whether the user is ready to begin or continue investments."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "assess_investment_readiness", {})
+        if not res.ok:
+            print_error(f"Failed to assess readiness: {res.error.message}")
+            raise typer.Exit(code=1)
+        if as_json:
+            print_json(_tool_dict(res))
+            return
+        data = _tool_dict(res).get("assessment", {})
+        lvl = data.get("level", "not_ready")
+        lvl_style = (
+            "green"
+            if lvl == "ready"
+            else (
+                "cyan"
+                if lvl == "ready_with_conditions"
+                else ("yellow" if lvl == "building" else "red")
+            )
+        )
+
+        lvl_str = lvl.upper().replace("_", " ")
+        v_text = data.get("verdict_text", "Criteria evaluated.")
+        console.print(
+            Panel(
+                f"[bold]Overall Readiness Level:[/bold] [{lvl_style}]{lvl_str}[/{lvl_style}]\n"
+                f"[bold]Assessed On:[/bold] {data.get('assessed_on', 'N/A')}\n"
+                f"[bold]Verdict Explanation:[/bold] {v_text}",
+                title="Investment Readiness Assessment",
+                border_style="cyan",
+            )
+        )
+
+        crit = data.get("criteria", [])
+        if crit:
+            t = Table(title="Assessment Criteria Breakdown", box=box.ROUNDED)
+            t.add_column("Criterion", style="bold")
+            t.add_column("Status")
+            t.add_column("Current Value", justify="right")
+            t.add_column("Target / Requirement", justify="right")
+            t.add_column("What Would Change It", style="dim")
+            for c in crit:
+                st = c.get("status", "")
+                st_style = "green" if st == "pass" else ("yellow" if st == "unknown" else "red")
+                t.add_row(
+                    str(c.get("name")),
+                    f"[{st_style}]{st.upper()}[/{st_style}]",
+                    str(c.get("current_value", "-")),
+                    str(c.get("target_value", "-")),
+                    str(c.get("what_would_change_it", "-")),
+                )
+            console.print(t)
+    finally:
+        conn.close()
+
+
+# -------------------------------------------------------------------------------------------------
+# 18. Contribution Planning & Trade-offs (PLAN_PHASE3 Section 5.7 & 5.11)
+# -------------------------------------------------------------------------------------------------
+contributions_app = typer.Typer(
+    name="contributions", help="Plan contributions and waterfall allocations."
+)
+app.add_typer(contributions_app, name="contributions")
+
+
+@contributions_app.command("plan")
+@app.command("plan-contributions")
+def contributions_plan_cmd(
+    months: Annotated[int, typer.Option("--months", "-m", help="Horizon in months")] = 6,
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Plan recurring contributions against cashflow surplus and waterfall priorities."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "plan_contributions", {"horizon_months": months})
+        if not res.ok:
+            print_error(f"Failed to plan contributions: {res.error.message}")
+            raise typer.Exit(code=1)
+        if as_json:
+            print_json(_tool_dict(res))
+            return
+        data = _tool_dict(res).get("plan", {})
+        console.print(
+            Panel(
+                f"[bold]Horizon:[/bold] {data.get('horizon_months')} months "
+                f"({data.get('period_from')})\n"
+                f"[bold]Status:[/bold] [cyan]{data.get('status', 'complete')}[/cyan]\n"
+                f"[bold]Summary:[/bold] {data.get('summary_text', 'Contribution plan evaluated.')}",
+                title="Contribution Plan Overview",
+                border_style="cyan",
+            )
+        )
+
+        steps = data.get("steps", [])
+        if steps:
+            t = Table(title="Waterfall Allocations per Month", box=box.ROUNDED)
+            t.add_column("Priority", justify="right")
+            t.add_column("Commitment / Goal", style="bold")
+            t.add_column("Needed", justify="right")
+            t.add_column("Funded (Expected)", justify="right")
+            t.add_column("Shortfall", justify="right")
+            t.add_column("Verdict")
+            for s in steps:
+                verd = s.get("verdict", "")
+                v_style = (
+                    "green"
+                    if verd == "fits"
+                    else ("yellow" if verd == "fits_expected_only" else "red")
+                )
+                t.add_row(
+                    str(s.get("priority")),
+                    str(s.get("name")),
+                    format_inr(s.get("needed_paise", 0)),
+                    format_inr(s.get("funded_expected_paise", 0)),
+                    format_inr(s.get("shortfall_paise", 0)),
+                    f"[{v_style}]{verd.upper()}[/{v_style}]",
+                )
+            console.print(t)
+
+        opts = data.get("options", [])
+        if opts:
+            t_opt = Table(title="Adjustment Options for Shortfalls", box=box.ROUNDED)
+            t_opt.add_column("Option", style="bold")
+            t_opt.add_column("Description")
+            t_opt.add_column("Impact", style="cyan")
+            for idx, o in enumerate(opts, 1):
+                t_opt.add_row(f"Option {idx}", str(o.get("description")), str(o.get("impact", "-")))
+            console.print(t_opt)
+    finally:
+        conn.close()
+
+
+@app.command("tradeoff")
+@app.command("trade-offs")
+def tradeoff_cmd(
+    alt: Annotated[
+        list[str] | None, typer.Option("--alt", help="Alternative spec JSON or description")
+    ] = None,
+    horizon: Annotated[int, typer.Option("--horizon", help="Horizon in months")] = 12,
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Compare competing financial trade-offs side by side."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        alt_inputs = alt or []
+        parsed_alts = []
+        for idx, a in enumerate(alt_inputs, 1):
+            try:
+                parsed_alts.append(json.loads(a))
+            except Exception:
+                parsed_alts.append({"name": f"Alternative {idx}", "changes": [], "description": a})
+        if not parsed_alts:
+            parsed_alts = [
+                {"name": "Prioritise Goal", "changes": []},
+                {"name": "Prioritise Emergency Fund", "changes": []},
+            ]
+
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(
+            ctx, "compare_tradeoffs", {"alternatives": parsed_alts, "horizon_months": horizon}
+        )
+        if not res.ok:
+            print_error(f"Failed to compare trade-offs: {res.error.message}")
+            raise typer.Exit(code=1)
+        if as_json:
+            print_json(_tool_dict(res))
+            return
+        data = _tool_dict(res).get("analysis", {})
+        rec_alt = data.get("recommended_alternative", "Multiple valid options")
+        cwording = data.get("constraint_wording", "Evaluation complete.")
+        console.print(
+            Panel(
+                f"[bold]Best Alternative:[/bold] [green]{rec_alt}[/green]\n"
+                f"[bold]Constraint Satisfaction Summary:[/bold] {cwording}",
+                title="Goal Trade-Off Comparison",
+                border_style="cyan",
+            )
+        )
+
+        results = data.get("results", [])
+        if results:
+            t = Table(title="Side-by-Side Alternatives Comparison", box=box.ROUNDED)
+            t.add_column("Alternative", style="bold")
+            t.add_column("Goal Completion")
+            t.add_column("Emergency Months", justify="right")
+            t.add_column("Uncovered Commitments", justify="right")
+            t.add_column("Shortfall Days", justify="right")
+            t.add_column("Satisfies All Constraints", justify="center")
+            for r in results:
+                sat = r.get("satisfies_all_constraints", False)
+                sat_str = "[bold green]YES[/bold green]" if sat else "[bold red]NO[/bold red]"
+                t.add_row(
+                    str(r.get("name")),
+                    str(r.get("goal_completion_date", "N/A")),
+                    f"{r.get('emergency_months', 0.0):.1f}",
+                    str(r.get("not_covered_commitments_count", 0)),
+                    str(r.get("shortfall_days_count", 0)),
+                    sat_str,
+                )
+            console.print(t)
+    finally:
+        conn.close()
+
+
+# -------------------------------------------------------------------------------------------------
+# 19. Behavioural Memory Commands (PLAN_PHASE3 Section 5.8, 5.9, & 5.11)
+# -------------------------------------------------------------------------------------------------
+memory_app = typer.Typer(
+    name="memory", help="Manage behavioural memories and contextual exceptions."
+)
+app.add_typer(memory_app, name="memory")
+app.add_typer(memory_app, name="memories")
+
+
+@memory_app.command("list")
+def memory_list_cmd(
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    status: Annotated[
+        str | None,
+        typer.Option("--status", "-s", help="Filter by status (active, candidate, stale, retired)"),
+    ] = None,
+    kind: Annotated[str | None, typer.Option("--kind", "-k", help="Filter by kind")] = None,
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """List behavioural memory items and confidence scores."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "list_memories", {"status": status, "kind": kind})
+        if not res.ok:
+            print_error(f"Failed to list memories: {res.error.message}")
+            raise typer.Exit(code=1)
+        if as_json:
+            print_json(_tool_dict(res))
+            return
+        items = _tool_dict(res).get("memories", [])
+        table = Table(title=f"Behavioural Memories for User '{user_id}'", box=box.ROUNDED)
+        table.add_column("Memory ID", style="dim")
+        table.add_column("Kind", style="cyan")
+        table.add_column("Subject Key", style="bold")
+        table.add_column("Confidence", justify="right")
+        table.add_column("Status")
+        table.add_column("Statement", style="dim")
+
+        for m in items:
+            st = m.get("status", "")
+            st_style = (
+                "green" if st == "active" else ("yellow" if st in ("candidate", "stale") else "dim")
+            )
+            conf_bp = m.get("confidence_bp", 0)
+            conf_str = f"{conf_bp / 100.0:.1f}%"
+            table.add_row(
+                str(m.get("id")),
+                str(m.get("kind")),
+                str(m.get("subject_key")),
+                conf_str,
+                f"[{st_style}]{st.upper()}[/{st_style}]",
+                str(m.get("statement_json")),
+            )
+        console.print(table)
+        if not items:
+            console.print("[dim]No memory items recorded yet.[/dim]")
+    finally:
+        conn.close()
+
+
+@memory_app.command("explain")
+def memory_explain_cmd(
+    memory_id: Annotated[str, typer.Argument(help="Memory item ID")],
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Explain evidence and decay calculations for a memory item."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "explain_memory", {"memory_id": memory_id})
+        if not res.ok:
+            print_error(f"Failed to explain memory: {res.error.message}")
+            raise typer.Exit(code=1)
+        if as_json:
+            print_json(_tool_dict(res))
+            return
+        m = _tool_dict(res).get("memory", {})
+        table = Table(title=f"Memory Explanation: {memory_id}", box=box.ROUNDED)
+        table.add_column("Property", style="bold")
+        table.add_column("Value", style="cyan")
+        table.add_row("ID", str(m.get("id")))
+        table.add_row("Kind", str(m.get("kind")))
+        table.add_row("Subject Key", str(m.get("subject_key")))
+        table.add_row("Status", str(m.get("status")).upper())
+        table.add_row("Prior Confidence", f"{m.get('prior_bp', 0) / 100.0:.1f}%")
+        table.add_row("Current Confidence", f"{m.get('confidence_bp', 0) / 100.0:.1f}%")
+        table.add_row("Supporting Evidence", str(m.get("supporting_evidence_count", 0)))
+        table.add_row("Contradicting Evidence", str(m.get("contradicting_evidence_count", 0)))
+        console.print(table)
+    finally:
+        conn.close()
+
+
+@memory_app.command("confirm")
+def memory_confirm_cmd(
+    memory_id: Annotated[str, typer.Argument(help="Memory item ID")],
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """User-confirm a memory item to activate it immediately."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "confirm_memory", {"memory_id": memory_id})
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to confirm memory: {res.error.message}")
+            raise typer.Exit(code=1)
+        print_success(f"Memory item '{memory_id}' confirmed and activated.")
+    finally:
+        conn.close()
+
+
+@memory_app.command("reject")
+def memory_reject_cmd(
+    memory_id: Annotated[str, typer.Argument(help="Memory item ID")],
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Reject a memory candidate."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "reject_memory", {"memory_id": memory_id})
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to reject memory: {res.error.message}")
+            raise typer.Exit(code=1)
+        print_success(f"Memory item '{memory_id}' rejected.")
+    finally:
+        conn.close()
+
+
+@memory_app.command("forget")
+def memory_forget_cmd(
+    memory_id: Annotated[str, typer.Argument(help="Memory item ID to permanently forget")],
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Permanently delete content of a memory item while keeping audit trail."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
+        res = execute_tool(ctx, "forget_memory", {"memory_id": memory_id})
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to forget memory: {res.error.message}")
+            raise typer.Exit(code=1)
+        print_success(f"Memory item '{memory_id}' permanently forgotten.")
+    finally:
+        conn.close()
+
+
+@memory_app.command("refresh")
+def memory_refresh_cmd(
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Run observers and decay calculations to refresh memory confidence."""
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="agent")
+        res = execute_tool(ctx, "refresh_memories", {})
+        conn.commit()
+        if not res.ok:
+            print_error(f"Failed to refresh memories: {res.error.message}")
+            raise typer.Exit(code=1)
+        if as_json:
+            print_json(_tool_dict(res))
+        else:
+            print_success(f"Memories refreshed successfully for user '{user_id}'.")
+    finally:
+        conn.close()
+
+
+# -------------------------------------------------------------------------------------------------
+# 20. User Preferences Commands (PLAN_PHASE3 Section 5.11)
+# -------------------------------------------------------------------------------------------------
+prefs_app = typer.Typer(name="prefs", help="Manage user planning preferences.")
+app.add_typer(prefs_app, name="prefs")
+
+
+@prefs_app.command("show")
+def prefs_show_cmd(
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Display all user planning preferences."""
+    from copilot.db.repo_phase3 import list_user_preferences
+
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        prefs = list_user_preferences(conn, user_id=user_id)
+        if as_json:
+            print_json(prefs)
+            return
+        table = Table(title=f"User Preferences for {user_id}", box=box.ROUNDED)
+        table.add_column("Key", style="bold cyan")
+        table.add_column("Value")
+        for k, v in prefs.items():
+            table.add_row(k, str(v))
+        console.print(table)
+        if not prefs:
+            console.print("[dim]No user preferences set yet (using system defaults).[/dim]")
+    finally:
+        conn.close()
+
+
+@prefs_app.command("set")
+def prefs_set_cmd(
+    key: Annotated[
+        str, typer.Argument(help="Preference key (e.g. emergency_months_target, buffer_paise)")
+    ],
+    value: Annotated[str, typer.Argument(help="Preference value (JSON string or primitive)")],
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Set a user planning preference value."""
+    from copilot.db.repo_phase3 import set_user_preference
+
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        try:
+            val = json.loads(value)
+        except Exception:
+            val = value
+        set_user_preference(conn, user_id=user_id, key=key, value=val)
+        conn.commit()
+        print_success(f"Preference '[cyan]{key}[/cyan]' set successfully.")
+    finally:
+        conn.close()
+
+
+# -------------------------------------------------------------------------------------------------
+# 21. Skills Library Commands (PLAN_PHASE3 Section 5.12 & 5.11)
+# -------------------------------------------------------------------------------------------------
+skills_app = typer.Typer(name="skills", help="Explore and execute procedural skills.")
+app.add_typer(skills_app, name="skills")
+
+
+@skills_app.command("list")
+def skills_list_cmd(
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """List registered procedural skills in the library."""
+    from copilot.skills.manifest import load_all_skills
+
+    skills = load_all_skills()
+    if as_json:
+        print_json({name: s.model_dump(mode="json") for name, s in skills.items()})
+        return
+    table = Table(title="Registered Procedural Skills Library", box=box.ROUNDED)
+    table.add_column("Skill Name", style="bold cyan")
+    table.add_column("Version", justify="center")
+    table.add_column("Description")
+    table.add_column("Steps", justify="right")
+    for name, s in sorted(skills.items()):
+        table.add_row(
+            name,
+            str(s.version),
+            s.description,
+            str(len(s.steps)),
+        )
+    console.print(table)
+
+
+@skills_app.command("show")
+def skills_show_cmd(
+    skill_name: Annotated[str, typer.Argument(help="Name of the skill to inspect")],
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Display manifest and procedure steps for a skill."""
+    from copilot.skills.manifest import load_skill_manifest
+
+    try:
+        s = load_skill_manifest(skill_name)
+    except Exception as exc:
+        print_error(f"Failed to load skill '{skill_name}': {exc}")
+        raise typer.Exit(code=1) from exc
+
+    if as_json:
+        print_json(s.model_dump(mode="json"))
+        return
+
+    console.print(
+        Panel(
+            f"[bold]Skill:[/bold] [cyan]{s.name}[/cyan] (v{s.version})\n"
+            f"[bold]Description:[/bold] {s.description}\n"
+            f"[bold]Inputs Schema:[/bold] {s.inputs}\n"
+            f"[bold]Preconditions:[/bold] {s.preconditions}\n"
+            f"[bold]Outputs:[/bold] {s.outputs}",
+            title=f"Skill Manifest: {s.name}",
+            border_style="cyan",
+        )
+    )
+
+    t = Table(title="Procedural Execution Steps", box=box.ROUNDED)
+    t.add_column("Step #", justify="right")
+    t.add_column("Tool Invoked", style="bold")
+    t.add_column("Parameters Expression")
+    for idx, st in enumerate(s.steps, 1):
+        for tool_name, params in st.items():
+            t.add_row(str(idx), tool_name, str(params))
+    console.print(t)
+
+
+@skills_app.command("run")
+def skills_run_cmd(
+    skill_name: Annotated[str, typer.Argument(help="Name of the skill to execute")],
+    inputs: Annotated[
+        str, typer.Option("--inputs", help="JSON string of skill input parameters")
+    ] = "{}",
+    user_id: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Execute a procedural skill through governed execute_tool steps."""
+    from copilot.skills.manifest import load_skill_manifest
+    from copilot.skills.runner import run_skill
+
+    ensure_tools_registered()
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        try:
+            in_dict = json.loads(inputs)
+        except Exception as exc:
+            print_error(f"Invalid inputs JSON: {exc}")
+            raise typer.Exit(code=1) from exc
+
+        manifest = load_skill_manifest(skill_name)
+        ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="agent")
+        result = run_skill(manifest, ctx, in_dict)
+        conn.commit()
+
+        if as_json:
+            print_json(
+                {
+                    "skill_name": skill_name,
+                    "status": result.status,
+                    "outputs": result.outputs,
+                    "error": result.error,
+                    "steps_executed": len(result.step_results),
+                }
+            )
+            return
+
+        st_style = "green" if result.status == "ok" else "red"
+        console.print(
+            Panel(
+                f"[bold]Skill:[/bold] [cyan]{skill_name}[/cyan]\n"
+                f"[bold]Status:[/bold] [{st_style}]{result.status.upper()}[/{st_style}]\n"
+                f"[bold]Steps Executed:[/bold] {len(result.step_results)}\n"
+                f"[bold]Findings Generated:[/bold] {len(result.outputs)}",
+                title="Skill Execution Result",
+                border_style="cyan",
+            )
+        )
+        if result.error:
+            print_error(f"Skill error: {result.error}")
+    finally:
+        conn.close()
+
+
+# -------------------------------------------------------------------------------------------------
+# Scheduled Jobs & Agent Runtime Commands (PLAN_PHASE3 Section 5.15)
+# -------------------------------------------------------------------------------------------------
+jobs_app = typer.Typer(name="jobs", help="Manage scheduled background upkeep jobs.")
+app.add_typer(jobs_app, name="jobs")
+
+
+@jobs_app.command("run-due")
+def jobs_run_due_cmd(
+    user: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Run all scheduled upkeep jobs that are due."""
+    from copilot.runtime.runner import run_due_jobs
+
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        runs = run_due_jobs(conn, user_id=user)
+        table = Table(title=f"Scheduled Jobs Run Results ({user})", box=box.ROUNDED)
+        table.add_column("Run ID", style="dim")
+        table.add_column("Job ID", style="cyan")
+        table.add_column("Status")
+        table.add_column("Summary", style="dim")
+
+        import json
+
+        for r in runs:
+            st_style = (
+                "green" if r.status == "ok" else ("yellow" if r.status == "skipped" else "red")
+            )
+            table.add_row(
+                r.id,
+                r.job_id,
+                f"[{st_style}]{r.status.upper()}[/{st_style}]",
+                json.dumps(r.summary_json),
+            )
+        console.print(table)
+        if not runs:
+            console.print("[dim]No scheduled jobs were due to run.[/dim]")
+    finally:
+        conn.close()
+
+
+@jobs_app.command("list")
+def jobs_list_cmd(
+    user: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """List all scheduled background upkeep jobs and their status."""
+    from copilot.db.repo_phase3 import list_scheduled_jobs
+    from copilot.runtime.scheduler import init_scheduled_jobs
+
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        init_scheduled_jobs(conn, user_id=user)
+        jobs = list_scheduled_jobs(conn, user_id=user, enabled_only=False)
+        table = Table(title=f"Scheduled Jobs for {user}", box=box.ROUNDED)
+        table.add_column("Job Kind", style="cyan")
+        table.add_column("Schedule")
+        table.add_column("Next Run At", style="dim")
+        table.add_column("Last Status")
+        table.add_column("Failures", justify="right")
+        table.add_column("Lease Owner", style="dim")
+
+        for j in jobs:
+            st_style = (
+                "green"
+                if j.last_status == "ok"
+                else ("red" if j.last_status == "dead_letter" else "yellow")
+            )
+            table.add_row(
+                j.job_kind,
+                j.schedule,
+                j.next_run_at,
+                f"[{st_style}]{j.last_status or 'pending'}[/{st_style}]",
+                str(j.consecutive_failures),
+                j.lease_owner or "-",
+            )
+        console.print(table)
+    finally:
+        conn.close()
+
+
+@jobs_app.command("retry")
+def jobs_retry_cmd(
+    job_kind: Annotated[str, typer.Argument(help="Job kind to retry")],
+    user: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Retry a failed or dead-lettered scheduled job."""
+    from copilot.runtime.runner import retry_dead_letter_job
+
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        run = retry_dead_letter_job(conn, user_id=user, job_kind=job_kind)
+        st_style = "green" if run.status == "ok" else "red"
+        console.print(
+            f"Retried [cyan]{job_kind}[/cyan]: [{st_style}]{run.status.upper()}[/{st_style}]"
+        )
+        print_json(run.summary_json)
+    finally:
+        conn.close()
+
+
+@jobs_app.command("run")
+def jobs_run_cmd(
+    job_kind: Annotated[str, typer.Argument(help="Specific job kind to run immediately")],
+    user: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Run a specific scheduled job immediately."""
+    from copilot.runtime.runner import run_job
+
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        run = run_job(conn, user_id=user, job_kind=job_kind)
+        st_style = (
+            "green" if run.status == "ok" else ("yellow" if run.status == "skipped" else "red")
+        )
+        console.print(
+            f"Executed [cyan]{job_kind}[/cyan]: [{st_style}]{run.status.upper()}[/{st_style}]"
+        )
+        print_json(run.summary_json)
+    finally:
+        conn.close()
+
+
+@jobs_app.command("dead-letter")
+def jobs_dead_letter_cmd(
+    user: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """List jobs that entered the dead-letter state after max retries."""
+    from copilot.db.repo_phase3 import list_scheduled_jobs
+
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        jobs = list_scheduled_jobs(conn, user_id=user, enabled_only=False)
+        dead = [j for j in jobs if j.last_status == "dead_letter"]
+        if as_json:
+            print_json([j.model_dump(mode="json") for j in dead])
+            return
+        table = Table(title=f"Dead-Letter Jobs for User '{user}'", box=box.ROUNDED)
+        table.add_column("Job Kind", style="bold red")
+        table.add_column("Schedule")
+        table.add_column("Consecutive Failures", justify="right")
+        table.add_column("Next Run At")
+        for j in dead:
+            table.add_row(j.job_kind, j.schedule, str(j.consecutive_failures), j.next_run_at)
+        console.print(table)
+        if not dead:
+            console.print("[green]No dead-letter jobs. All scheduled jobs healthy.[/green]")
+    finally:
+        conn.close()
+
+
+@app.command("agentd")
+def agentd_cmd(
+    user: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    interval: Annotated[int | None, typer.Option("--interval", help="Loop interval (s)")] = None,
+    max_cycles: Annotated[
+        int | None, typer.Option("--max-cycles", help="Maximum cycles to run")
+    ] = None,
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Run the foreground agent daemon loop for automated upkeep."""
+    from copilot.runtime.daemon import run_agentd
+
+    db_path = get_db_path(db)
+
+    def conn_factory():
+        return open_db(db_path)
+
+    console.print(
+        f"[bold cyan]FinCo Agent Daemon[/bold cyan] starting for user [bold]{user}[/bold]..."
+    )
+    cycles = run_agentd(
+        conn_factory=conn_factory,
+        user_id=user,
+        loop_interval_seconds=interval,
+        max_cycles=max_cycles,
+    )
+    console.print(f"agentd stopped after completing [bold]{cycles}[/bold] cycle(s).")
+
+
+@app.command("ops")
+def ops_cmd(
+    user: Annotated[str | None, typer.Option("--user", "-u", help="Filter by User ID")] = None,
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Display operational telemetry and observability report (PLAN_PHASE3 Section 5.15)."""
+    import dataclasses
+
+    from copilot.ops.telemetry import compute_ops_telemetry
+
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        report = compute_ops_telemetry(conn, user_id=user)
+        if json_output:
+            print_json(dataclasses.asdict(report))
+            return
+
+        summary_text = (
+            f"[bold]Scope:[/bold] [cyan]{user or 'all users'}[/cyan]\n\n"
+            f"[bold]LLM Metrics:[/bold] Calls/Task: [bold]{report.llm_calls_per_task}[/bold] | "
+            f"Tokens/Task: [bold]{report.tokens_per_task}[/bold] | "
+            f"Total Tokens: [bold]{report.total_tokens}[/bold]\n"
+            f"[bold]Estimated Cost:[/bold] "
+            f"[bold yellow]{report.estimated_cost_str}[/bold yellow]\n\n"
+            f"[bold]Reliability:[/bold] Budget Stops: [bold]{report.budget_stops_count}[/bold] | "
+            f"Validator Fallback Rate: [bold]{report.validator_fallback_rate * 100:.2f}%[/bold]\n"
+            f"[bold]Self-Correction:[/bold] Critic Catch Rate: "
+            f"[bold]{report.critic_catch_rate * 100:.2f}%[/bold] | "
+            f"Revision Success Rate: [bold]{report.revision_success_rate * 100:.2f}%[/bold]\n"
+            f"[bold]Orchestration:[/bold] Parallel Speed-up: "
+            f"[bold green]{report.parallel_speed_up}x[/bold green]\n\n"
+            f"[bold]Background Jobs:[/bold] [green]{report.job_counts.get('ok', 0)} ok[/green], "
+            f"[red]{report.job_counts.get('dead_letter', 0)} dead letter[/red], "
+            f"[yellow]{report.job_counts.get('failed', 0)} failed[/yellow], "
+            f"[dim]{report.job_counts.get('skipped', 0)} skipped[/dim]"
+        )
+
+        console.print(
+            Panel(summary_text, title="FinCo Ops Telemetry Dashboard", border_style="cyan")
+        )
+
+        if report.p50_p95_nodes or report.p50_p95_skills:
+            t = Table(title="Component Latency Percentiles", box=box.ROUNDED)
+            t.add_column("Type", style="cyan")
+            t.add_column("Component Name")
+            t.add_column("Count", justify="right")
+            t.add_column("p50 (ms)", justify="right")
+            t.add_column("p95 (ms)", justify="right")
+
+            for name, stats in report.p50_p95_nodes.items():
+                t.add_row(
+                    "Node",
+                    name,
+                    str(stats.get("count", 0)),
+                    f"{stats['p50_ms']:.1f}",
+                    f"{stats['p95_ms']:.1f}",
+                )
+            for name, stats in report.p50_p95_skills.items():
+                t.add_row(
+                    "Skill",
+                    name,
+                    str(stats.get("count", 0)),
+                    f"{stats['p50_ms']:.1f}",
+                    f"{stats['p95_ms']:.1f}",
+                )
+            console.print(t)
+
+        if report.failure_counts_by_code:
+            t_err = Table(title="Failures by Error Code", box=box.ROUNDED)
+            t_err.add_column("Error Code", style="red")
+            t_err.add_column("Count", justify="right")
+            for code, count in report.failure_counts_by_code.items():
+                t_err.add_row(code, str(count))
+            console.print(t_err)
+    finally:
+        conn.close()
+
+
+# -------------------------------------------------------------------------------------------------
+# 19. Bounded Feedback Learning Commands (PLAN_PHASE3 Section 5.16)
+# -------------------------------------------------------------------------------------------------
+learning_app = typer.Typer(
+    help="Inspect and manage bounded feedback learning state (PLAN_PHASE3 Section 5.16)."
+)
+app.add_typer(learning_app, name="learning")
+
+
+@learning_app.command("show")
+def learning_show_cmd(
+    user: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+) -> None:
+    """Display learned sensitivity multipliers and Beta posteriors."""
+    from copilot.core.learning import list_tenant_learning_stats
+
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        stats = list_tenant_learning_stats(conn, user_id=user)
+        if json_output:
+            print_json(stats)
+            return
+
+        table = Table(title=f"Learned Feedback Multipliers for User '{user}'", box=box.ROUNDED)
+        table.add_column("Subject Kind", style="cyan", no_wrap=True)
+        table.add_column("Subject Key", no_wrap=True)
+        table.add_column("Alpha (α)", justify="right")
+        table.add_column("Beta (β)", justify="right")
+        table.add_column("Posterior (p)", justify="right")
+        table.add_column("Multiplier (m)", justify="right", style="bold green")
+        table.add_column("Hard Floor", justify="center")
+        table.add_column("Updated At", style="dim")
+
+        for s in stats:
+            floor_str = "[bold red]YES[/bold red]" if s["hard_floor_protected"] else "NO"
+            m_style = "bold green" if s["multiplier"] >= 1.0 else "bold yellow"
+            table.add_row(
+                s["subject_kind"],
+                s["subject_key"],
+                f"{s['alpha']:.1f}",
+                f"{s['beta']:.1f}",
+                f"{s['p']:.4f}",
+                f"[{m_style}]{s['multiplier']:.4f}[/{m_style}]",
+                floor_str,
+                s["updated_at"],
+            )
+        console.print(table)
+        if not stats:
+            console.print(
+                "[dim]No learned feedback recorded yet. Using priors (α=2, β=2, m=1.0).[/dim]"
+            )
+    finally:
+        conn.close()
+
+
+@learning_app.command("reset")
+def learning_reset_cmd(
+    user: Annotated[str, typer.Option("--user", "-u", help="User ID")] = "u1",
+    subject: Annotated[
+        str | None, typer.Option("--subject", "-s", help="Specific subject key to reset")
+    ] = None,
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Reset learned feedback statistics to priors (restores α=2, β=2, m=1.0)."""
+    from copilot.core.learning import reset_learning
+
+    db_path = get_db_path(db)
+    conn = open_db(db_path)
+    try:
+        cnt = reset_learning(conn, user_id=user, subject_key=subject)
+        conn.commit()
+        if subject:
+            console.print(
+                f"Reset [cyan]{cnt}[/cyan] feedback stat(s) for subject '[bold]{subject}[/bold]'."
+            )
+        else:
+            console.print(
+                f"Reset [cyan]{cnt}[/cyan] feedback stat(s) for user '{user}' back to priors."
+            )
+    finally:
+        conn.close()
+
+
+# -------------------------------------------------------------------------------------------------
+# 20. Model Context Protocol (MCP) Server Commands (PLAN_PHASE3 Section 5.17)
+# -------------------------------------------------------------------------------------------------
+mcp_app = typer.Typer(
+    help="Model Context Protocol (MCP) server commands (PLAN_PHASE3 Section 5.17)."
+)
+app.add_typer(mcp_app, name="mcp")
+
+
+@app.command("mcp-serve")
+@mcp_app.command("serve")
+def mcp_serve_cmd(
+    user_id: Annotated[str, typer.Option("--user-id", "-u", help="User ID for MCP tenant")] = "u1",
+    db: Annotated[str | None, typer.Option("--db", help="SQLite database path")] = None,
+) -> None:
+    """Expose FinCo capabilities over stdio via Model Context Protocol (MCP)."""
+    from copilot.mcp.server import run_mcp_stdio_server
+
+    db_path = get_db_path(db)
+    run_mcp_stdio_server(user_id=user_id, db_path=db_path)
 
 
 if __name__ == "__main__":

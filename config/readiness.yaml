@@ -1,0 +1,18 @@
+# Investment Readiness Assessment Configuration (PLAN_PHASE3 Section 5.6, Section 1.3)
+
+min_history_months: 3
+positive_months_required: 2
+max_cv_bp: 5000  # 50.00% max coefficient of variation for stable cash flow
+emergency_months_target: 3  # Range allowed: 1 to 12
+emergency_min_months: 1
+obligation_window_days: 90
+
+essential_categories:
+  - rent
+  - groceries
+  - utilities
+  - education
+  - transport
+  - health
+  - insurance
+  - emi

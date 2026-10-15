@@ -103,3 +103,98 @@ templates:
       - tool_name: check_budgets
         arg_bindings: {"year": "{year}", "month": "{month}"}
         rationale: "Inspect budget limits for active alerts"
+
+  # Phase 3 Plan Templates (PLAN_PHASE3 Section 5.10 & 5.12)
+  affordability:
+    intent_type: affordability
+    required_tools: ["affordability_check"]
+    allowed_tools: ["affordability_check", "get_calendar", "check_commitment_coverage", "run_whatif", "evaluate_goal_impact"]
+    default_steps:
+      - tool_name: affordability_check
+        arg_bindings: {"amount_paise": "{amount_paise}"}
+        rationale: "Execute certified affordability check skill combining calendar, what-if, coverage, and goals"
+
+  trip_planning:
+    intent_type: trip_planning
+    required_tools: ["trip_planning"]
+    allowed_tools: ["trip_planning", "get_calendar", "plan_contributions", "compare_tradeoffs"]
+    default_steps:
+      - tool_name: trip_planning
+        arg_bindings: {"target_amount_paise": "{amount_paise}", "target_date": "{target_date}"}
+        rationale: "Execute certified trip planning skill evaluating goal, bucket, calendar buffer, and trade-offs"
+
+  contribution_check:
+    intent_type: contribution_check
+    required_tools: ["contribution_review"]
+    allowed_tools: ["contribution_review", "assess_investment_readiness", "plan_contributions", "list_goals"]
+    default_steps:
+      - tool_name: contribution_review
+        arg_bindings: {"horizon_months": "6"}
+        rationale: "Execute certified contribution review skill assessing readiness, waterfall feasibility, and goals"
+
+  goal_progress:
+    intent_type: goal_progress
+    required_tools: ["get_goal_progress"]
+    allowed_tools: ["get_goal_progress", "list_goals"]
+    default_steps:
+      - tool_name: get_goal_progress
+        arg_bindings: {"goal_id": "{goal_id}"}
+        rationale: "Fetch goal progress, required monthly pace, and projected completion date"
+
+  commitment_check:
+    intent_type: commitment_check
+    required_tools: ["check_commitment_coverage"]
+    allowed_tools: ["check_commitment_coverage", "get_calendar", "get_commitment_status"]
+    default_steps:
+      - tool_name: check_commitment_coverage
+        arg_bindings: {"horizon_days": "60"}
+        rationale: "Check commitment coverage against the buffer in the calendar projection"
+
+  calendar_lookahead:
+    intent_type: calendar_lookahead
+    required_tools: ["get_calendar"]
+    allowed_tools: ["get_calendar", "check_commitment_coverage"]
+    default_steps:
+      - tool_name: get_calendar
+        arg_bindings: {"horizon_days": "60"}
+        rationale: "Project daily cash flow, running balances, and shortfall days over calendar horizon"
+
+  bucket_status:
+    intent_type: bucket_status
+    required_tools: ["get_bucket_status"]
+    allowed_tools: ["get_bucket_status", "list_buckets", "get_allocation_summary"]
+    default_steps:
+      - tool_name: get_bucket_status
+        arg_bindings: {}
+        rationale: "Evaluate derived bucket balance, spent amount, and status"
+      - tool_name: get_allocation_summary
+        arg_bindings: {}
+        rationale: "Summarize reserved bucket totals and available unallocated funds"
+
+  investment_readiness:
+    intent_type: investment_readiness
+    required_tools: ["assess_investment_readiness"]
+    allowed_tools: ["assess_investment_readiness"]
+    default_steps:
+      - tool_name: assess_investment_readiness
+        arg_bindings: {}
+        rationale: "Assess savings cushion, cashflow stability, emergency reserve, and obligation coverage"
+
+  tradeoff_compare:
+    intent_type: tradeoff_compare
+    required_tools: ["compare_tradeoffs"]
+    allowed_tools: ["compare_tradeoffs", "plan_contributions", "get_calendar"]
+    default_steps:
+      - tool_name: compare_tradeoffs
+        arg_bindings: {"horizon_months": "12"}
+        rationale: "Side-by-side trade-off comparison evaluating goal completion, shortfall, and constraints"
+
+  memory_query:
+    intent_type: memory_query
+    required_tools: ["list_memories"]
+    allowed_tools: ["list_memories", "explain_memory"]
+    default_steps:
+      - tool_name: list_memories
+        arg_bindings: {}
+        rationale: "List active and observed behavioural memories and patterns"
+

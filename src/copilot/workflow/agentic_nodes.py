@@ -533,10 +533,15 @@ def synthesize_node(state: AgenticState, config: RunnableConfig | None = None) -
     origin_map = {
         "whatif_add_spend": "whatif",
         "whatif_reduce_spend": "whatif",
+        "affordability": "whatif",
+        "tradeoff_compare": "whatif",
         "investigate_anomaly": "investigation",
         "explain_change": "investigation",
         "alerts_overview": "alert",
         "goal_check": "goal",
+        "goal_progress": "goal",
+        "trip_planning": "goal",
+        "contribution_check": "goal",
     }
     origin = origin_map.get(intent_type, "monthly_review")
 
@@ -733,3 +738,53 @@ def error_node(state: AgenticState, config: RunnableConfig | None = None) -> dic
         "stop_reason": "tool_failure",
         "trace": [trace_entry],
     }
+
+
+def multi_agent_node(state: AgenticState, config: RunnableConfig | None = None) -> dict[str, Any]:
+    """Execute the multi-agent planning subgraph for multi-domain intents."""
+    t0 = time.perf_counter()
+    conn, ctx, llm_client = _get_exec_ctx(state, config)
+    from copilot.workflow.multi_agent_graph import run_multi_agent_workflow
+
+    intent = state.get("intent") or {}
+    user_id = state["user_id"]
+    task_id = state["task_id"]
+
+    subgraph_result = run_multi_agent_workflow(
+        intent=intent,
+        user_id=user_id,
+        task_id=task_id,
+        ctx=ctx,
+        llm_client=llm_client,
+        user_data=dict(state),
+    )
+
+    duration = (time.perf_counter() - t0) * 1000.0
+    trace_entry: TraceEntry = {
+        "node": "multi_agent",
+        "started_at": to_utc_iso(now_utc(state.get("clock"))),
+        "ended_at": to_utc_iso(now_utc(state.get("clock"))),
+        "duration_ms": duration,
+        "tools_called": [
+            r.get("agent_role")
+            for r in subgraph_result.get("reports", [])
+            if isinstance(r, dict)
+        ],
+
+        "counts": {
+            "subquestions": len(subgraph_result.get("subquestions", [])),
+            "reports": len(subgraph_result.get("reports", [])),
+            "findings": len(subgraph_result.get("findings", [])),
+        },
+        "status": subgraph_result.get("status", "ok"),
+        "error": None,
+    }
+
+    return {
+        "findings": subgraph_result.get("findings", []),
+        "status": "completed" if subgraph_result.get("status") != "failed" else "failed",
+        "stop_reason": "completed" if subgraph_result.get("status") != "failed" else "tool_failure",
+        "final_narration": subgraph_result.get("final_narration"),
+        "trace": [trace_entry],
+    }
+

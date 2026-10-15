@@ -1,0 +1,19 @@
+name: explain_month_change
+version: 1
+description: Causal investigation into month-over-month spending and surplus variance.
+inputs:
+  category_id: optional
+  period: optional
+preconditions:
+  - has_transactions
+steps:
+  - investigate_month_change:
+      period: $period
+      category_id: $category_id
+  - list_memories:
+      status: active
+outputs:
+  - causal_investigation
+  - memory_evidence
+narration_template: explain_month_change_v1
+eval_cases: tests/skills/explain_month_change/

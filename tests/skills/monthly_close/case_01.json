@@ -1,0 +1,9 @@
+{
+  "name": "standard_monthly_close",
+  "description": "Standard monthly wrap-up rolling over unspent balances and refreshing memory",
+  "inputs": {
+    "period": "2026-09"
+  },
+  "expected_status": "ok",
+  "expected_outputs_contain": ["rollover_buckets", "refresh_memories", "evaluate_alerts", "get_allocation_summary"]
+}

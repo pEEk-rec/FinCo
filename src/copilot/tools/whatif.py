@@ -9,9 +9,10 @@ Governance:
 """
 
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from pydantic import Field
+from pydantic import Field, StrictInt
 
 from copilot.audit.events import record_event
 from copilot.core.simulation import (
@@ -20,9 +21,9 @@ from copilot.core.simulation import (
     compare_scenarios,
     simulate,
 )
-from copilot.core.timeutil import now_utc, to_utc_iso
+from copilot.core.timeutil import IST, now_utc, to_utc_iso
 from copilot.db.repo import insert_simulation
-from copilot.models.agentic import Projection, Scenario
+from copilot.models.agentic import Projection, Scenario, ScenarioKind
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
 from copilot.tools.registry import register
 
@@ -36,7 +37,14 @@ if TYPE_CHECKING:
 class RunWhatIfInput(ToolInput):
     """Input parameters for simulating a financial scenario."""
 
-    scenario: Scenario
+    scenario: Scenario | None = None
+    kind: ScenarioKind | None = None
+    amount_paise: StrictInt | None = None
+    category_id: str | None = None
+    start_month: str | None = None
+    recurring: bool = False
+    months: int = 1
+    goal_id: str | None = None
     horizon_months: int | None = Field(default=None, ge=1, le=6)
 
 
@@ -52,15 +60,30 @@ def run_whatif_handler(ctx: "ExecutionContext", **kwargs) -> RunWhatIfOutput:
     ts = to_utc_iso(now_utc(ctx.clock))
     sim_id = f"sim_{uuid.uuid4().hex[:8]}"
 
+    scenario = params.scenario
+    if scenario is None:
+        now_dt = ctx.clock if isinstance(ctx.clock, datetime) else now_utc()
+        ist_now = now_dt.astimezone(IST)
+        start_m = params.start_month or f"{ist_now.year:04d}-{ist_now.month:02d}"
+        scenario = Scenario(
+            kind=params.kind or "add_spend",
+            amount_paise=params.amount_paise or 0,
+            category_id=params.category_id,
+            start_month=start_m,
+            recurring=params.recurring,
+            months=params.months,
+            goal_id=params.goal_id,
+        )
+
     snapshot = build_snapshot(ctx.conn, ctx.user_id, ctx.clock or ts)
-    projection = simulate(snapshot, params.scenario, params.horizon_months)
+    projection = simulate(snapshot, scenario, params.horizon_months)
 
     # Persist immutable explanation record
     insert_simulation(
         conn=ctx.conn,
         sim_id=sim_id,
         user_id=ctx.user_id,
-        scenario=params.scenario.model_dump(mode="json"),
+        scenario=scenario.model_dump(mode="json"),
         baseline={
             "income_paise": snapshot.estimated_monthly_income_paise,
             "category_spend": snapshot.baseline_variable_spend_by_category,
@@ -76,14 +99,14 @@ def run_whatif_handler(ctx: "ExecutionContext", **kwargs) -> RunWhatIfOutput:
         user_id=ctx.user_id,
         actor=ctx.actor,
         event_type="whatif_simulated",
-        reason=f"What-if scenario '{params.scenario.kind}' simulated by {ctx.actor}",
+        reason=f"What-if scenario '{scenario.kind}' simulated by {ctx.actor}",
         run_id=ctx.run_id,
         entity_type="simulation",
         entity_id=sim_id,
         metadata={
             "simulation_id": sim_id,
-            "kind": params.scenario.kind,
-            "amount_paise": params.scenario.amount_paise,
+            "kind": scenario.kind,
+            "amount_paise": scenario.amount_paise,
         },
         clock=ctx.clock,
     )

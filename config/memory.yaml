@@ -1,0 +1,36 @@
+# Behavioural Memory Store, Observers & Decay Configuration (PLAN_PHASE3 Section 5.8, 5.9, 1.3)
+
+advice_cooldown_days: 30
+
+thresholds_bp:
+  use: 6000
+  stale: 4000
+  retire: 2000
+
+half_lives_days:
+  recurring_pattern: 90
+  contextual_exception: 365
+  advice_feedback: 120
+  merchant_habit: 180
+  preference: 0  # 0 indicates no time decay
+
+support_cap_bp: 10000
+min_contradictions_to_retire: 2
+k_s: 1.0
+k_c: 1.5
+exception_damping_bp: 5000
+
+allowed_exception_reasons:
+  - festival
+  - travel
+  - one_off_purchase
+  - medical
+  - family_event
+  - other
+
+observers:
+  min_weeks: 2
+  weekend_ratio_threshold_bp: 15000
+  month_start_threshold_bp: 5000
+  payday_spike_threshold_bp: 4000
+

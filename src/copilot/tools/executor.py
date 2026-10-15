@@ -26,6 +26,7 @@ from copilot.audit.events import Actor, record_event
 from copilot.core.errors import ErrorCode, ToolError, ToolFailure
 from copilot.db.connection import savepoint
 from copilot.governance.policy import Decision, PolicySettings, decide
+from copilot.ops.tracing import span
 from copilot.tools.contracts import ToolResult, ToolSpec
 from copilot.tools.registry import get as get_tool
 
@@ -157,23 +158,49 @@ def execute_tool(
     ctx: ExecutionContext, tool_name: str, raw_input: Any, approved: bool = False
 ) -> ToolResult:
     """Execute a tool by name through governance, validation and audit. Never raises."""
-    try:
-        spec = get_tool(tool_name)
-        if spec is None:
-            error = ToolError(code=ErrorCode.NOT_FOUND, message=f"Tool '{tool_name}' not found.")
-            return _fail(ctx, str(tool_name), raw_input, None, approved, error)
+    with span(
+        kind="tool",
+        name=str(tool_name),
+        attrs={"tool_name": str(tool_name)},
+        user_id=ctx.user_id,
+        trace_id=ctx.run_id,
+        conn=ctx.conn,
+    ) as sp:
+        try:
+            spec = get_tool(tool_name)
+            if spec is None:
+                error = ToolError(
+                    code=ErrorCode.NOT_FOUND,
+                    message=f"Tool '{tool_name}' not found.",
+                )
+                res = _fail(ctx, str(tool_name), raw_input, None, approved, error)
+                sp.status = "error"
+                sp.error_code = error.code.value
+                return res
 
-        decision = decide(ctx.policy, spec, ctx.actor)
-        if decision.outcome == "deny":
-            error = ToolError(code=ErrorCode.DENIED_BY_POLICY, message=decision.reason)
-            return _fail(ctx, spec.name, raw_input, decision, approved, error)
-        if decision.outcome == "needs_approval" and not approved:
-            error = ToolError(code=ErrorCode.APPROVAL_REQUIRED, message=decision.reason)
-            return _fail(ctx, spec.name, raw_input, decision, approved, error)
+            decision = decide(ctx.policy, spec, ctx.actor)
+            if decision.outcome == "deny":
+                error = ToolError(code=ErrorCode.DENIED_BY_POLICY, message=decision.reason)
+                res = _fail(ctx, spec.name, raw_input, decision, approved, error)
+                sp.status = "error"
+                sp.error_code = error.code.value
+                return res
+            if decision.outcome == "needs_approval" and not approved:
+                error = ToolError(code=ErrorCode.APPROVAL_REQUIRED, message=decision.reason)
+                res = _fail(ctx, spec.name, raw_input, decision, approved, error)
+                sp.status = "error"
+                sp.error_code = error.code.value
+                return res
 
-        return _run(ctx, spec, raw_input, decision, approved)
-    except Exception as exc:  # noqa: BLE001 - last line of defence
-        return ToolResult(
-            ok=False,
-            error=ToolError(code=ErrorCode.INTERNAL, message=f"{type(exc).__name__}: {exc}"),
-        )
+            res = _run(ctx, spec, raw_input, decision, approved)
+            if not res.ok and res.error:
+                sp.status = "error"
+                sp.error_code = res.error.code.value
+            return res
+        except Exception as exc:  # noqa: BLE001 - last line of defence
+            sp.status = "error"
+            sp.error_code = ErrorCode.INTERNAL.value
+            return ToolResult(
+                ok=False,
+                error=ToolError(code=ErrorCode.INTERNAL, message=f"{type(exc).__name__}: {exc}"),
+            )

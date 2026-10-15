@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[2]
 @pytest.fixture
 def state(tmp_path):
     clear_registry()
-    st = ApiState(db_path=tmp_path / "api.db", clock=DEMO_CLOCK, token="test-token")
+    st = ApiState(db_path=tmp_path / "api.db", clock=DEMO_CLOCK, token="test-token", llm=None)
     ensure_demo(st, "imported")
     yield st
     clear_registry()

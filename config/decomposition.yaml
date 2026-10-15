@@ -1,0 +1,46 @@
+# Multi-Agent Decomposition Configuration (PLAN_PHASE3 Section 5.13)
+
+max_subquestions_per_task: 4
+
+decomposition_templates:
+  affordability:
+    - domain: cashflow
+      question_kind: calendar_coverage
+    - domain: goals
+      question_kind: goal_impact
+  tradeoff_compare:
+    - domain: cashflow
+      question_kind: scenario_cashflow
+    - domain: goals
+      question_kind: scenario_goals
+  contribution_check:
+    - domain: readiness
+      question_kind: readiness_assessment
+    - domain: cashflow
+      question_kind: contribution_fit
+  trip_planning:
+    - domain: cashflow
+      question_kind: calendar_coverage
+    - domain: goals
+      question_kind: bucket_allocation
+    - domain: behaviour
+      question_kind: seasonal_patterns
+
+registered_question_kinds:
+  calendar_coverage: cashflow
+  scenario_cashflow: cashflow
+  contribution_fit: cashflow
+  forecast: cashflow
+  commitment_status: cashflow
+  goal_impact: goals
+  scenario_goals: goals
+  bucket_allocation: goals
+  tradeoff_analysis: goals
+  goal_progress: goals
+  readiness_assessment: readiness
+  contribution_plan: readiness
+  seasonal_patterns: behaviour
+  anomaly_check: behaviour
+  habit_investigation: behaviour
+  memory_retrieval: behaviour
+

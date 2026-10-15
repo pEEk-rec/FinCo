@@ -1,0 +1,11 @@
+{
+  "name": "family_vacation",
+  "description": "Plan 9-month family vacation for Rs. 60,000",
+  "inputs": {
+    "target_amount_paise": 6000000,
+    "target_date": "2027-07-01",
+    "category_id": "c_travel"
+  },
+  "expected_status": "ok",
+  "expected_outputs_contain": ["get_calendar", "plan_contributions", "compare_tradeoffs"]
+}

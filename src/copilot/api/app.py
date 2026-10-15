@@ -39,8 +39,8 @@ from copilot.db.repo import (
     list_goals,
     list_monthly_reviews,
 )
-from copilot.models.domain import Category
 from copilot.models.agentic import Goal, Investigation, Projection, Timeline
+from copilot.models.domain import Category
 from copilot.review.models import MonthlyReviewData
 from copilot.tools.executor import execute_tool
 
@@ -267,6 +267,64 @@ class CompareIn(BaseModel):
 class CompareOut(BaseModel):
     comparison: ScenarioComparison
     simulation_id: str
+
+
+class CommitmentIn(BaseModel):
+    name: str = Field(min_length=1)
+    amount_paise: int = Field(ge=1)
+    start_date: str = Field(default="2024-01-01", pattern=r"^\d{4}-\d{2}-\d{2}$")
+    category_id: str | None = None
+    schedule_kind: Literal["monthly", "weekly", "yearly", "custom"] = "monthly"
+    schedule_json: dict[str, Any] = Field(default_factory=lambda: {"day": 1})
+    direction: Literal["outflow", "inflow"] = "outflow"
+    kind: Literal[
+        "bill", "subscription", "emi", "sip", "rent", "tax", "income", "other"
+    ] = "bill"
+    certainty: Literal["firm", "variable", "discretionary"] = "firm"
+    goal_id: str | None = None
+    bucket_id: str | None = None
+
+
+class BucketIn(BaseModel):
+    name: str = Field(min_length=1)
+    kind: Literal["spending", "goal", "commitment", "flexible"] = "spending"
+    period_policy: Literal["reset_monthly", "accumulate"] | None = None
+    goal_id: str | None = None
+    commitment_id: str | None = None
+    sort_order: int = 0
+
+
+class BucketAllocateIn(BaseModel):
+    bucket_id: str
+    amount_paise: int = Field(ge=1)
+    period: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}$")
+
+
+class BucketReallocateIn(BaseModel):
+    from_bucket_id: str
+    to_bucket_id: str
+    amount_paise: int = Field(ge=1)
+    period: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}$")
+
+
+class MemoryForgetIn(BaseModel):
+    memory_id: str
+    reason: str = "user_request"
+
+
+class LearningResetIn(BaseModel):
+    subject_kind: str | None = None
+    subject_key: str | None = None
+
+
+def _dump_data(data: Any) -> Any:
+    if hasattr(data, "model_dump"):
+        return data.model_dump(mode="json")
+    if isinstance(data, list):
+        return [_dump_data(x) for x in data]
+    if isinstance(data, dict):
+        return {k: _dump_data(v) for k, v in data.items()}
+    return data
 
 
 # ---------------------------------------------------------------------------------------------
@@ -728,6 +786,192 @@ def create_app(state: ApiState) -> FastAPI:
         )
         conn.commit()
         return CompareOut.model_validate(out.model_dump())  # type: ignore[attr-defined]
+
+    # -- Phase 3: Commitments -------------------------------------------------------------
+    @app.get("/api/commitments", dependencies=auth)
+    def list_commitments_api(conn: Conn, status: str | None = None) -> list[dict[str, Any]]:
+        from copilot.db.repo_phase3 import list_commitments
+
+        items = list_commitments(conn, user_id=state.user_id, status=status)
+        return [_dump_data(c) for c in items]
+
+    @app.post("/api/commitments", dependencies=auth)
+    def create_commitment_api(body: CommitmentIn, conn: Conn) -> dict[str, Any]:
+        out = unwrap(
+            execute_tool(
+                state.context(conn, "user"),
+                "create_commitment",
+                body.model_dump(),
+            )
+        )
+        conn.commit()
+        return _dump_data(out)
+
+    @app.post("/api/commitments/suggest", dependencies=auth)
+    def suggest_commitments_api(conn: Conn) -> dict[str, Any]:
+        out = unwrap(
+            execute_tool(
+                state.context(conn, "user"),
+                "suggest_commitments",
+                {},
+            )
+        )
+        conn.commit()
+        return _dump_data(out)
+
+    # -- Phase 3: Calendar ----------------------------------------------------------------
+    @app.get("/api/calendar", dependencies=auth)
+    def calendar_forecast_api(
+        conn: Conn, horizon_days: int = Query(60, ge=1, le=180)
+    ) -> dict[str, Any]:
+        out = unwrap(
+            execute_tool(
+                state.context(conn, "user"),
+                "get_calendar",
+                {"horizon_days": horizon_days},
+            )
+        )
+        conn.commit()
+        return _dump_data(out)
+
+    # -- Phase 3: Buckets -----------------------------------------------------------------
+    @app.get("/api/buckets", dependencies=auth)
+    def buckets_api(conn: Conn) -> dict[str, Any]:
+        out = unwrap(
+            execute_tool(
+                state.context(conn, "user"),
+                "list_buckets",
+                {},
+            )
+        )
+        conn.commit()
+        return _dump_data(out)
+
+    @app.post("/api/buckets", dependencies=auth)
+    def create_bucket_api(body: BucketIn, conn: Conn) -> dict[str, Any]:
+        out = unwrap(
+            execute_tool(
+                state.context(conn, "user"),
+                "create_bucket",
+                body.model_dump(),
+            )
+        )
+        conn.commit()
+        return _dump_data(out)
+
+    @app.post("/api/buckets/allocate", dependencies=auth)
+    def allocate_bucket_api(body: BucketAllocateIn, conn: Conn) -> dict[str, Any]:
+        out = unwrap(
+            execute_tool(
+                state.context(conn, "user"),
+                "allocate_to_bucket",
+                body.model_dump(),
+            )
+        )
+        conn.commit()
+        return _dump_data(out)
+
+    @app.post("/api/buckets/reallocate", dependencies=auth)
+    def reallocate_bucket_api(body: BucketReallocateIn, conn: Conn) -> dict[str, Any]:
+        out = unwrap(
+            execute_tool(
+                state.context(conn, "user"),
+                "reassign_between_buckets",
+                body.model_dump(),
+            )
+        )
+        conn.commit()
+        return _dump_data(out)
+
+    # -- Phase 3: Readiness ---------------------------------------------------------------
+    @app.get("/api/readiness", dependencies=auth)
+    def readiness_api(conn: Conn) -> dict[str, Any]:
+        out = unwrap(
+            execute_tool(
+                state.context(conn, "user"),
+                "assess_investment_readiness",
+                {},
+            )
+        )
+        conn.commit()
+        return _dump_data(out)
+
+    # -- Phase 3: Memories ----------------------------------------------------------------
+    @app.get("/api/memories", dependencies=auth)
+    def memories_api(conn: Conn, status: str | None = None) -> list[dict[str, Any]]:
+        from copilot.db.repo_phase3 import list_memory_items
+
+        items = list_memory_items(conn, user_id=state.user_id, status=status)
+        return [_dump_data(m) for m in items]
+
+    @app.post("/api/memories/forget", dependencies=auth)
+    def forget_memory_api(body: MemoryForgetIn, conn: Conn) -> dict[str, Any]:
+        out = unwrap(
+            execute_tool(
+                state.context(conn, "user"),
+                "forget_memory",
+                body.model_dump(),
+            )
+        )
+        conn.commit()
+        return _dump_data(out)
+
+    @app.get("/api/memories/audit", dependencies=auth)
+    def memory_audit_api(
+        conn: Conn, limit: int = Query(50, ge=1, le=200)
+    ) -> list[dict[str, Any]]:
+        rows = conn.execute(
+            "SELECT * FROM memory_audit_log WHERE user_id = ? ORDER BY timestamp DESC LIMIT ?",
+            (state.user_id, limit),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    # -- Phase 3: Learning ----------------------------------------------------------------
+    @app.get("/api/learning", dependencies=auth)
+    def learning_profile_api(conn: Conn) -> dict[str, Any]:
+        from copilot.core.learning import list_tenant_learning_stats
+
+        stats = list_tenant_learning_stats(conn, state.user_id)
+        return {"user_id": state.user_id, "stats": stats}
+
+    @app.post("/api/learning/reset", dependencies=auth)
+    def reset_learning_api(body: LearningResetIn, conn: Conn) -> dict[str, Any]:
+        from copilot.core.learning import reset_learning
+
+        deleted = reset_learning(
+            conn,
+            state.user_id,
+            subject_kind=body.subject_kind,
+            subject_key=body.subject_key,
+            clock=now_utc(state.clock),
+        )
+        conn.commit()
+        return {"status": "ok", "reset_count": deleted}
+
+    # -- Phase 3: Ops & Jobs --------------------------------------------------------------
+    @app.get("/api/ops", dependencies=auth)
+    def ops_dashboard_api(conn: Conn) -> dict[str, Any]:
+        import dataclasses
+
+        from copilot.db.repo_phase3 import list_scheduled_jobs
+        from copilot.ops.telemetry import compute_ops_telemetry
+
+        telemetry = compute_ops_telemetry(conn, user_id=state.user_id)
+        jobs = list_scheduled_jobs(conn, user_id=state.user_id, enabled_only=False)
+        return {
+            "status": "healthy",
+            "telemetry": dataclasses.asdict(telemetry),
+            "background_jobs": [_dump_data(j) for j in jobs],
+        }
+
+    @app.post("/api/jobs/run", dependencies=auth)
+    def run_due_jobs_api(conn: Conn) -> dict[str, Any]:
+        from copilot.runtime.runner import run_due_jobs
+
+        runs = run_due_jobs(conn, user_id=state.user_id)
+        conn.commit()
+        return {"status": "ok", "jobs_executed": len(runs), "runs": [_dump_data(r) for r in runs]}
+
 
     return app
 

@@ -1,0 +1,18 @@
+name: monthly_close
+version: 1
+description: Monthly financial wrap-up - rollover buckets, refresh memory confidence, scan alerts, and draft review.
+inputs:
+  period: optional
+preconditions:
+  - has_transactions
+steps:
+  - rollover_buckets: {}
+  - refresh_memories: {}
+  - evaluate_alerts: {}
+  - get_allocation_summary: {}
+outputs:
+  - rollover_summary
+  - memory_refresh_summary
+  - alert_batch
+narration_template: monthly_close_v1
+eval_cases: tests/skills/monthly_close/

@@ -145,6 +145,20 @@ tools:
     short_description: "List the user's active or paused financial goals"
     intents: ["goal_check", "summarize_period"]
 
+  get_goal_progress:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Evaluate current balance, pace, and projected completion for a goal"
+    intents: ["goal_check", "goal_progress", "summarize_period"]
+
+  record_goal_contribution:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Record a manual contribution or withdrawal against a savings goal"
+    intents: []
+
   evaluate_goal_impact:
     planner_selectable: true
     tool_class: compute
@@ -235,3 +249,339 @@ tools:
     cost: cheap
     short_description: "Build the monthly review"
     intents: []
+
+  # Phase 3 Commitments Tools
+  list_commitments:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "List commitments and recurrence schedules for a user"
+    intents: ["commitment_check", "summarize_period"]
+
+  get_commitment_status:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Get status, due dates, and match history for a commitment"
+    intents: ["commitment_check"]
+
+  create_commitment:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Create a new financial commitment"
+    intents: []
+
+  update_commitment:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Update a financial commitment"
+    intents: []
+
+  pause_commitment:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Pause an active commitment"
+    intents: []
+
+  end_commitment:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "End an active commitment"
+    intents: []
+
+  accept_commitment:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Accept a suggested draft commitment"
+    intents: []
+
+  reject_commitment:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Reject a suggested commitment"
+    intents: []
+
+  suggest_commitments:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: medium
+    short_description: "Suggest draft commitments from recurring payment series"
+    intents: []
+
+  # Phase 3 Virtual Buckets Tools
+  list_buckets:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "List virtual spending, goal, and flexible buckets"
+    intents: ["bucket_check", "summarize_period"]
+
+  get_bucket_status:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Evaluate derived balance, spend, and status for a virtual bucket"
+    intents: ["bucket_check"]
+
+  get_allocation_summary:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Summarize reserved bucket totals and available unallocated funds"
+    intents: ["bucket_check", "summarize_period"]
+
+  create_bucket:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Create a new virtual bucket"
+    intents: []
+
+  update_bucket:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Update properties of an existing virtual bucket"
+    intents: []
+
+  archive_bucket:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Archive a virtual bucket"
+    intents: []
+
+  map_category_to_bucket:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Map a category to a virtual bucket"
+    intents: []
+
+  allocate_to_bucket:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Allocate funds to a virtual bucket"
+    intents: []
+
+  release_from_bucket:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Release funds from a virtual bucket"
+    intents: []
+
+  reassign_between_buckets:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Reassign funds between two virtual buckets"
+    intents: []
+
+  draft_reallocation:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Draft a reallocation between buckets"
+    intents: []
+
+  create_reallocation_draft:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Create a reallocation draft between buckets"
+    intents: []
+
+  decide_reallocation:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Decide on a reallocation draft"
+    intents: []
+
+  decide_reallocation_draft:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Decide on a reallocation draft"
+    intents: []
+
+  apply_reallocation:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Apply an approved reallocation draft"
+    intents: []
+
+  apply_reallocation_draft:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Apply an approved reallocation draft"
+    intents: []
+
+  # Phase 3 Financial Calendar Tools
+  get_calendar:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Project daily cash flow, running balances, and commitment coverage"
+    intents: ["cashflow_projection", "affordability"]
+
+  check_commitment_coverage:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Check commitment coverage against buffer in calendar projection"
+    intents: ["commitment_check", "affordability"]
+
+  # Phase 3 Investment Readiness Tools
+  assess_investment_readiness:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Assess savings capacity and financial cushion against readiness criteria"
+    intents: ["readiness_check", "affordability"]
+
+  get_readiness_assessment:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Assess savings capacity and financial cushion against readiness criteria"
+    intents: ["readiness_check", "affordability"]
+
+  # Phase 3 Contribution Planning and Trade-off Tools
+  plan_contributions:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Compute monthly waterfall contribution plan and generate options"
+    intents: ["contribution_plan", "affordability"]
+
+  compare_tradeoffs:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Compare scenario alternatives assessing cash flow and constraints"
+    intents: ["tradeoff_analysis", "affordability"]
+
+  # Phase 3 Behavioural Memory Tools
+  list_memories:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "List observed and confirmed behavioural memories and patterns"
+    intents: ["memory_query"]
+
+  explain_memory:
+    planner_selectable: true
+    tool_class: read
+    cost: cheap
+    short_description: "Explain evidence and confidence calculations for a memory item"
+    intents: ["memory_query"]
+
+  confirm_memory:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "User tool to confirm a memory candidate into active status"
+    intents: []
+
+  reject_memory:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "User tool to reject a memory candidate or item"
+    intents: []
+
+  edit_memory_statement:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "User tool to edit bounded fields of a memory statement"
+    intents: []
+
+  forget_memory:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "User tool to clear content and forget a memory item"
+    intents: []
+
+  refresh_memories:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Run observers to refresh behavioural memory candidates and confidence"
+    intents: ["monthly_close", "memory_query"]
+
+  record_contextual_exception:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Record a contextual exception for a category and period"
+    intents: []
+
+  rollover_buckets:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Rollover unspent balances for reset_monthly buckets to unallocated"
+    intents: ["monthly_close"]
+
+  investigate_month_change:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Investigate period-over-period spend changes via deterministic decomposition"
+    intents: ["explain_change"]
+
+  # Skills (PLAN_PHASE3 Section 5.12)
+  affordability_check:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Run affordability check skill: calendar projection, what-if spend, commitments, and goals"
+    intents: ["affordability"]
+
+  monthly_close:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Run monthly close skill: rollover buckets, refresh memory confidence, scan alerts, and draft review"
+    intents: ["monthly_close"]
+
+  trip_planning:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Run trip planning skill: goal progress, bucket allocation, calendar buffer, and trade-offs"
+    intents: ["trip_planning"]
+
+  contribution_review:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Run contribution review skill: investment readiness, contribution plan, and goal status"
+    intents: ["contribution_check"]
+
+  explain_month_change:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Run explain month change skill: causal investigation into spend changes and memory context"
+    intents: ["explain_change"]
+
+  run_skill:
+    planner_selectable: true
+    tool_class: compute
+    cost: medium
+    short_description: "Execute a certified skill procedure by name"
+    intents: ["affordability", "trip_planning", "contribution_check"]

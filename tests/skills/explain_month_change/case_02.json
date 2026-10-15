@@ -1,0 +1,10 @@
+{
+  "name": "shopping_month_change",
+  "description": "Investigate month-over-month shopping spend variance",
+  "inputs": {
+    "category_id": "c_shopping",
+    "period": "2026-10"
+  },
+  "expected_status": "ok",
+  "expected_outputs_contain": ["investigate_month_change", "list_memories"]
+}

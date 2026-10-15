@@ -14,8 +14,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
-from copilot.core.config import load_settings
 from copilot.api.llm import GuardedLLM, build_llm
+from copilot.core.config import load_settings
 from copilot.db.connection import get_connection, init_db
 from copilot.governance.policy import PolicySettings, load_policy
 from copilot.llm.client import LLMClient
