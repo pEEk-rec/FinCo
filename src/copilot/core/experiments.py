@@ -13,7 +13,6 @@ from datetime import date, datetime, timedelta
 from typing import Any
 
 from copilot.config.phase4 import load_baseline_config, load_experiments_config
-from copilot.core.advice import format_inr
 from copilot.core.baseline import (
     calculate_baseline,
     calculate_integrity_notes,
@@ -22,6 +21,7 @@ from copilot.core.baseline import (
 )
 from copilot.core.essentials import first_essential
 from copilot.core.goals import goal_current_paise
+from copilot.core.labels import format_metric, metric_label
 from copilot.core.metrics import METRIC_DIRECTIONS, calculate_metric
 from copilot.core.timeutil import IST, now_utc, to_utc_iso
 from copilot.db.repo import get_goal
@@ -225,13 +225,16 @@ def design_experiment(
             )
 
     # 5. Hypothesis formulation
-    intervention = p.get("intervention") or f"I modify my {metric_code} behavior"
+    metric_name = metric_label(metric_code)
+    intervention = p.get("intervention") or "stick to this challenge"
     dir_word = "at or below" if direction == "lower" else "at or above"
     if base is not None:
         hypo_text = (
-            f"If I {intervention}, then {metric_code} over {duration_days} days will be "
-            f"{dir_word} {target_val}, compared with my usual {base.median} "
-            f"(range {base.low} to {base.high})."
+            f"If I {intervention}, then my {metric_name} over {duration_days} days will be "
+            f"{dir_word} {format_metric(metric_code, target_val)}, compared with my usual "
+            f"{format_metric(metric_code, base.median)} "
+            f"(range {format_metric(metric_code, base.low)} to "
+            f"{format_metric(metric_code, base.high)})."
         )
         hyp_model = Hypothesis(
             intervention=intervention,
@@ -241,8 +244,8 @@ def design_experiment(
         )
     else:
         hypo_text = (
-            f"If I {intervention}, then {metric_code} over {duration_days} days will be "
-            f"{dir_word} {target_val}."
+            f"If I {intervention}, then my {metric_name} over {duration_days} days will be "
+            f"{dir_word} {format_metric(metric_code, target_val)}."
         )
         hyp_model = Hypothesis(
             intervention=intervention,
@@ -255,7 +258,7 @@ def design_experiment(
     exp = Experiment(
         id=exp_id,
         user_id=user_id,
-        title=p.get("title") or f"Challenge: {metric_code}",
+        title=p.get("title") or f"Challenge: {metric_name}",
         template_code=template_code,
         hypothesis_json={"statement": hypo_text, "structured": hyp_model.model_dump()},
         metric_def_json={
@@ -622,13 +625,17 @@ def create_due_reviews(
             dir_str = "below" if effect_val > 0 else "above"
             if base is not None:
                 narrative = (
-                    f"Observed {m_code} was {format_inr(obs_val)}, "
-                    f"{format_inr(abs(effect_val))} {dir_str} your usual median "
-                    f"of {format_inr(base.median)} "
-                    f"(range {format_inr(base.low)} to {format_inr(base.high)})."
+                    f"Your {metric_label(m_code)} was {format_metric(m_code, obs_val)}, "
+                    f"{format_metric(m_code, abs(effect_val))} {dir_str} your usual median "
+                    f"of {format_metric(m_code, base.median)} "
+                    f"(range {format_metric(m_code, base.low)} to "
+                    f"{format_metric(m_code, base.high)})."
                 )
             else:
-                narrative = f"Observed {m_code} was {format_inr(obs_val)} (no baseline comparison)."
+                narrative = (
+                    f"Your {metric_label(m_code)} was {format_metric(m_code, obs_val)} "
+                    "(no baseline comparison)."
+                )
 
             # 6. Goal linking using Phase 3 maths (never promises goal will be reached)
             goal_narrative: str | None = None

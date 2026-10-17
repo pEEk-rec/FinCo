@@ -30,11 +30,13 @@ from copilot.config.phase4 import (
     load_offers_config,
     load_phase4_safety_config,
 )
+from copilot.core.advice import format_inr
 from copilot.core.baseline import calculate_baseline
 from copilot.core.calendar import build_calendar, load_calendar_config
 from copilot.core.category_resolution import resolve_categories, resolve_merchants
 from copilot.core.essentials import essential_category_ids, is_essential
 from copilot.core.goals import goal_progress, required_monthly_paise
+from copilot.core.labels import format_metric, metric_label
 from copilot.core.metrics import METRIC_CATALOGUE, calculate_tagging_completeness
 from copilot.core.policy import (  # noqa: E402
     is_in_dismissal_quiet_period,
@@ -771,12 +773,12 @@ def _insert_offers(
     for rank, (cand, propensity_bp) in enumerate(zip(selected, propensities, strict=True), 1):
         offer_id = f"off_{uuid.uuid4().hex[:12]}"
         if cand.expected_effect_paise > 0:
-            exp_rs = cand.expected_effect_paise // 100
-            tgt_rs = cand.target_value // 100
-            med_rs = cand.baseline_median // 100
             reason_stmt = (
-                f"Your typical {cand.metric_code} is ₹{med_rs}; "
-                f"a {cand.difficulty} target of ₹{tgt_rs} could save ₹{exp_rs}."
+                f"Your usual {metric_label(cand.metric_code)} is "
+                f"{format_metric(cand.metric_code, cand.baseline_median)}; "
+                f"a {cand.difficulty} target of "
+                f"{format_metric(cand.metric_code, cand.target_value)} "
+                f"could save {format_inr(cand.expected_effect_paise)}."
             )
         else:
             reason_stmt = cand.rationale

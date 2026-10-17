@@ -335,6 +335,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/coach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Coach Api */
+        get: operations["coach_api_api_coach_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/commitments": {
         parameters: {
             query?: never;
@@ -1199,6 +1216,21 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
+        /** AdjustmentView */
+        AdjustmentView: {
+            /** Experiment Id */
+            experiment_id: string;
+            /** Experiment Title */
+            experiment_title: string;
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Message */
+            message: string;
+            /** Status */
+            status: string;
+        };
         /** AdviceDecisionIn */
         AdviceDecisionIn: {
             /**
@@ -1419,6 +1451,35 @@ export interface components {
             /** Trace */
             trace: components["schemas"]["TraceNodeOut"][];
         };
+        /** BadgeView */
+        BadgeView: {
+            /** Awarded At */
+            awarded_at: string;
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+            /** Name */
+            name: string;
+        };
+        /** BestView */
+        BestView: {
+            /** Achieved At */
+            achieved_at: string;
+            /** Best */
+            best: number;
+            /** Label */
+            label: string;
+            /** Scope */
+            scope: string;
+            /**
+             * Unit
+             * @enum {string}
+             */
+            unit: "money" | "count" | "days" | "percent_bp";
+            /** Window Days */
+            window_days: number;
+        };
         /** BucketAllocateIn */
         BucketAllocateIn: {
             /** Amount Paise */
@@ -1555,6 +1616,20 @@ export interface components {
             current_spend_paise: number;
             /** Previous Spend Paise */
             previous_spend_paise: number | null;
+        };
+        /** CoachView */
+        CoachView: {
+            /** Active */
+            active: components["schemas"]["ExperimentView"][];
+            /** Adjustments */
+            adjustments: components["schemas"]["AdjustmentView"][];
+            /** Offers */
+            offers: components["schemas"]["OfferView"][];
+            /** Offers Note */
+            offers_note: string | null;
+            progress: components["schemas"]["ProgressView"];
+            /** Reviews */
+            reviews: components["schemas"]["ReviewView"][];
         };
         /** CommitmentIn */
         CommitmentIn: {
@@ -1823,6 +1898,62 @@ export interface components {
             template_code?: string | null;
             /** Title */
             title?: string | null;
+        };
+        /** ExperimentView */
+        ExperimentView: {
+            /** Checkin Id */
+            checkin_id: string | null;
+            /**
+             * Difficulty
+             * @enum {string}
+             */
+            difficulty: "easy" | "medium" | "hard";
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "lower" | "higher";
+            /** Elapsed Days */
+            elapsed_days: number;
+            /** Extended By Days */
+            extended_by_days: number;
+            /** High */
+            high: number | null;
+            /** History */
+            history: number[];
+            /** Hypothesis */
+            hypothesis: string;
+            /** Id */
+            id: string;
+            /** Low */
+            low: number | null;
+            /** Metric Label */
+            metric_label: string;
+            /** Observed */
+            observed: number;
+            /** Pace */
+            pace: string;
+            /** Paused Days */
+            paused_days: string[];
+            /** Status */
+            status: string;
+            /** Target */
+            target: number;
+            /** Title */
+            title: string;
+            /** Total Days */
+            total_days: number;
+            /**
+             * Unit
+             * @enum {string}
+             */
+            unit: "money" | "count" | "days" | "percent_bp";
+            /** Usual */
+            usual: number | null;
+            /** Window End */
+            window_end: string;
+            /** Window Start */
+            window_start: string;
         };
         /**
          * ForecastBand
@@ -2179,6 +2310,19 @@ export interface components {
             /** Subject Kind */
             subject_kind?: string | null;
         };
+        /** LevelView */
+        LevelView: {
+            /** Name */
+            name: string;
+            /** Number */
+            number: number;
+            /** Progress Bp */
+            progress_bp: number;
+            /** Total Xp */
+            total_xp: number;
+            /** Xp To Next */
+            xp_to_next: number | null;
+        };
         /** LlmUsedOut */
         LlmUsedOut: {
             /** Available */
@@ -2290,6 +2434,35 @@ export interface components {
             /** Week Start */
             week_start?: string | null;
         };
+        /** OfferView */
+        OfferView: {
+            /**
+             * Difficulty
+             * @enum {string}
+             */
+            difficulty: "easy" | "medium" | "hard";
+            /** Duration Days */
+            duration_days: number;
+            /** Expected Saving Paise */
+            expected_saving_paise: number;
+            /** Id */
+            id: string;
+            /** Metric Label */
+            metric_label: string;
+            /** Reason */
+            reason: string;
+            /** Target */
+            target: number;
+            /** Title */
+            title: string;
+            /**
+             * Unit
+             * @enum {string}
+             */
+            unit: "money" | "count" | "days" | "percent_bp";
+            /** Usual */
+            usual: number;
+        };
         /**
          * PacePoint
          * @description Cumulative paise at the end of an IST day of the month.
@@ -2330,6 +2503,18 @@ export interface components {
             status: string;
             /** Tool Name */
             tool_name: string;
+        };
+        /** ProgressView */
+        ProgressView: {
+            /** Badges */
+            badges: components["schemas"]["BadgeView"][];
+            /** Bests */
+            bests: components["schemas"]["BestView"][];
+            level: components["schemas"]["LevelView"];
+            /** Locked Badges */
+            locked_badges: components["schemas"]["BadgeView"][];
+            /** Streaks */
+            streaks: components["schemas"]["StreakView"][];
         };
         /** Projection */
         Projection: {
@@ -2532,6 +2717,42 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** ReviewView */
+        ReviewView: {
+            /** Confirmation Prompt */
+            confirmation_prompt: string | null;
+            /** Details */
+            details: string[];
+            /** Experiment Id */
+            experiment_id: string;
+            /** Feedback Given */
+            feedback_given: boolean;
+            /** Headline */
+            headline: string;
+            /** High */
+            high: number | null;
+            /** Low */
+            low: number | null;
+            /** Needs Confirmation */
+            needs_confirmation: boolean;
+            /** Observed */
+            observed: number;
+            /** Outcome */
+            outcome: string;
+            /** Target Met */
+            target_met: boolean | null;
+            /** Title */
+            title: string;
+            /**
+             * Unit
+             * @enum {string}
+             */
+            unit: "money" | "count" | "days" | "percent_bp";
+            /** Usual */
+            usual: number | null;
+            /** Window End */
+            window_end: string;
+        };
         /** Scenario */
         Scenario: {
             /** Amount Paise */
@@ -2607,6 +2828,15 @@ export interface components {
             id: string;
             /** Occurred At */
             occurred_at: string;
+        };
+        /** StreakView */
+        StreakView: {
+            /** Code */
+            code: string;
+            /** Days */
+            days: number;
+            /** Label */
+            label: string;
         };
         /**
          * Suggestion
@@ -4051,6 +4281,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    coach_api_api_coach_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachView"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };

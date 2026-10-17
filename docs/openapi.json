@@ -18,6 +18,44 @@
         "title": "AdjustmentRejectIn",
         "type": "object"
       },
+      "AdjustmentView": {
+        "properties": {
+          "experiment_id": {
+            "title": "Experiment Id",
+            "type": "string"
+          },
+          "experiment_title": {
+            "title": "Experiment Title",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "experiment_id",
+          "experiment_title",
+          "id",
+          "kind",
+          "message",
+          "status"
+        ],
+        "title": "AdjustmentView",
+        "type": "object"
+      },
       "AdviceDecisionIn": {
         "properties": {
           "decision": {
@@ -614,6 +652,78 @@
         "title": "AskOut",
         "type": "object"
       },
+      "BadgeView": {
+        "properties": {
+          "awarded_at": {
+            "title": "Awarded At",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "awarded_at",
+          "code",
+          "description",
+          "name"
+        ],
+        "title": "BadgeView",
+        "type": "object"
+      },
+      "BestView": {
+        "properties": {
+          "achieved_at": {
+            "title": "Achieved At",
+            "type": "string"
+          },
+          "best": {
+            "title": "Best",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "scope": {
+            "title": "Scope",
+            "type": "string"
+          },
+          "unit": {
+            "enum": [
+              "money",
+              "count",
+              "days",
+              "percent_bp"
+            ],
+            "title": "Unit",
+            "type": "string"
+          },
+          "window_days": {
+            "title": "Window Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "achieved_at",
+          "best",
+          "label",
+          "scope",
+          "unit",
+          "window_days"
+        ],
+        "title": "BestView",
+        "type": "object"
+      },
       "BucketAllocateIn": {
         "properties": {
           "amount_paise": {
@@ -1031,6 +1141,62 @@
           "previous_spend_paise"
         ],
         "title": "CategoryTotal",
+        "type": "object"
+      },
+      "CoachView": {
+        "properties": {
+          "active": {
+            "items": {
+              "$ref": "#/components/schemas/ExperimentView"
+            },
+            "title": "Active",
+            "type": "array"
+          },
+          "adjustments": {
+            "items": {
+              "$ref": "#/components/schemas/AdjustmentView"
+            },
+            "title": "Adjustments",
+            "type": "array"
+          },
+          "offers": {
+            "items": {
+              "$ref": "#/components/schemas/OfferView"
+            },
+            "title": "Offers",
+            "type": "array"
+          },
+          "offers_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offers Note"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/ProgressView"
+          },
+          "reviews": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewView"
+            },
+            "title": "Reviews",
+            "type": "array"
+          }
+        },
+        "required": [
+          "active",
+          "adjustments",
+          "offers",
+          "offers_note",
+          "progress",
+          "reviews"
+        ],
+        "title": "CoachView",
         "type": "object"
       },
       "CommitmentIn": {
@@ -1768,6 +1934,173 @@
           }
         },
         "title": "ExperimentStartIn",
+        "type": "object"
+      },
+      "ExperimentView": {
+        "properties": {
+          "checkin_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkin Id"
+          },
+          "difficulty": {
+            "enum": [
+              "easy",
+              "medium",
+              "hard"
+            ],
+            "title": "Difficulty",
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "lower",
+              "higher"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "elapsed_days": {
+            "title": "Elapsed Days",
+            "type": "integer"
+          },
+          "extended_by_days": {
+            "title": "Extended By Days",
+            "type": "integer"
+          },
+          "high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "High"
+          },
+          "history": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "hypothesis": {
+            "title": "Hypothesis",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Low"
+          },
+          "metric_label": {
+            "title": "Metric Label",
+            "type": "string"
+          },
+          "observed": {
+            "title": "Observed",
+            "type": "integer"
+          },
+          "pace": {
+            "title": "Pace",
+            "type": "string"
+          },
+          "paused_days": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Paused Days",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "total_days": {
+            "title": "Total Days",
+            "type": "integer"
+          },
+          "unit": {
+            "enum": [
+              "money",
+              "count",
+              "days",
+              "percent_bp"
+            ],
+            "title": "Unit",
+            "type": "string"
+          },
+          "usual": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usual"
+          },
+          "window_end": {
+            "title": "Window End",
+            "type": "string"
+          },
+          "window_start": {
+            "title": "Window Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "checkin_id",
+          "difficulty",
+          "direction",
+          "elapsed_days",
+          "extended_by_days",
+          "high",
+          "history",
+          "hypothesis",
+          "id",
+          "low",
+          "metric_label",
+          "observed",
+          "pace",
+          "paused_days",
+          "status",
+          "target",
+          "title",
+          "total_days",
+          "unit",
+          "usual",
+          "window_end",
+          "window_start"
+        ],
+        "title": "ExperimentView",
         "type": "object"
       },
       "ForecastBand": {
@@ -2824,6 +3157,48 @@
         "title": "LearningResetIn",
         "type": "object"
       },
+      "LevelView": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "progress_bp": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Progress Bp",
+            "type": "integer"
+          },
+          "total_xp": {
+            "title": "Total Xp",
+            "type": "integer"
+          },
+          "xp_to_next": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xp To Next"
+          }
+        },
+        "required": [
+          "name",
+          "number",
+          "progress_bp",
+          "total_xp",
+          "xp_to_next"
+        ],
+        "title": "LevelView",
+        "type": "object"
+      },
       "LlmUsedOut": {
         "properties": {
           "available": {
@@ -3132,6 +3507,75 @@
         "title": "OfferSuggestIn",
         "type": "object"
       },
+      "OfferView": {
+        "properties": {
+          "difficulty": {
+            "enum": [
+              "easy",
+              "medium",
+              "hard"
+            ],
+            "title": "Difficulty",
+            "type": "string"
+          },
+          "duration_days": {
+            "title": "Duration Days",
+            "type": "integer"
+          },
+          "expected_saving_paise": {
+            "title": "Expected Saving Paise",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "metric_label": {
+            "title": "Metric Label",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "unit": {
+            "enum": [
+              "money",
+              "count",
+              "days",
+              "percent_bp"
+            ],
+            "title": "Unit",
+            "type": "string"
+          },
+          "usual": {
+            "title": "Usual",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "difficulty",
+          "duration_days",
+          "expected_saving_paise",
+          "id",
+          "metric_label",
+          "reason",
+          "target",
+          "title",
+          "unit",
+          "usual"
+        ],
+        "title": "OfferView",
+        "type": "object"
+      },
       "PacePoint": {
         "description": "Cumulative paise at the end of an IST day of the month.",
         "properties": {
@@ -3221,6 +3665,50 @@
           "tool_name"
         ],
         "title": "PlanStepOut",
+        "type": "object"
+      },
+      "ProgressView": {
+        "properties": {
+          "badges": {
+            "items": {
+              "$ref": "#/components/schemas/BadgeView"
+            },
+            "title": "Badges",
+            "type": "array"
+          },
+          "bests": {
+            "items": {
+              "$ref": "#/components/schemas/BestView"
+            },
+            "title": "Bests",
+            "type": "array"
+          },
+          "level": {
+            "$ref": "#/components/schemas/LevelView"
+          },
+          "locked_badges": {
+            "items": {
+              "$ref": "#/components/schemas/BadgeView"
+            },
+            "title": "Locked Badges",
+            "type": "array"
+          },
+          "streaks": {
+            "items": {
+              "$ref": "#/components/schemas/StreakView"
+            },
+            "title": "Streaks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "badges",
+          "bests",
+          "level",
+          "locked_badges",
+          "streaks"
+        ],
+        "title": "ProgressView",
         "type": "object"
       },
       "Projection": {
@@ -3742,6 +4230,133 @@
         "title": "ReviewVersion",
         "type": "object"
       },
+      "ReviewView": {
+        "properties": {
+          "confirmation_prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmation Prompt"
+          },
+          "details": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Details",
+            "type": "array"
+          },
+          "experiment_id": {
+            "title": "Experiment Id",
+            "type": "string"
+          },
+          "feedback_given": {
+            "title": "Feedback Given",
+            "type": "boolean"
+          },
+          "headline": {
+            "title": "Headline",
+            "type": "string"
+          },
+          "high": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "High"
+          },
+          "low": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Low"
+          },
+          "needs_confirmation": {
+            "title": "Needs Confirmation",
+            "type": "boolean"
+          },
+          "observed": {
+            "title": "Observed",
+            "type": "integer"
+          },
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          },
+          "target_met": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Met"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "unit": {
+            "enum": [
+              "money",
+              "count",
+              "days",
+              "percent_bp"
+            ],
+            "title": "Unit",
+            "type": "string"
+          },
+          "usual": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usual"
+          },
+          "window_end": {
+            "title": "Window End",
+            "type": "string"
+          }
+        },
+        "required": [
+          "confirmation_prompt",
+          "details",
+          "experiment_id",
+          "feedback_given",
+          "headline",
+          "high",
+          "low",
+          "needs_confirmation",
+          "observed",
+          "outcome",
+          "target_met",
+          "title",
+          "unit",
+          "usual",
+          "window_end"
+        ],
+        "title": "ReviewView",
+        "type": "object"
+      },
       "Scenario": {
         "additionalProperties": false,
         "properties": {
@@ -3930,6 +4545,29 @@
           "occurred_at"
         ],
         "title": "SimilarItem",
+        "type": "object"
+      },
+      "StreakView": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "days": {
+            "title": "Days",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "days",
+          "label"
+        ],
+        "title": "StreakView",
         "type": "object"
       },
       "Suggestion": {
@@ -5962,6 +6600,54 @@
           }
         },
         "summary": "Dismiss Offer Api"
+      }
+    },
+    "/api/coach": {
+      "get": {
+        "operationId": "coach_api_api_coach_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Coach Api"
       }
     },
     "/api/commitments": {

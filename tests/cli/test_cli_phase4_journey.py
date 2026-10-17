@@ -56,7 +56,7 @@ def test_offers_are_generated_from_the_cli_and_carry_a_reason(journey_db: str):
     offers = json.loads(out)
     assert offers and offers[0]["template_code"] == "delivery_cap"
     table = _run("challenges", "offers", "--clock", NOW, "--db", journey_db)
-    assert "typical" in table, "the reason column must show the observational statement"
+    assert "usual" in table, "the reason column must show the observational statement"
 
 
 def test_a_dated_exception_pauses_the_experiment_and_feedback_teaches_the_loop(journey_db: str):

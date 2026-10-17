@@ -25,6 +25,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from copilot.api import read_models as rm
+from copilot.api.coach_view import CoachView, build_coach_view
 from copilot.api.errors import ApiError, ApiException, not_found, unwrap
 from copilot.api.services import draft_month_advice, register_all_tools, run_import
 from copilot.api.state import ApiState, connection_scope
@@ -1406,6 +1407,11 @@ def create_app(state: ApiState) -> FastAPI:
         )
         conn.commit()
         return _dump_data(out)
+
+    # -- Phase 4: the screens' read model -------------------------------------------------
+    @app.get("/api/coach", response_model=CoachView, dependencies=auth)
+    def coach_api(conn: Conn) -> CoachView:
+        return build_coach_view(conn, state.user_id, clock=now_utc(state.clock))
 
     # -- Phase 4: Adjustments -------------------------------------------------------------
     @app.get("/api/adjustments", dependencies=auth)
