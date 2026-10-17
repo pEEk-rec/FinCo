@@ -1994,6 +1994,266 @@
         "title": "Goal",
         "type": "object"
       },
+      "GoalContributionIn": {
+        "properties": {
+          "amount_paise": {
+            "minimum": 1.0,
+            "title": "Amount Paise",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "amount_paise"
+        ],
+        "title": "GoalContributionIn",
+        "type": "object"
+      },
+      "GoalIn": {
+        "properties": {
+          "current_paise": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Current Paise",
+            "type": "integer"
+          },
+          "deadline": {
+            "anyOf": [
+              {
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "kind": {
+            "default": "savings",
+            "enum": [
+              "savings",
+              "purchase",
+              "emergency_fund",
+              "other"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "priority": {
+            "default": 2,
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Priority",
+            "type": "integer"
+          },
+          "target_paise": {
+            "exclusiveMinimum": 0.0,
+            "title": "Target Paise",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "target_paise"
+        ],
+        "title": "GoalIn",
+        "type": "object"
+      },
+      "GoalProgress": {
+        "additionalProperties": false,
+        "properties": {
+          "current_paise": {
+            "title": "Current Paise",
+            "type": "integer"
+          },
+          "goal_id": {
+            "title": "Goal Id",
+            "type": "string"
+          },
+          "linked_account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linked Account Id"
+          },
+          "months_remaining": {
+            "title": "Months Remaining",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "percent_bp": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Percent Bp",
+            "type": "integer"
+          },
+          "progress_source": {
+            "enum": [
+              "manual",
+              "bucket",
+              "account"
+            ],
+            "title": "Progress Source",
+            "type": "string"
+          },
+          "projected_completion_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projected Completion Date"
+          },
+          "projection_range": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Projection Range",
+            "type": "object"
+          },
+          "remaining_paise": {
+            "title": "Remaining Paise",
+            "type": "integer"
+          },
+          "required_monthly_paise": {
+            "title": "Required Monthly Paise",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "on_track",
+              "at_risk",
+              "off_track",
+              "completed",
+              "unknown"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "target_paise": {
+            "title": "Target Paise",
+            "type": "integer"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "current_paise",
+          "goal_id",
+          "linked_account_id",
+          "months_remaining",
+          "name",
+          "percent_bp",
+          "progress_source",
+          "projected_completion_date",
+          "projection_range",
+          "remaining_paise",
+          "required_monthly_paise",
+          "status",
+          "target_paise",
+          "user_id"
+        ],
+        "title": "GoalProgress",
+        "type": "object"
+      },
+      "GoalUpdateIn": {
+        "properties": {
+          "deadline": {
+            "anyOf": [
+              {
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "maximum": 3.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "paused",
+                  "done"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "target_paise": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Paise"
+          }
+        },
+        "title": "GoalUpdateIn",
+        "type": "object"
+      },
       "GoalsOut": {
         "properties": {
           "goals": {
@@ -2002,10 +2262,18 @@
             },
             "title": "Goals",
             "type": "array"
+          },
+          "progress": {
+            "items": {
+              "$ref": "#/components/schemas/GoalProgress"
+            },
+            "title": "Progress",
+            "type": "array"
           }
         },
         "required": [
-          "goals"
+          "goals",
+          "progress"
         ],
         "title": "GoalsOut",
         "type": "object"
@@ -7168,6 +7436,230 @@
           }
         },
         "summary": "Goals"
+      },
+      "post": {
+        "operationId": "create_goal_api_api_goals_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Goal Api"
+      }
+    },
+    "/api/goals/{goal_id}/contributions": {
+      "post": {
+        "operationId": "goal_contribution_api_api_goals__goal_id__contributions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "goal_id",
+            "required": true,
+            "schema": {
+              "title": "Goal Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalContributionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Goal Contribution Api"
+      }
+    },
+    "/api/goals/{goal_id}/update": {
+      "post": {
+        "operationId": "update_goal_api_api_goals__goal_id__update_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "goal_id",
+            "required": true,
+            "schema": {
+              "title": "Goal Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalUpdateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Goal Api"
       }
     },
     "/api/goals/{id}/decompose": {

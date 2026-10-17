@@ -207,3 +207,42 @@ test('the URL token logs in and is removed from the address bar', async ({ brows
   expect(page.url()).not.toContain('token');
   await context.close();
 });
+
+test('goals: create, add money, edit, pause, finish; every figure comes from the API', async ({
+  page,
+  request,
+}) => {
+  await page.goto('/goals');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('saving for');
+  await page.getByRole('button', { name: 'New goal' }).first().click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('What are you saving for').fill('Camera lens');
+  await dialog.getByLabel('Target (rupees)').fill('50000');
+  await dialog.getByLabel('By when (optional)').fill('2030-01-31');
+  await dialog.getByRole('button', { name: 'Create goal' }).click();
+  await expect(page.getByRole('heading', { name: 'Camera lens', exact: true })).toBeVisible();
+  const card = page.locator('li', {
+    has: page.getByRole('heading', { name: 'Camera lens', exact: true }),
+  });
+  await expectNoSeriousA11yIssues(page, 'goals');
+
+  await card.getByRole('button', { name: 'Add money' }).click();
+  await page.getByLabel('Amount to add to Camera lens').fill('12500');
+  await card.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(card.getByText('₹12,500', { exact: false })).toBeVisible();
+
+  const goals = await getJson<{
+    goals: { id: string; name: string; current_paise: number; status: string }[];
+    progress: { goal_id: string; percent_bp: number; current_paise: number }[];
+  }>(request, '/goals');
+  const lens = goals.goals.find((g) => g.name === 'Camera lens');
+  expect(goals.progress.find((p) => p.goal_id === lens?.id)?.current_paise).toBe(1250000);
+  expect(goals.progress.find((p) => p.goal_id === lens?.id)?.percent_bp).toBe(2500);
+  await expect(card.getByText('25%')).toBeVisible();
+
+  await card.getByRole('button', { name: 'Pause' }).click();
+  await expect(card.getByText('Paused')).toBeVisible();
+  await card.getByRole('button', { name: 'Resume' }).click();
+  await card.getByRole('button', { name: 'Mark finished' }).click();
+  await expect(page.getByRole('heading', { name: 'Finished' })).toBeVisible();
+});

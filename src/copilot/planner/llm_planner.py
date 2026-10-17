@@ -6,8 +6,11 @@ All proposals must pass through the deterministic PlanValidator; any invalid pro
 is audited as 'plan_rejected' and replaced with the deterministic plan.
 """
 
+import hashlib
+import json
 import logging
 import sqlite3
+import time
 import uuid
 from typing import Any
 
@@ -30,6 +33,19 @@ class LLMStepProposal(BaseModel):
 
 class LLMPlanProposal(BaseModel):
     steps: list[LLMStepProposal] = Field(default_factory=list)
+
+
+_PLAN_CACHE: dict[str, tuple[float, "LLMPlanProposal"]] = {}
+_PLAN_CACHE_MAX = 128
+_PLAN_CACHE_TTL_S = 900.0
+
+
+def _plan_cache_key(user_id: str, intent: Intent, raw_text: str | None, catalogue: Any) -> str:
+    """The same user, intent, question and tool catalogue always yield the same proposal."""
+    material = json.dumps(
+        [user_id, intent.model_dump(mode="json"), raw_text, catalogue], sort_keys=True, default=str
+    )
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()
 
 
 class LLMPlanner:
@@ -74,19 +90,29 @@ class LLMPlanner:
             "Return the proposed plan as structured JSON with a list of steps."
         )
 
+        raw_text = state_projection.get("raw_text") if state_projection else None
+        cache_key = _plan_cache_key(user_id, intent, raw_text, catalogue)
+        hit = _PLAN_CACHE.get(cache_key)
+        cached = hit[1] if hit and time.monotonic() - hit[0] < _PLAN_CACHE_TTL_S else None
         try:
-            proposal, _ = builder.structured_call(
-                client=self.client,
-                output_model=LLMPlanProposal,
-                user_id=user_id,
-                task_id=task_id,
-                purpose="planning",
-                instruction=instruction,
-                intent=intent,
-                catalogue=catalogue,
-                untrusted_data=state_projection.get("raw_text") if state_projection else None,
-                conn=conn,
-            )
+            if cached is not None:
+                proposal = cached  # a repeated question costs no model call; it is re-validated
+            else:
+                proposal, _ = builder.structured_call(
+                    client=self.client,
+                    output_model=LLMPlanProposal,
+                    user_id=user_id,
+                    task_id=task_id,
+                    purpose="planning",
+                    instruction=instruction,
+                    intent=intent,
+                    catalogue=catalogue,
+                    untrusted_data=raw_text,
+                    conn=conn,
+                )
+                if len(_PLAN_CACHE) >= _PLAN_CACHE_MAX:
+                    _PLAN_CACHE.pop(next(iter(_PLAN_CACHE)))
+                _PLAN_CACHE[cache_key] = (time.monotonic(), proposal)
         except (StructuredOutputError, Exception) as err:
             logger.warning("LLM planner proposal failed (%s); using deterministic plan", err)
             return self.fallback.propose(task_id, user_id, intent, state_projection, tool_catalogue)

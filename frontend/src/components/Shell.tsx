@@ -7,6 +7,7 @@ import {
   ListChecks,
   Sparkle,
   SquaresFour,
+  Target,
 } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
@@ -22,6 +23,7 @@ const NAV: { to: string; label: string; icon: ReactNode; end?: boolean }[] = [
   { to: '/', label: copy.nav.dashboard, icon: <SquaresFour size={18} />, end: true },
   { to: '/transactions', label: copy.nav.transactions, icon: <ArrowsLeftRight size={18} /> },
   { to: '/review', label: copy.nav.review, icon: <ListChecks size={18} /> },
+  { to: '/goals', label: copy.nav.goals, icon: <Target size={18} /> },
   { to: '/monthly', label: copy.nav.monthly, icon: <FileText size={18} /> },
   { to: '/connect', label: copy.nav.connect, icon: <CloudArrowDown size={18} /> },
 ];

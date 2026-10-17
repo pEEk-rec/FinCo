@@ -815,8 +815,12 @@ function GoalsAlertsPanel() {
                   <Badge>{g.status}</Badge>
                 </div>
                 <p className="tabular text-small text-ink-2">
-                  {formatINR(g.current_paise, { paise: 'never' })} of{' '}
-                  {formatINR(g.target_paise, { paise: 'never' })}
+                  {formatINR(
+                    goals.data.progress.find((p) => p.goal_id === g.id)?.current_paise ??
+                      g.current_paise,
+                    { paise: 'never' },
+                  )}{' '}
+                  of {formatINR(g.target_paise, { paise: 'never' })}
                   {g.deadline ? ` by ${formatDay(`${g.deadline}T06:30:00Z`)}` : ''}
                 </p>
               </li>
@@ -955,9 +959,9 @@ function ActivityPanel() {
         <Card labelledBy="pend-title" className="border-agent/30">
           <CardHeader id="pend-title" label={T.pendingApprovals} />
           <ul>
-            {pending.map((p) => (
+            {pending.map((p, i) => (
               <li
-                key={`${p.ts}-${p.title}`}
+                key={`${p.ts}-${p.title}-${i}`}
                 className="border-b border-hairline px-6 py-3 last:border-b-0"
               >
                 <p className="text-[14px]">{p.title}</p>
@@ -975,9 +979,9 @@ function ActivityPanel() {
           </div>
         ) : (
           <ol>
-            {entries.slice(0, 60).map((e) => (
+            {entries.slice(0, 60).map((e, i) => (
               <li
-                key={`${e.ts}-${e.kind}-${e.title}`}
+                key={`${e.ts}-${e.kind}-${e.title}-${i}`}
                 className="grid grid-cols-[6rem_10rem_minmax(0,1fr)] gap-3 border-b border-hairline px-6 py-3 last:border-b-0"
               >
                 <span className="text-small text-ink-3">

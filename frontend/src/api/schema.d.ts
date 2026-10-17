@@ -672,7 +672,42 @@ export interface paths {
         /** Goals */
         get: operations["goals_api_goals_get"];
         put?: never;
-        post?: never;
+        /** Create Goal Api */
+        post: operations["create_goal_api_api_goals_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals/{goal_id}/contributions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Goal Contribution Api */
+        post: operations["goal_contribution_api_api_goals__goal_id__contributions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals/{goal_id}/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Update Goal Api */
+        post: operations["update_goal_api_api_goals__goal_id__update_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1866,10 +1901,94 @@ export interface components {
             /** User Id */
             user_id: string;
         };
+        /** GoalContributionIn */
+        GoalContributionIn: {
+            /** Amount Paise */
+            amount_paise: number;
+        };
+        /** GoalIn */
+        GoalIn: {
+            /**
+             * Current Paise
+             * @default 0
+             */
+            current_paise: number;
+            /** Deadline */
+            deadline?: string | null;
+            /**
+             * Kind
+             * @default savings
+             * @enum {string}
+             */
+            kind: "savings" | "purchase" | "emergency_fund" | "other";
+            /** Name */
+            name: string;
+            /**
+             * Priority
+             * @default 2
+             */
+            priority: number;
+            /** Target Paise */
+            target_paise: number;
+        };
+        /** GoalProgress */
+        GoalProgress: {
+            /** Current Paise */
+            current_paise: number;
+            /** Goal Id */
+            goal_id: string;
+            /** Linked Account Id */
+            linked_account_id: string | null;
+            /** Months Remaining */
+            months_remaining: number;
+            /** Name */
+            name: string;
+            /** Percent Bp */
+            percent_bp: number;
+            /**
+             * Progress Source
+             * @enum {string}
+             */
+            progress_source: "manual" | "bucket" | "account";
+            /** Projected Completion Date */
+            projected_completion_date: string | null;
+            /** Projection Range */
+            projection_range: {
+                [key: string]: string | null;
+            };
+            /** Remaining Paise */
+            remaining_paise: number;
+            /** Required Monthly Paise */
+            required_monthly_paise: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "on_track" | "at_risk" | "off_track" | "completed" | "unknown";
+            /** Target Paise */
+            target_paise: number;
+            /** User Id */
+            user_id: string;
+        };
+        /** GoalUpdateIn */
+        GoalUpdateIn: {
+            /** Deadline */
+            deadline?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Priority */
+            priority?: number | null;
+            /** Status */
+            status?: ("active" | "paused" | "done") | null;
+            /** Target Paise */
+            target_paise?: number | null;
+        };
         /** GoalsOut */
         GoalsOut: {
             /** Goals */
             goals: components["schemas"]["Goal"][];
+            /** Progress */
+            progress: components["schemas"]["GoalProgress"][];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -5165,6 +5284,190 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    create_goal_api_api_goals_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    goal_contribution_api_api_goals__goal_id__contributions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalContributionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_goal_api_api_goals__goal_id__update_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

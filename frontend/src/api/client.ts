@@ -84,6 +84,9 @@ export type CategoryOut = S['CategoryOut'];
 export type RecategorizeOut = S['RecategorizeOut'];
 export type Timeline = S['Timeline'];
 export type GoalsOut = S['GoalsOut'];
+export type GoalIn = S['GoalIn'];
+export type GoalUpdateIn = S['GoalUpdateIn'];
+export type GoalProgress = S['GoalProgress'];
 export type WhatIfOut = S['WhatIfOut'];
 export type CompareOut = S['CompareOut'];
 export type WhatIfIn = S['WhatIfIn'];
@@ -231,6 +234,10 @@ export const api = {
   decideAlert: (id: string, body: AlertDecisionIn) =>
     post<Record<string, unknown>>(`/alerts/${id}/decision`, body),
   goals: () => get<GoalsOut>('/goals'),
+  createGoal: (body: GoalIn) => post<GoalsOut>('/goals', body),
+  updateGoal: (id: string, body: GoalUpdateIn) => post<GoalsOut>(`/goals/${id}/update`, body),
+  addToGoal: (id: string, amountPaise: number) =>
+    post<GoalsOut>(`/goals/${id}/contributions`, { amount_paise: amountPaise }),
   anomalies: () => get<S['AnomalyOut'][]>('/anomalies'),
   investigateAnomaly: (anomalyId: string) =>
     post<S['InvestigationOut']>('/investigate/anomaly', { anomaly_id: anomalyId }),

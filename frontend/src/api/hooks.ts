@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { api, ApiError, type TransactionFilters } from './client';
+import {
+  api,
+  ApiError,
+  type GoalIn,
+  type GoalsOut,
+  type GoalUpdateIn,
+  type TransactionFilters,
+} from './client';
 
 /** Server state keys; one place so invalidation after a write is exact. */
 export const keys = {
@@ -55,6 +62,23 @@ export const useTimeline = () =>
   useQuery({ queryKey: keys.timeline, queryFn: api.timeline, retry });
 export const useAlerts = () => useQuery({ queryKey: keys.alerts, queryFn: api.alerts, retry });
 export const useGoals = () => useQuery({ queryKey: keys.goals, queryFn: api.goals, retry });
+
+/** Goal writes return the whole goals view, so the cache is replaced without a refetch. */
+export function useGoalWrites() {
+  const client = useQueryClient();
+  const store = (data: GoalsOut) => client.setQueryData(keys.goals, data);
+  return {
+    create: useMutation({ mutationFn: (b: GoalIn) => api.createGoal(b), onSuccess: store }),
+    update: useMutation({
+      mutationFn: (v: { id: string; body: GoalUpdateIn }) => api.updateGoal(v.id, v.body),
+      onSuccess: store,
+    }),
+    contribute: useMutation({
+      mutationFn: (v: { id: string; paise: number }) => api.addToGoal(v.id, v.paise),
+      onSuccess: store,
+    }),
+  };
+}
 
 /** After any write that changes money-relevant data, everything derived from it refetches. */
 export function useInvalidateFinancials() {

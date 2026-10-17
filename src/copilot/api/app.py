@@ -41,6 +41,7 @@ from copilot.db.repo import (
 )
 from copilot.models.agentic import Goal, Investigation, Projection, Timeline
 from copilot.models.domain import Category
+from copilot.models.phase3 import GoalProgress
 from copilot.review.models import MonthlyReviewData
 from copilot.tools.executor import execute_tool
 
@@ -247,6 +248,28 @@ class AlertPreferenceIn(BaseModel):
 
 class GoalsOut(BaseModel):
     goals: list[Goal]
+    progress: list[GoalProgress] = Field(default_factory=list)
+
+
+class GoalIn(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    kind: Literal["savings", "purchase", "emergency_fund", "other"] = "savings"
+    target_paise: int = Field(gt=0)
+    current_paise: int = Field(default=0, ge=0)
+    deadline: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    priority: int = Field(default=2, ge=1, le=3)
+
+
+class GoalUpdateIn(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=80)
+    target_paise: int | None = Field(default=None, gt=0)
+    deadline: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    priority: int | None = Field(default=None, ge=1, le=3)
+    status: Literal["active", "paused", "done"] | None = None
+
+
+class GoalContributionIn(BaseModel):
+    amount_paise: int = Field(ge=1)
 
 
 class WhatIfIn(BaseModel):
@@ -817,7 +840,51 @@ def create_app(state: ApiState) -> FastAPI:
 
     @app.get("/api/goals", response_model=GoalsOut, dependencies=auth)
     def goals(conn: Conn) -> GoalsOut:
-        return GoalsOut(goals=list_goals(conn, state.user_id))
+        return _goals_out(conn)
+
+    def _goals_out(conn: sqlite3.Connection) -> GoalsOut:
+        from copilot.core.goals import goal_progress
+
+        items = list_goals(conn, state.user_id)
+        today = now_utc(state.clock).astimezone(IST).date()
+        progress = [goal_progress(conn, state.user_id, g, today) for g in items]
+        return GoalsOut(goals=items, progress=progress)
+
+    @app.post("/api/goals", response_model=GoalsOut, dependencies=auth)
+    def create_goal_api(body: GoalIn, conn: Conn) -> GoalsOut:
+        unwrap(
+            execute_tool(
+                state.context(conn, "user"),
+                "create_goal",
+                body.model_dump(exclude_none=True),
+            )
+        )
+        conn.commit()
+        return _goals_out(conn)
+
+    @app.post("/api/goals/{goal_id}/update", response_model=GoalsOut, dependencies=auth)
+    def update_goal_api(goal_id: str, body: GoalUpdateIn, conn: Conn) -> GoalsOut:
+        unwrap(
+            execute_tool(
+                state.context(conn, "user"),
+                "update_goal",
+                {"goal_id": goal_id, **body.model_dump(exclude_none=True)},
+            )
+        )
+        conn.commit()
+        return _goals_out(conn)
+
+    @app.post("/api/goals/{goal_id}/contributions", response_model=GoalsOut, dependencies=auth)
+    def goal_contribution_api(goal_id: str, body: GoalContributionIn, conn: Conn) -> GoalsOut:
+        unwrap(
+            execute_tool(
+                state.context(conn, "user"),
+                "record_goal_contribution",
+                {"goal_id": goal_id, "amount_paise": body.amount_paise},
+            )
+        )
+        conn.commit()
+        return _goals_out(conn)
 
     def _scenario(s: WhatIfIn) -> dict[str, Any]:
         now = now_utc(state.clock).astimezone(IST)

@@ -11,6 +11,7 @@ export const copy = {
     dashboard: 'Dashboard',
     transactions: 'Transactions',
     review: 'Review',
+    goals: 'Goals',
     monthly: 'Monthly review',
     agent: 'Agent',
     connect: 'Connect and import',
