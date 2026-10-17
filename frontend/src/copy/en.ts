@@ -12,6 +12,8 @@ export const copy = {
     transactions: 'Transactions',
     review: 'Review',
     goals: 'Goals',
+    challenges: 'Challenges',
+    progress: 'Progress',
     monthly: 'Monthly review',
     agent: 'Agent',
     connect: 'Connect and import',

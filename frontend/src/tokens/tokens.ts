@@ -8,24 +8,33 @@
  */
 
 export const colors = {
-  canvas: '#F6F5F1',
+  // Warm paper lit by coral: a serious ledger with a living accent. Coral is the brand and the
+  // colour of money in motion; deep green, amber and crimson carry meaning; violet marks the AI.
+  canvas: '#FBF6F2',
   surface: '#FFFFFF',
-  'surface-sunken': '#EFEDE7',
-  'surface-hover': '#F9F8F5',
-  'surface-selected': '#F1EFE9',
-  hairline: '#E4E1D8',
-  'hairline-strong': '#CFCBC0',
-  'input-border': '#8E8A80',
-  ink: '#121413',
-  'ink-2': '#4D514D',
-  'ink-3': '#686C67',
+  'surface-sunken': '#F4ECE6',
+  'surface-hover': '#FDF8F5',
+  'surface-selected': '#FCEAE3',
+  hairline: '#EADFD7',
+  'hairline-strong': '#D9C8BD',
+  'input-border': '#8C7B70',
+  ink: '#1F1A17',
+  'ink-2': '#4F4540',
+  'ink-3': '#6B605A',
   'ink-inverse': '#FFFFFF',
-  positive: '#0F6B53',
-  'positive-tint': '#E3F1EC',
-  attention: '#8F5605',
-  'attention-tint': '#FBF1DC',
-  negative: '#B4382A',
-  'negative-tint': '#FBE8E4',
+  brand: '#BA3A25',
+  'brand-ink': '#FFFFFF',
+  'brand-tint': '#FDECE7',
+  coral: '#FF7A5C',
+  peach: '#FFB68C',
+  gold: '#9A600A',
+  'gold-tint': '#FBF0DA',
+  positive: '#0F7A5A',
+  'positive-tint': '#E2F3EC',
+  attention: '#975300',
+  'attention-tint': '#FCEFD9',
+  negative: '#B3261E',
+  'negative-tint': '#FCE6E3',
   agent: '#5B47D6',
   'agent-tint': '#ECE8FD',
   focus: '#2F5BD3',
@@ -47,9 +56,9 @@ export const categoryPalette = [
   { fg: '#4D514D', bg: '#EFEDE7', mark: '#8A8E89' },
 ] as const;
 
-export const radius = { control: '8px', card: '14px', chip: '999px' } as const;
+export const radius = { control: '12px', card: '20px', chip: '999px' } as const;
 
-export const shadow = { popover: '0 8px 24px rgba(18, 20, 19, 0.08)' } as const;
+export const shadow = { popover: '0 16px 40px rgba(80, 40, 20, 0.14)' } as const;
 
 export const motion = {
   fast: 150,
@@ -94,6 +103,12 @@ export const contrastPairs: { fg: ColorName; bg: ColorName; kind: 'text' | 'larg
     { fg: 'ink-3' as const, bg, kind: 'text' as const },
   ]),
   { fg: 'ink-inverse', bg: 'ink', kind: 'text' },
+  { fg: 'brand-ink', bg: 'brand', kind: 'text' },
+  { fg: 'brand', bg: 'surface', kind: 'text' },
+  { fg: 'brand', bg: 'brand-tint', kind: 'text' },
+  { fg: 'gold', bg: 'surface', kind: 'text' },
+  { fg: 'gold', bg: 'gold-tint', kind: 'text' },
+  { fg: 'brand', bg: 'canvas', kind: 'text' },
   { fg: 'positive', bg: 'surface', kind: 'text' },
   { fg: 'positive', bg: 'positive-tint', kind: 'text' },
   { fg: 'attention', bg: 'surface', kind: 'text' },

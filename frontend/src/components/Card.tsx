@@ -1,9 +1,16 @@
-import type { ReactNode } from 'react';
+import type { PointerEvent, ReactNode } from 'react';
 import { Link } from 'react-router';
 
 import { cx } from './cx';
 
-/** Flat surface with a hairline border. Cards never carry shadows. */
+/** Lets the coral sheen follow the pointer across a glass pane (pure decoration). */
+function followPointer(e: PointerEvent<HTMLElement>) {
+  const box = e.currentTarget.getBoundingClientRect();
+  e.currentTarget.style.setProperty('--mx', `${e.clientX - box.left}px`);
+  e.currentTarget.style.setProperty('--my', `${e.clientY - box.top}px`);
+}
+
+/** A pane of frosted paper over the moving light. */
 export function Card({
   children,
   className,
@@ -18,7 +25,8 @@ export function Card({
   return (
     <Tag
       aria-labelledby={labelledBy}
-      className={cx('rounded-card border border-hairline bg-surface', className)}
+      onPointerMove={followPointer}
+      className={cx('glass rounded-card', className)}
     >
       {children}
     </Tag>

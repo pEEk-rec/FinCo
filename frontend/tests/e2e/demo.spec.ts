@@ -246,3 +246,36 @@ test('goals: create, add money, edit, pause, finish; every figure comes from the
   await card.getByRole('button', { name: 'Mark finished' }).click();
   await expect(page.getByRole('heading', { name: 'Finished' })).toBeVisible();
 });
+
+test('challenges: find one, start it, pause, resume; progress shows the level', async ({
+  page,
+  request,
+}) => {
+  await page.goto('/challenges');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('honestly measured');
+  await page.getByRole('button', { name: 'Look for a challenge' }).click();
+  const start = page.getByRole('button', { name: 'Start this challenge' });
+  await expect(start.first()).toBeVisible();
+  await expectNoSeriousA11yIssues(page, 'challenges');
+
+  await start.first().click();
+  await expect(page.getByRole('heading', { name: 'In progress' })).toBeVisible();
+  const coach = await getJson<{ active: { id: string; status: string; title: string }[] }>(
+    request,
+    '/coach',
+  );
+  expect(coach.active).toHaveLength(1);
+  const title = coach.active[0]!.title;
+  const card = page.locator('li', { has: page.getByRole('heading', { name: title, exact: true }) });
+
+  await card.getByRole('button', { name: 'Pause' }).click();
+  await expect(card.getByText('Paused', { exact: true })).toBeVisible();
+  await card.getByRole('button', { name: 'Resume' }).click();
+  await expect(card.getByRole('button', { name: 'Pause' })).toBeVisible();
+
+  await page.goto('/progress');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('kept honest');
+  await expect(page.getByText('Level', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Badges' })).toBeVisible();
+  await expectNoSeriousA11yIssues(page, 'progress');
+});

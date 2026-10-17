@@ -3,9 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   api,
   ApiError,
+  type CheckinResponse,
   type GoalIn,
   type GoalsOut,
   type GoalUpdateIn,
+  type ReviewFeedback,
   type TransactionFilters,
 } from './client';
 
@@ -23,6 +25,7 @@ export const keys = {
   timeline: ['timeline'] as const,
   alerts: ['alerts'] as const,
   goals: ['goals'] as const,
+  coach: ['coach'] as const,
 };
 
 const retry = (count: number, error: Error) =>
@@ -62,6 +65,32 @@ export const useTimeline = () =>
   useQuery({ queryKey: keys.timeline, queryFn: api.timeline, retry });
 export const useAlerts = () => useQuery({ queryKey: keys.alerts, queryFn: api.alerts, retry });
 export const useGoals = () => useQuery({ queryKey: keys.goals, queryFn: api.goals, retry });
+
+export const useCoach = () => useQuery({ queryKey: keys.coach, queryFn: api.coach, retry });
+
+/** Every change to a challenge goes through the API; the whole coach view is then re-read. */
+export function useCoachWrites() {
+  const client = useQueryClient();
+  const refresh = () => client.invalidateQueries({ queryKey: keys.coach });
+  const run = <V>(fn: (v: V) => Promise<unknown>) => ({ mutationFn: fn, onSuccess: refresh });
+  return {
+    suggest: useMutation(run(() => api.suggestOffers())),
+    accept: useMutation(run((id: string) => api.acceptOffer(id))),
+    dismiss: useMutation(run((id: string) => api.dismissOffer(id))),
+    acceptAdjustment: useMutation(run((id: string) => api.acceptAdjustment(id))),
+    rejectAdjustment: useMutation(run((id: string) => api.rejectAdjustment(id))),
+    pause: useMutation(run((id: string) => api.pauseExperiment(id))),
+    resume: useMutation(run((id: string) => api.resumeExperiment(id))),
+    abandon: useMutation(run((id: string) => api.abandonExperiment(id))),
+    checkin: useMutation(
+      run((v: { id: string; response: CheckinResponse }) => api.answerCheckin(v.id, v.response)),
+    ),
+    confirm: useMutation(run((id: string) => api.confirmIntegrity(id))),
+    feedback: useMutation(
+      run((v: { id: string; body: ReviewFeedback }) => api.sendFeedback(v.id, v.body)),
+    ),
+  };
+}
 
 /** Goal writes return the whole goals view, so the cache is replaced without a refetch. */
 export function useGoalWrites() {

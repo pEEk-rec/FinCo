@@ -91,6 +91,17 @@ export type WhatIfOut = S['WhatIfOut'];
 export type CompareOut = S['CompareOut'];
 export type WhatIfIn = S['WhatIfIn'];
 export type AlertDecisionIn = S['AlertDecisionIn'];
+export type CoachView = S['CoachView'];
+export type OfferView = S['OfferView'];
+export type ExperimentView = S['ExperimentView'];
+export type ReviewView = S['ReviewView'];
+export type Unit = S['OfferView']['unit'];
+export type CheckinResponse = 'going_well' | 'hard' | 'want_to_pause' | 'skip';
+export interface ReviewFeedback {
+  difficulty_rating?: number;
+  user_helpful?: boolean;
+  would_repeat?: boolean;
+}
 
 /** Failure with the API's stable error code. */
 export class ApiError extends Error {
@@ -234,6 +245,21 @@ export const api = {
   decideAlert: (id: string, body: AlertDecisionIn) =>
     post<Record<string, unknown>>(`/alerts/${id}/decision`, body),
   goals: () => get<GoalsOut>('/goals'),
+  coach: () => get<CoachView>('/coach'),
+  suggestOffers: () => post<unknown>('/challenges/offers/suggest', {}),
+  acceptOffer: (id: string) => post<unknown>(`/challenges/offers/${id}/accept`, {}),
+  dismissOffer: (id: string) => post<unknown>(`/challenges/offers/${id}/dismiss`, {}),
+  acceptAdjustment: (id: string) => post<unknown>(`/adjustments/${id}/accept`, {}),
+  rejectAdjustment: (id: string) => post<unknown>(`/adjustments/${id}/reject`, {}),
+  pauseExperiment: (id: string) => post<unknown>(`/experiments/${id}/pause`, {}),
+  resumeExperiment: (id: string) => post<unknown>(`/experiments/${id}/resume`, {}),
+  abandonExperiment: (id: string) =>
+    post<unknown>(`/experiments/${id}/abandon`, { reason: 'stopped from the app' }),
+  answerCheckin: (checkinId: string, response: CheckinResponse) =>
+    post<unknown>(`/experiments/${checkinId}/checkin`, { user_response: response }),
+  confirmIntegrity: (id: string) => post<unknown>(`/experiments/${id}/confirm-integrity`, {}),
+  sendFeedback: (id: string, body: ReviewFeedback) =>
+    post<unknown>(`/experiments/${id}/feedback`, body),
   createGoal: (body: GoalIn) => post<GoalsOut>('/goals', body),
   updateGoal: (id: string, body: GoalUpdateIn) => post<GoalsOut>(`/goals/${id}/update`, body),
   addToGoal: (id: string, amountPaise: number) =>

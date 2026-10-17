@@ -1,0 +1,43 @@
+{
+  "review_id": "rev_337fb65afaca",
+  "experiment_id": "exp_fcb7a09a416a",
+  "user_id": "u1",
+  "reasons": [
+    "no_baseline_review"
+  ],
+  "template_code": "weekday_home_cooking",
+  "title": "Weekday Cooking",
+  "hypothesis": {
+    "statement": "If I stick to this challenge, then my spending over 14 days will be at or below \u20b93,000, compared with my usual \u20b93,028 (range \u20b91,577 to \u20b94,811).",
+    "structured": {
+      "intervention": "stick to this challenge",
+      "metric": "category_spend",
+      "direction": "lower",
+      "target": 300000
+    }
+  },
+  "metric_def": {
+    "metric_code": "category_spend",
+    "direction": "lower",
+    "categories": [
+      "food"
+    ],
+    "merchants": [],
+    "weekdays_only": false,
+    "goal_id": null,
+    "bucket_id": null
+  },
+  "review": {
+    "observed_value": 0,
+    "outcome": "no_baseline",
+    "rank_p_bp": 10000,
+    "effect_value": 0,
+    "target_met": false,
+    "integrity": {
+      "notes": "Abandoned early by user; zero penalty."
+    },
+    "user_difficulty": 3,
+    "user_helpful": 1,
+    "created_at": "2024-03-18T06:30:00Z"
+  }
+}

@@ -8,8 +8,11 @@ import {
   Sparkle,
   SquaresFour,
   Target,
+  Trophy,
+  Flask,
 } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
+import { motion } from 'motion/react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 
 import { useReviewQueue, useSession } from '../api/hooks';
@@ -17,6 +20,7 @@ import { ApiError } from '../api/client';
 import { copy } from '../copy/en';
 import { Badge } from './Badge';
 import { cx } from './cx';
+import { LiquidBackdrop } from '../motion/LiquidBackdrop';
 import { ErrorState } from './States';
 
 const NAV: { to: string; label: string; icon: ReactNode; end?: boolean }[] = [
@@ -24,6 +28,8 @@ const NAV: { to: string; label: string; icon: ReactNode; end?: boolean }[] = [
   { to: '/transactions', label: copy.nav.transactions, icon: <ArrowsLeftRight size={18} /> },
   { to: '/review', label: copy.nav.review, icon: <ListChecks size={18} /> },
   { to: '/goals', label: copy.nav.goals, icon: <Target size={18} /> },
+  { to: '/challenges', label: copy.nav.challenges, icon: <Flask size={18} /> },
+  { to: '/progress', label: copy.nav.progress, icon: <Trophy size={18} /> },
   { to: '/monthly', label: copy.nav.monthly, icon: <FileText size={18} /> },
   { to: '/connect', label: copy.nav.connect, icon: <CloudArrowDown size={18} /> },
 ];
@@ -42,18 +48,32 @@ function NavItem({
       end={end}
       className={({ isActive }) =>
         cx(
-          'flex h-9 items-center gap-3 rounded-control px-3 text-[14px] transition-colors duration-fast',
-          (active ?? isActive)
-            ? 'bg-surface-selected text-ink font-medium'
-            : 'text-ink-2 hover:bg-surface-sunken hover:text-ink',
+          'relative flex h-9 items-center gap-3 rounded-control px-3 text-[14px] transition-colors duration-fast',
+          (active ?? isActive) ? 'font-medium text-brand' : 'text-ink-2 hover:text-ink',
         )
       }
     >
-      <span aria-hidden className="flex text-ink-3">
-        {icon}
-      </span>
-      <span className="flex-1">{label}</span>
-      {count ? <span className="tabular text-small text-ink-3">{count}</span> : null}
+      {({ isActive }) => (
+        <>
+          {(active ?? isActive) ? (
+            // One shared blob that flows from item to item (a spring, so it settles like liquid).
+            <motion.span
+              layoutId="nav-liquid"
+              aria-hidden
+              className="absolute inset-0 -z-10 rounded-control bg-brand-tint ring-1 ring-coral/35 ring-inset"
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            />
+          ) : null}
+          <span
+            aria-hidden
+            className={cx('flex', (active ?? isActive) ? 'text-brand' : 'text-ink-3')}
+          >
+            {icon}
+          </span>
+          <span className="flex-1">{label}</span>
+          {count ? <span className="tabular text-small text-ink-3">{count}</span> : null}
+        </>
+      )}
     </NavLink>
   );
 }
@@ -68,18 +88,23 @@ export function Shell() {
   const onActivity = onAgent && location.hash === '#activity';
 
   return (
-    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[15rem_minmax(0,1fr)]">
+    <div className="relative isolate grid min-h-screen grid-cols-1 lg:grid-cols-[15rem_minmax(0,1fr)]">
+      <LiquidBackdrop />
       <a
         href="#content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-control focus:bg-ink focus:px-3 focus:py-2 focus:text-ink-inverse"
       >
         {copy.nav.skip}
       </a>
-      <aside className="no-print sticky top-0 hidden h-screen flex-col border-r border-hairline bg-canvas px-3 py-5 lg:flex">
-        <div className="mb-8 px-3">
-          <span className="serif-light text-[24px] leading-none">{copy.product}</span>
+      <aside className="no-print glass sticky top-0 hidden h-screen flex-col rounded-none border-y-0 border-l-0 px-3 py-5 lg:flex">
+        <div className="mb-8 flex items-center gap-2.5 px-3">
+          <span
+            aria-hidden
+            className="h-6 w-6 rounded-full bg-[conic-gradient(from_200deg,var(--color-coral),var(--color-peach),var(--color-brand),var(--color-coral))] shadow-[0_0_18px_-4px_var(--color-coral)]"
+          />
+          <span className="serif-light text-[26px] leading-none">{copy.product}</span>
         </div>
-        <nav aria-label="Main" className="flex flex-col gap-0.5">
+        <nav aria-label="Main" className="isolate flex flex-col gap-0.5">
           {NAV.map((item) => (
             <NavItem
               key={item.to}

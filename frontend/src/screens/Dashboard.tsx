@@ -12,6 +12,7 @@ import { EmptyState, ErrorState, InsufficientDataState, SkeletonBlock } from '..
 import { copy } from '../copy/en';
 import { formatDayShort } from '../format/date';
 import { formatINR } from '../format/money';
+import { LiquidVessel } from '../motion/Liquid';
 import { NumberTicker } from '../motion/NumberTicker';
 
 const T = copy.dashboard;
@@ -56,19 +57,32 @@ function PaceCard({ data }: { data: Dashboard }) {
         action={{ to: '/transactions', text: copy.nav.transactions }}
       />
       <div className="px-6 pt-8 pb-6">
-        <div className="flex flex-col items-start gap-1">
-          <span className="label-mono text-ink-3">{T.leftToSpend}</span>
-          <NumberTicker
-            value={formatINR(pace.left_to_spend_paise, { paise: 'never' })}
-            className="tabular text-hero font-light tracking-[-0.02em]"
+        <div className="flex items-center gap-6">
+          <LiquidVessel
+            // What is left of the budget, as liquid: it drains as the month is spent.
+            fraction={
+              pace.total_limit_paise > 0 && !pace.over_budget
+                ? pace.left_to_spend_paise / pace.total_limit_paise
+                : 0
+            }
+            tone={pace.over_budget ? 'negative' : pace.pace === 'over' ? 'attention' : 'brand'}
+            size={120}
+            shape="drop"
           />
-          <span className="text-small text-ink-2">
-            {pace.over_budget
-              ? T.overBy(formatINR(Math.abs(pace.left_to_spend_paise), { paise: 'never' }))
-              : T.ofBudget(formatINR(pace.total_limit_paise, { paise: 'never' }))}
-            <span aria-hidden> · </span>
-            {T.spentSoFar(formatINR(pace.spent_paise, { paise: 'never' }))}
-          </span>
+          <div className="flex flex-col items-start gap-1">
+            <span className="label-mono text-ink-3">{T.leftToSpend}</span>
+            <NumberTicker
+              value={formatINR(pace.left_to_spend_paise, { paise: 'never' })}
+              className="tabular text-hero font-light tracking-[-0.02em]"
+            />
+            <span className="text-small text-ink-2">
+              {pace.over_budget
+                ? T.overBy(formatINR(Math.abs(pace.left_to_spend_paise), { paise: 'never' }))
+                : T.ofBudget(formatINR(pace.total_limit_paise, { paise: 'never' }))}
+              <span aria-hidden> · </span>
+              {T.spentSoFar(formatINR(pace.spent_paise, { paise: 'never' }))}
+            </span>
+          </div>
         </div>
         <div className="mt-8">
           <PaceChart

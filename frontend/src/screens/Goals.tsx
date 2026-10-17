@@ -1,6 +1,6 @@
 import { Plus, PencilSimple, Pause, Play, CheckCircle } from '@phosphor-icons/react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useState, type FormEvent } from 'react';
 
 import { ApiError, type GoalIn, type GoalProgress } from '../api/client';
@@ -13,6 +13,7 @@ import { EmptyState, ErrorState, SkeletonBlock } from '../components/States';
 import { useToast } from '../components/Toast';
 import { formatDay } from '../format/date';
 import { formatINR, parseRupeesToPaise } from '../format/money';
+import { LiquidVessel, type LiquidTone } from '../motion/Liquid';
 import { NumberTicker } from '../motion/NumberTicker';
 import { motion as tokens } from '../tokens/tokens';
 
@@ -41,29 +42,15 @@ const field =
 const percentText = (bp: number): string => `${Math.floor(bp / 100)}%`;
 
 function Ring({ progress, goalDone }: { progress: GoalProgress; goalDone: boolean }) {
-  const reduce = useReducedMotion();
-  const tone = STATUS[goalDone ? 'completed' : progress.status];
+  const status = goalDone ? 'completed' : progress.status;
+  const tone: LiquidTone =
+    status === 'off_track' ? 'negative' : status === 'at_risk' ? 'attention' : 'brand';
   return (
-    <div className="relative h-24 w-24 shrink-0">
-      <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden>
-        <circle cx="50" cy="50" r="42" fill="none" strokeWidth="8" className="stroke-hairline" />
-        <motion.circle
-          cx="50"
-          cy="50"
-          r="42"
-          fill="none"
-          strokeWidth="8"
-          strokeLinecap="round"
-          className={tone.stroke}
-          initial={reduce ? false : { pathLength: 0 }}
-          animate={{ pathLength: Math.max(progress.percent_bp, 60) / 10000 }}
-          transition={{ duration: tokens.slow / 1000, ease: tokens.easeArray }}
-        />
-      </svg>
-      <span className="tabular absolute inset-0 flex items-center justify-center text-[18px]">
+    <LiquidVessel fraction={goalDone ? 1 : progress.percent_bp / 10000} tone={tone} size={96}>
+      <span className="text-[18px] font-medium">
         <NumberTicker value={percentText(progress.percent_bp)} />
       </span>
-    </div>
+    </LiquidVessel>
   );
 }
 

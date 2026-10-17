@@ -228,7 +228,8 @@ def design_experiment(
     metric_name = metric_label(metric_code)
     intervention = p.get("intervention") or "stick to this challenge"
     dir_word = "at or below" if direction == "lower" else "at or above"
-    if base is not None:
+    # Comparing with a usual of zero (no history for this metric) says nothing, so leave it out.
+    if base is not None and base.high > 0:
         hypo_text = (
             f"If I {intervention}, then my {metric_name} over {duration_days} days will be "
             f"{dir_word} {format_metric(metric_code, target_val)}, compared with my usual "
