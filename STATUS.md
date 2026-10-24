@@ -1,7 +1,39 @@
 ## Current state
-Last completed stage: 4.13 (Phase 4 complete) | Blockers: none | Open weak spots: see docs/known_issues.md
+Landing page track (PLAN_LANDING): Cinematic landing page with transparent ambient video loop, calm serif typography, live transformation stage, bento capability cards, principles, and radiant finale: DONE. All frontend verification, WCAG AA contrast, glyph, figure, and e2e checks passed.
+Capture track (PLAN_CAPTURE): last completed stage C0 | next C1 | Blockers: none | Owner tasks pending: confirm real bank sender IDs, export and redact an SMS corpus, try AA sandbox sign-ups (plan section 1). Phase 4 is complete; its weak spots are in docs/known_issues.md.
 
-## Proposed commits (awaiting approval; no git command was run for Phase 4)
+## Stage C0: Align: DONE
+Goal: copy the ADRs into place, find out what the repository already has that the capture plan touches, and add validated config skeletons.
+Files:
+- docs/adr/ADR-0001-at-payment-capture.md, docs/adr/ADR-0002-account-aggregator.md (copies; originals stay in docs/CAPTURE/)
+- docs/capture_alignment.md
+- src/copilot/config/capture.py (schemas and loaders)
+- config/capture.yaml, config/sms_senders.yaml, config/reconcile.yaml, config/aa.yaml
+- config/sms_templates/{hdfc,sbi,icici,axis,kotak}.yaml
+- tests/config/test_capture_config.py
+- docs/decisions.md, docs/open_questions.md
+Built: validated loaders for the ask policy, sender allowlist, per-bank templates, reconciliation and AA consent defaults; a cross-file check; 20 tests.
+Key finding: the repo already holds a prototype of the SMS parser, webhook, event table, reconciliation and AA client (`rails/`, `live/`). It has no sender allowlist and writes outside `execute_tool`. The alignment doc says which parts C-stages supersede and which they reuse.
+Evidence:
+```
+$ pytest tests/config -q
+36 passed
+$ pytest -q (full suite, after C0)
+1214 passed
+$ ruff check .
+All checks passed!
+```
+Pending (owner): the shipped sender IDs are unverified, so every bank is `enabled: false` and nothing is read from any sender yet.
+
+
+## Proposed commits (awaiting approval; no git command was run)
+- `Add cinematic landing page`:
+  - `frontend/public/videos/hero_background.mp4` (atmospheric video loop: girl counting cash in breeze)
+  - `frontend/src/copy/landing.ts` (editorial copy following data honesty and figure-free gates)
+  - `frontend/src/screens/landing/` (`HeroSection.tsx`, `TransformationStage.tsx`, `StatementSection.tsx`, `CapabilityGrid.tsx`, `Principles.tsx`, `Finale.tsx`, `Footer.tsx`, `LandingPage.tsx`)
+  - `frontend/src/screens/Welcome.tsx` (updated entry rendering LandingPage)
+  - `frontend/src/styles/index.css` (transparent video scrim, frosted glass pill utilities, calm landing-serif typography)
+
 Checkpoint A, after Stage 4.7: "Add experiments, challenges and progress tracking"
 - migrations 004/005 and models/repos for experiments, offers, check-ins, adjustments, XP/badges, personal bests
 - src/copilot/core/{baseline,experiments,challenges,adaptive,rewards,self_competition,streaks,policy}.py and their tools/*.py

@@ -1,0 +1,110 @@
+[
+  {
+    "name": "upi debit",
+    "sender": "AXISBK",
+    "text": "Debit INR 250.00 A/c no. XX1234 18-10-26 10:45:12 UPI/P2P/628912345688/RAMESH K SMS BLOCKUPI Cust ID to 919951860002 Axis Bank",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 25000,
+      "account_last4": "1234",
+      "utr": "628912345688",
+      "display_name": "RAMESH K",
+      "vpa": null,
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T10:45:12"
+    }
+  },
+  {
+    "name": "upi credit",
+    "sender": "AXISBN",
+    "text": "Credit INR 5000.00 A/c no. XX1234 18-10-26 UPI/P2A/628912345689/PRIYA S Axis Bank",
+    "expect": {
+      "kind": "credit",
+      "direction": "credit",
+      "amount_paise": 500000,
+      "account_last4": "1234",
+      "utr": "628912345689",
+      "display_name": "PRIYA S",
+      "vpa": null,
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "card spend",
+    "sender": "AXISBK",
+    "text": "INR 1299.00 spent on Axis Bank Card no. XX5678 18-10-26 10:45:12 at AMAZON. Avl Lmt INR 50000.00",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 129900,
+      "account_last4": "5678",
+      "utr": null,
+      "display_name": "AMAZON",
+      "vpa": null,
+      "channel": "card",
+      "occurred_at_ist": "2026-10-18T10:45:12"
+    }
+  },
+  {
+    "name": "atm withdrawal",
+    "sender": "AXISBK",
+    "text": "INR 2000.00 withdrawn from A/c no. XX1234 18-10-26 10:45:12 at ATM-WDL",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 200000,
+      "account_last4": "1234",
+      "utr": null,
+      "display_name": "ATM cash withdrawal",
+      "vpa": null,
+      "channel": "atm",
+      "occurred_at_ist": "2026-10-18T10:45:12"
+    }
+  },
+  {
+    "name": "autopay",
+    "sender": "AXISBK",
+    "text": "Debit INR 199.00 A/c no. XX1234 18-10-26 10:45:12 UPI AutoPay/628912345690/YOUTUBE PREMIUM Axis Bank",
+    "expect": {
+      "kind": "autopay",
+      "direction": "debit",
+      "amount_paise": 19900,
+      "account_last4": "1234",
+      "utr": "628912345690",
+      "display_name": "YOUTUBE PREMIUM",
+      "vpa": null,
+      "channel": "autopay",
+      "occurred_at_ist": "2026-10-18T10:45:12"
+    }
+  },
+  {
+    "name": "reversal",
+    "sender": "AXISBK",
+    "text": "Credit INR 250.00 A/c no. XX1234 18-10-26 UPI/REV/628912345688",
+    "expect": {
+      "kind": "reversal",
+      "direction": "credit",
+      "amount_paise": 25000,
+      "account_last4": "1234",
+      "utr": "628912345688",
+      "display_name": "Reversal",
+      "vpa": null,
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "otp",
+    "sender": "AXISBK",
+    "text": "OTP is 449120 for txn of INR 250.00 at AMAZON. Do not share.",
+    "expect": "dropped:otp"
+  },
+  {
+    "name": "service notice",
+    "sender": "AXISBK",
+    "text": "Your Axis Bank debit card will expire in 30 days. Request a new one in the app.",
+    "expect": "unparsed"
+  }
+]

@@ -9,6 +9,7 @@ Tests:
 - target in force at the end used for target_met
 - proposals expire
 """
+
 import json
 import uuid
 from datetime import datetime
@@ -55,7 +56,9 @@ def conn():
     init_db(c)
     insert_user(c, User(id="u_alice", created_at=T0))
     insert_account(c, Account(id="acc_a", user_id="u_alice", name="Checking", created_at=T0))
-    insert_category(c, Category(id="dining_out", user_id="u_alice", name="Dining Out", created_at=T0))
+    insert_category(
+        c, Category(id="dining_out", user_id="u_alice", name="Dining Out", created_at=T0)
+    )
     yield c
     c.close()
 
@@ -72,15 +75,39 @@ def _make_active_experiment(conn, *, target_value: int = 100000) -> Experiment:
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            exp_id, "u_alice", "Test Experiment", "weekday_home_cooking",
+            exp_id,
+            "u_alice",
+            "Test Experiment",
+            "weekday_home_cooking",
             json.dumps({"statement": "test hypothesis"}),
-            json.dumps({"metric_code": "category_spend", "direction": "lower",
-                        "categories": ["dining_out"], "merchants": [], "weekdays_only": False}),
+            json.dumps(
+                {
+                    "metric_code": "category_spend",
+                    "direction": "lower",
+                    "categories": ["dining_out"],
+                    "merchants": [],
+                    "weekdays_only": False,
+                }
+            ),
             json.dumps({"metric_code": "category_spend", "categories": ["dining_out"]}),
-            "medium", EXP_START, EXP_END,
-            json.dumps({"k": 6, "window_values": [120000] * 6, "median": 120000,
-                        "low": 110000, "high": 130000, "excluded_windows": []}),
-            target_value, "active", "user", T0, T0,
+            "medium",
+            EXP_START,
+            EXP_END,
+            json.dumps(
+                {
+                    "k": 6,
+                    "window_values": [120000] * 6,
+                    "median": 120000,
+                    "low": 110000,
+                    "high": 130000,
+                    "excluded_windows": [],
+                }
+            ),
+            target_value,
+            "active",
+            "user",
+            T0,
+            T0,
         ),
     )
     return get_experiment(conn, "u_alice", exp_id)
@@ -111,6 +138,7 @@ def _make_checkin(
 # ===========================================================================
 # 1. detect_consecutive_behind
 # ===========================================================================
+
 
 class TestDetectConsecutiveBehind:
     def test_one_behind_does_not_trigger(self, conn):
@@ -171,6 +199,7 @@ class TestDetectConsecutiveBehind:
 # 2. detect_want_to_pause
 # ===========================================================================
 
+
 class TestDetectWantToPause:
     def test_want_to_pause_response_triggers_pause(self, conn):
         exp = _make_active_experiment(conn)
@@ -183,7 +212,9 @@ class TestDetectWantToPause:
     def test_other_responses_do_not_trigger(self, conn):
         exp = _make_active_experiment(conn)
         for resp in ("going_well", "hard", "skip"):
-            _make_checkin(conn, exp.id, f"2026-09-0{resp.__hash__() % 7 + 1}", "on_pace", user_response=resp)
+            _make_checkin(
+                conn, exp.id, f"2026-09-0{resp.__hash__() % 7 + 1}", "on_pace", user_response=resp
+            )
         # Clear and insert the last one
         conn.execute("DELETE FROM experiment_checkins WHERE experiment_id = ?", (exp.id,))
         _make_checkin(conn, exp.id, "2026-09-07", "on_pace", user_response="going_well")
@@ -198,6 +229,7 @@ class TestDetectWantToPause:
 # ===========================================================================
 # 3. detect_ahead_at_midpoint
 # ===========================================================================
+
 
 class TestDetectAheadAtMidpoint:
     def test_ahead_wide_margin_at_mid_triggers_optional(self, conn):
@@ -242,6 +274,7 @@ class TestDetectAheadAtMidpoint:
 # 4. detect_exception_overlap
 # ===========================================================================
 
+
 class TestDetectExceptionOverlap:
     def _insert_exception(self, conn, from_date: str, to_date: str) -> str:
         mem_id = f"mem_{uuid.uuid4().hex[:8]}"
@@ -253,10 +286,16 @@ class TestDetectExceptionOverlap:
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                mem_id, "u_alice", "contextual_exception",
+                mem_id,
+                "u_alice",
+                "contextual_exception",
                 f"exception:{from_date}..{to_date}",
                 json.dumps({"from_date": from_date, "to_date": to_date, "reason": "festival"}),
-                "user_stated", "active", 10000, 1, T0,
+                "user_stated",
+                "active",
+                10000,
+                1,
+                T0,
             ),
         )
         return mem_id
@@ -318,6 +357,7 @@ class TestDetectExceptionOverlap:
 # 5. run_adaptive_detectors (integration)
 # ===========================================================================
 
+
 class TestRunAdaptiveDetectors:
     def test_run_over_multiple_active_experiments(self, conn):
         """run_adaptive_detectors runs over all active experiments."""
@@ -339,15 +379,14 @@ class TestRunAdaptiveDetectors:
         for eid in (exp1.id, exp2.id):
             _make_checkin(conn, eid, "2026-09-03", "behind")
             _make_checkin(conn, eid, "2026-09-07", "behind")
-        proposals = run_adaptive_detectors(
-            conn, "u_alice", experiment_id=exp1.id, clock=CLOCK_MID
-        )
+        proposals = run_adaptive_detectors(conn, "u_alice", experiment_id=exp1.id, clock=CLOCK_MID)
         assert all(p.experiment_id == exp1.id for p in proposals)
 
 
 # ===========================================================================
 # 6. Accept / Reject / Expire
 # ===========================================================================
+
 
 class TestAcceptRejectExpire:
     def test_accept_pause_pauses_experiment(self, conn):

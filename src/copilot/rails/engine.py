@@ -68,7 +68,10 @@ CREATE TABLE IF NOT EXISTS rail_splits (
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
     """Create the rails tables (own tables; the core schema is untouched)."""
-    conn.executescript(SCHEMA)
+    # One statement at a time: executescript would commit, breaking a caller inside a savepoint.
+    for statement in SCHEMA.split(";"):
+        if statement.strip():
+            conn.execute(statement)
 
 
 # ----------------------------------------------------------------------------- output models

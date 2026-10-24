@@ -637,6 +637,118 @@ tools:
     short_description: "Design a new financial experiment with baseline sizing"
     intents: ["start_experiment"]
 
+  record_payment_event:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Record a payment captured from a bank alert, the simulator or by hand"
+    intents: []
+
+  simulate_payment_event:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Simulate a bank alert end to end, clearly labelled as simulated"
+    intents: []
+
+  label_payment_event:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Give a captured payment the category the user chose"
+    intents: []
+
+  set_counterparty_policy:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Choose how a payee is handled: learn, always ask, or one category"
+    intents: []
+
+  register_push_subscription:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Turn notifications on for this device"
+    intents: []
+
+  remove_push_subscription:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Turn notifications off for this device"
+    intents: []
+
+  reconcile_payment_events:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Match captured payments to ledger transactions"
+    intents: []
+
+  capture_coverage:
+    planner_selectable: false
+    tool_class: read
+    cost: cheap
+    short_description: "Alert coverage against the ledger and provisional spend"
+    intents: []
+
+  set_account_last4:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Say which account ends in which four digits"
+    intents: []
+
+  aa_status:
+    planner_selectable: false
+    tool_class: read
+    cost: cheap
+    short_description: "The bank link: its scope, purpose, schedule and state"
+    intents: []
+
+  create_aa_consent:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Ask to link the bank through an Account Aggregator"
+    intents: []
+
+  set_aa_consent_state:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Approve, pause, resume or revoke the bank link"
+    intents: []
+
+  fetch_aa_data:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Fetch transactions under an active bank link"
+    intents: []
+
+  run_aa_cycle:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Runtime job: expire links, delete old copies, fetch what is due"
+    intents: []
+
+  expire_capture_prompts:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Runtime job: unanswered prompts apply their best guess"
+    intents: []
+
+  pending_prompts:
+    planner_selectable: false
+    tool_class: read
+    cost: cheap
+    short_description: "List captured payments waiting for the user to tag them"
+    intents: []
+
   start_experiment:
     planner_selectable: false
     tool_class: write_logical

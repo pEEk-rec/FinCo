@@ -664,9 +664,7 @@ def insert_investigation(conn: sqlite3.Connection, inv: Investigation) -> None:
         )
 
 
-def get_investigation(
-    conn: sqlite3.Connection, user_id: str, inv_id: str
-) -> Investigation | None:
+def get_investigation(conn: sqlite3.Connection, user_id: str, inv_id: str) -> Investigation | None:
     """Get an investigation with its hypotheses and evidence items."""
     row = conn.execute(
         "SELECT * FROM investigations WHERE id = ? AND user_id = ?",
@@ -743,9 +741,7 @@ def insert_simulation(
     )
 
 
-def get_simulation(
-    conn: sqlite3.Connection, user_id: str, sim_id: str
-) -> dict[str, Any] | None:
+def get_simulation(conn: sqlite3.Connection, user_id: str, sim_id: str) -> dict[str, Any] | None:
     """Get a simulation by ID."""
     row = conn.execute(
         "SELECT * FROM simulations WHERE id = ? AND user_id = ?",
@@ -861,9 +857,7 @@ def update_alert_status(
     return cur.rowcount > 0
 
 
-def get_alert_by_dedup_key(
-    conn: sqlite3.Connection, user_id: str, dedup_key: str
-) -> Alert | None:
+def get_alert_by_dedup_key(conn: sqlite3.Connection, user_id: str, dedup_key: str) -> Alert | None:
     """Get the most recent alert matching user_id and dedup_key."""
     row = conn.execute(
         "SELECT * FROM alerts WHERE user_id = ? AND dedup_key = ? ORDER BY created_at DESC LIMIT 1",
@@ -1062,4 +1056,3 @@ def update_recommendation_status(
         (status, decided_at, decided_by, rec_id, user_id),
     )
     return cur.rowcount > 0
-

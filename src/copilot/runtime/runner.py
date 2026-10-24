@@ -47,7 +47,7 @@ def _get_period_key(job_kind: str, dt: datetime) -> str:
         return dt.strftime("%Y-%m")
     elif job_kind == "weekly_offers":
         return dt.strftime("%Y-W%W")
-    elif job_kind == "evaluate_alerts":
+    elif job_kind in ("evaluate_alerts", "capture_reconcile", "capture_expire_prompts"):
         return dt.strftime("%Y-%m-%d-%H")
     else:
         # Daily jobs: refresh_memories, coverage_scan, suggest_commitments, expire_drafts,
@@ -201,6 +201,19 @@ def _execute_job_handler(
             revs = getattr(res.data, "reviews", [])
             return True, {"created_count": len(revs), "period": period_key}, None
 
+        elif job_kind in ("capture_reconcile", "capture_expire_prompts", "aa_fetch"):
+            tool = {
+                "capture_reconcile": "reconcile_payment_events",
+                "capture_expire_prompts": "expire_capture_prompts",
+                "aa_fetch": "run_aa_cycle",
+            }[job_kind]
+            res = execute_tool(ctx, tool, {})
+            if not res.ok:
+                err_msg = res.error.message if res.error else "failed"
+                err_code = res.error.code.value if res.error else "tool_failure"
+                return False, {"error": err_msg, "period": period_key}, err_code
+            return True, {**res.data.model_dump(), "period": period_key}, None
+
         elif job_kind == "expire_offers":
             res = execute_tool(ctx, "expire_offers", {})
             if not res.ok:
@@ -218,11 +231,15 @@ def _execute_job_handler(
                 return False, {"error": err_msg, "period": period_key}, err_code
             props = getattr(res.data, "proposals_created", 0)
             exc_cnt = getattr(res.data, "exceptions_detected", 0)
-            return True, {
-                "proposals_created": props,
-                "exceptions_detected": exc_cnt,
-                "period": period_key,
-            }, None
+            return (
+                True,
+                {
+                    "proposals_created": props,
+                    "exceptions_detected": exc_cnt,
+                    "period": period_key,
+                },
+                None,
+            )
 
         elif job_kind == "weekly_offers":
             res = execute_tool(ctx, "weekly_offers", {})
@@ -241,11 +258,15 @@ def _execute_job_handler(
                 return False, {"error": err_msg, "period": period_key}, err_code
             xp_cnt = getattr(res.data, "xp_awarded_count", 0)
             badge_cnt = getattr(res.data, "badges_awarded_count", 0)
-            return True, {
-                "xp_awarded_count": xp_cnt,
-                "badges_awarded_count": badge_cnt,
-                "period": period_key,
-            }, None
+            return (
+                True,
+                {
+                    "xp_awarded_count": xp_cnt,
+                    "badges_awarded_count": badge_cnt,
+                    "period": period_key,
+                },
+                None,
+            )
 
         else:
             return False, {"error": f"Unknown job kind '{job_kind}'"}, "unknown_job_kind"
@@ -345,8 +366,7 @@ def run_job(
     if not force:
         past_runs = list_job_runs(conn, user_id=user_id, job_id=job.id, limit=30)
         already_run = any(
-            r.status == "ok" and r.summary_json.get("period") == period_key
-            for r in past_runs
+            r.status == "ok" and r.summary_json.get("period") == period_key for r in past_runs
         )
         if already_run:
             # Idempotent skip: release lease without changing next_run_at or failure count
@@ -399,9 +419,7 @@ def run_job(
         trace_id=run_id,
         conn=conn,
     ) as sp:
-        success, summary_data, err_code = _execute_job_handler(
-            job_kind, ctx, ref_dt, period_key
-        )
+        success, summary_data, err_code = _execute_job_handler(job_kind, ctx, ref_dt, period_key)
 
         finish_dt = now_utc()
         finish_iso = to_utc_iso(finish_dt)
@@ -441,15 +459,11 @@ def run_job(
                 # Transition to dead letter
                 status: Literal["ok", "failed", "skipped", "dead_letter"] = "dead_letter"
                 next_run_iso = "2999-12-31T00:00:00Z"
-                summary_data["dead_letter_reason"] = (
-                    f"Max retries ({config.max_retries}) exceeded"
-                )
+                summary_data["dead_letter_reason"] = f"Max retries ({config.max_retries}) exceeded"
             else:
                 status = "failed"
                 # Exponential backoff schedule
-                backoff_seconds = config.backoff_base_seconds * (
-                    2 ** (consecutive_failures - 1)
-                )
+                backoff_seconds = config.backoff_base_seconds * (2 ** (consecutive_failures - 1))
                 next_run_dt = ref_dt + timedelta(seconds=backoff_seconds)
                 next_run_iso = to_utc_iso(next_run_dt)
 

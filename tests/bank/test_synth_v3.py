@@ -16,7 +16,9 @@ def test_synth_v3_determinism_dev_seeds():
         res2 = generate_transactions_v3(seed=s, months=3, user_id="u1", account_ids=["a1"])
         assert len(res1.transactions) == len(res2.transactions)
         assert [t.id for t in res1.transactions] == [t.id for t in res2.transactions]
-        assert [t.amount_paise for t in res1.transactions] == [t.amount_paise for t in res2.transactions]
+        assert [t.amount_paise for t in res1.transactions] == [
+            t.amount_paise for t in res2.transactions
+        ]
 
 
 def test_synth_v3_all_injected_causes_dev_seeds():

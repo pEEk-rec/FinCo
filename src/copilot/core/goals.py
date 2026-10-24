@@ -591,9 +591,9 @@ def goal_progress(
     proj_date, proj_range = projected_completion(remaining, history, today_d)
 
     if remaining == 0:
-        track_status: Literal[
-            "on_track", "at_risk", "off_track", "completed", "unknown"
-        ] = "completed"
+        track_status: Literal["on_track", "at_risk", "off_track", "completed", "unknown"] = (
+            "completed"
+        )
     else:
         surplus = monthly_surplus_estimate(conn, user_id, today_d)
         p2_status, _, _ = goal_status(eval_goal, today_d, surplus)

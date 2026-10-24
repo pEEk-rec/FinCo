@@ -41,7 +41,9 @@ def test_get_db_connection_in_memory():
     conn = get_db_connection(":memory:")
     assert isinstance(conn, sqlite3.Connection)
     # verify tables exist
-    row = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'").fetchone()
+    row = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'"
+    ).fetchone()
     assert row is not None
     conn.close()
 
@@ -65,7 +67,13 @@ def test_render_dashboard_headless(
     insert_user(conn, User(id="u1", created_at="2024-01-01T00:00:00Z"))
     insert_account(
         conn,
-        Account(id="a1", user_id="u1", name="Checking", opening_balance_paise=100000, created_at="2024-01-01T00:00:00Z"),
+        Account(
+            id="a1",
+            user_id="u1",
+            name="Checking",
+            opening_balance_paise=100000,
+            created_at="2024-01-01T00:00:00Z",
+        ),
     )
 
     mock_col = MagicMock()

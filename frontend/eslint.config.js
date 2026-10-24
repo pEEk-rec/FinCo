@@ -34,6 +34,11 @@ export default tseslint.config(
     },
   },
   {
+    files: ['public/sw.js'],
+    extends: [js.configs.recommended],
+    languageOptions: { globals: globals.serviceworker },
+  },
+  {
     files: ['src/tokens/**', 'scripts/**', 'tests/**'],
     rules: { 'no-restricted-syntax': 'off' },
   },

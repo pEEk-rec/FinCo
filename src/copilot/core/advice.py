@@ -391,9 +391,7 @@ def validate_advice(
                 f"consequential recommendation of kind '{rec_kind}' requires a simulation_id"
             )
         elif simulations_by_id is not None and effective_sim_id not in simulations_by_id:
-            violations.append(
-                f"unknown simulation id: '{effective_sim_id}'"
-            )
+            violations.append(f"unknown simulation id: '{effective_sim_id}'")
 
     # 5. Prediction check
     has_simulation = bool(simulation_id or getattr(draft, "simulation_id", None))

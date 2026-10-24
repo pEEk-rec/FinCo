@@ -52,17 +52,13 @@ def validate_skill_manifest(manifest: SkillManifest) -> None:
 
     for idx, step in enumerate(manifest.steps):
         if not isinstance(step, dict) or len(step) != 1:
-            raise ValueError(
-                f"Skill '{manifest.name}' step {idx} must be a single-key mapping"
-            )
+            raise ValueError(f"Skill '{manifest.name}' step {idx} must be a single-key mapping")
         tool_name, step_args = next(iter(step.items()))
 
         # 1. Existence check
         spec = get_tool(tool_name)
         if spec is None:
-            raise ValueError(
-                f"Unknown tool '{tool_name}' in step {idx} of skill '{manifest.name}'"
-            )
+            raise ValueError(f"Unknown tool '{tool_name}' in step {idx} of skill '{manifest.name}'")
 
         # 2. Safety / Write tool check
         # Skills may only reference planner-selectable read/compute tools,

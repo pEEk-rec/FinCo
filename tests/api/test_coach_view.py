@@ -42,7 +42,9 @@ def journey(tmp_path):
 def _client(db, clock):
     from copilot.core.timeutil import from_utc_iso
 
-    st = ApiState(db_path=__import__("pathlib").Path(db), clock=from_utc_iso(clock), token="t", llm=None)
+    st = ApiState(
+        db_path=__import__("pathlib").Path(db), clock=from_utc_iso(clock), token="t", llm=None
+    )
     return TestClient(create_app(st))
 
 
@@ -66,8 +68,11 @@ def test_the_view_follows_a_challenge_from_offer_to_review(journey):
     mid = _client(journey, "2024-05-04T04:30:00Z").get("/api/coach", headers=AUTH).json()
     assert mid["offers"] == [] and len(mid["active"]) == 1
     a = mid["active"][0]
-    assert a["total_days"] == 7 and a["usual"] and a["history"] and a["pace"] in (
-        "ahead", "on_pace", "behind"
+    assert (
+        a["total_days"] == 7
+        and a["usual"]
+        and a["history"]
+        and a["pace"] in ("ahead", "on_pace", "behind")
     )
     assert "_" not in a["hypothesis"].split("then")[1][:40]
 

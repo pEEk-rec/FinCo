@@ -36,8 +36,18 @@ def sample_user(conn):
     insert_user(conn, user_a)
     insert_user(conn, user_b)
 
-    cat_a = Category(id="cat_groceries", user_id="user_alice", name="Groceries", created_at="2026-09-01T00:00:00Z")
-    cat_b = Category(id="cat_bob_secret", user_id="user_bob", name="Bob Secret", created_at="2026-09-01T00:00:00Z")
+    cat_a = Category(
+        id="cat_groceries",
+        user_id="user_alice",
+        name="Groceries",
+        created_at="2026-09-01T00:00:00Z",
+    )
+    cat_b = Category(
+        id="cat_bob_secret",
+        user_id="user_bob",
+        name="Bob Secret",
+        created_at="2026-09-01T00:00:00Z",
+    )
     insert_category(conn, cat_a)
     insert_category(conn, cat_b)
 
@@ -196,7 +206,11 @@ def test_validator_rejects_cross_user_entity_id(conn, sample_user):
         user_id=sample_user,
         seq=1,
         tool_name="forecast_category_spend",
-        args={"year": 2026, "month": 9, "category_id": "cat_bob_secret"},  # Belongs to Bob, not Alice!
+        args={
+            "year": 2026,
+            "month": 9,
+            "category_id": "cat_bob_secret",
+        },  # Belongs to Bob, not Alice!
         rationale="Cross-user leak",
         proposed_by="llm",
     )

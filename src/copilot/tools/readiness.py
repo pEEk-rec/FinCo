@@ -89,8 +89,7 @@ def register_readiness_tools(register_fn: Callable[[ToolSpec], None] = register)
         ToolSpec(
             name="get_readiness_assessment",
             description=(
-                "Retrieve structured readiness evaluation of financial cushion "
-                "and savings capacity"
+                "Retrieve structured readiness evaluation of financial cushion and savings capacity"
             ),
             input_model=AssessReadinessInput,
             output_model=AssessReadinessOutput,

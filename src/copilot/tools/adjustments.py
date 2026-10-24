@@ -47,19 +47,16 @@ class ListAdjustmentsInput(ToolInput):
     """Input for listing adjustment proposals."""
 
     experiment_id: str | None = None
-    status: (
-        Literal["proposed", "accepted", "rejected", "expired", "auto_applied_pause"]
-        | None
-    ) = None
+    status: Literal["proposed", "accepted", "rejected", "expired", "auto_applied_pause"] | None = (
+        None
+    )
 
 
 class ListAdjustmentsOutput(ToolOutput):
     proposals: list[AdjustmentProposal]
 
 
-def list_adjustments_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> ListAdjustmentsOutput:
+def list_adjustments_handler(ctx: "ExecutionContext", **kwargs) -> ListAdjustmentsOutput:
     params = ListAdjustmentsInput.model_validate(kwargs)
     proposals = repo_list_adjustment_proposals(
         ctx.conn,
@@ -83,9 +80,7 @@ class AcceptAdjustmentOutput(ToolOutput):
     proposal: AdjustmentProposal
 
 
-def accept_adjustment_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> AcceptAdjustmentOutput:
+def accept_adjustment_handler(ctx: "ExecutionContext", **kwargs) -> AcceptAdjustmentOutput:
     params = AcceptAdjustmentInput.model_validate(kwargs)
     prop = core_accept_adjustment(
         ctx.conn,
@@ -110,9 +105,7 @@ class RejectAdjustmentOutput(ToolOutput):
     proposal: AdjustmentProposal
 
 
-def reject_adjustment_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> RejectAdjustmentOutput:
+def reject_adjustment_handler(ctx: "ExecutionContext", **kwargs) -> RejectAdjustmentOutput:
     params = RejectAdjustmentInput.model_validate(kwargs)
     prop = core_reject_adjustment(
         ctx.conn,
@@ -136,9 +129,7 @@ class RunAdaptiveDetectorsOutput(ToolOutput):
     proposals: list[AdjustmentProposal]
 
 
-def run_adaptive_detectors_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> RunAdaptiveDetectorsOutput:
+def run_adaptive_detectors_handler(ctx: "ExecutionContext", **kwargs) -> RunAdaptiveDetectorsOutput:
     params = RunAdaptiveDetectorsInput.model_validate(kwargs)
     proposals = core_run_adaptive_detectors(
         ctx.conn,
@@ -162,9 +153,7 @@ class ExpireStaleProposalsOutput(ToolOutput):
     expired_ids: list[str]
 
 
-def expire_stale_proposals_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> ExpireStaleProposalsOutput:
+def expire_stale_proposals_handler(ctx: "ExecutionContext", **kwargs) -> ExpireStaleProposalsOutput:
     params = ExpireStaleProposalsInput.model_validate(kwargs)
     expired_ids = core_expire_stale_proposals(
         ctx.conn,

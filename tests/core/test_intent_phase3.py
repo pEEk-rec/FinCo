@@ -47,7 +47,10 @@ def _setup_intent_entities(conn: sqlite3.Connection, user_id: str = "u_intent"):
         ("groceries", "c_groceries"),
         ("travel", "c_travel"),
     ]:
-        insert_category(conn, Category(id=cat_id, user_id=user_id, name=cat_name, created_at="2026-01-01T00:00:00Z"))
+        insert_category(
+            conn,
+            Category(id=cat_id, user_id=user_id, name=cat_name, created_at="2026-01-01T00:00:00Z"),
+        )
 
     insert_goal(
         conn,
@@ -124,7 +127,9 @@ def test_intent_accuracy_on_labelled_examples(conn):
             amount_paise = parse_amount_paise(query)
 
             classified = classify_intent(query, entities, period_info, amount_paise, cfg)
-            assert classified.type == intent_name, f"Query '{query}' classified as {classified.type}, expected {intent_name}"
+            assert classified.type == intent_name, (
+                f"Query '{query}' classified as {classified.type}, expected {intent_name}"
+            )
 
 
 def test_tool_minimality_per_phase3_intent():
@@ -145,7 +150,9 @@ def test_tool_minimality_per_phase3_intent():
     ]
 
     for intent_type, expected_tools in cases:
-        intent = Intent(type=intent_type, period="2026-10", amount_paise=3000000, goal_id="g_vacation")
+        intent = Intent(
+            type=intent_type, period="2026-10", amount_paise=3000000, goal_id="g_vacation"
+        )
         plan = planner.propose(
             task_id="t_mini",
             user_id="u_mini",
@@ -153,7 +160,9 @@ def test_tool_minimality_per_phase3_intent():
             state_projection={"clock": "2026-10-15T12:00:00Z"},
         )
         planned_tools = [s.tool_name for s in plan.steps]
-        assert planned_tools == expected_tools, f"Intent {intent_type} planned {planned_tools}, expected {expected_tools}"
+        assert planned_tools == expected_tools, (
+            f"Intent {intent_type} planned {planned_tools}, expected {expected_tools}"
+        )
 
 
 def test_adversarial_plans_with_write_tools_rejected_and_audited(conn):

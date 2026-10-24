@@ -28,7 +28,7 @@ export function Badge({
   return (
     <span
       className={cx(
-        'label-mono inline-flex h-5 shrink-0 items-center rounded-[4px] px-1.5 whitespace-nowrap',
+        'label-mono inline-flex h-6 shrink-0 items-center rounded-chip px-2.5 whitespace-nowrap',
         TONES[tone],
         className,
       )}
@@ -57,7 +57,7 @@ export function Chip({
         'inline-flex h-7 items-center rounded-chip px-3 text-small transition-colors duration-fast',
         selected
           ? 'bg-ink text-ink-inverse'
-          : 'bg-transparent text-ink-2 hover:bg-surface-sunken hover:text-ink',
+          : 'bg-transparent text-ink-2 ring-1 ring-ink/15 ring-inset hover:bg-surface-sunken hover:text-ink',
       )}
     >
       {children}

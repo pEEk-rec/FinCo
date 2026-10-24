@@ -74,9 +74,7 @@ class PlanValidator:
 
         for idx, step in enumerate(plan.steps):
             if has_terminal:
-                reasons.append(
-                    f"Step {idx} ('{step.tool_name}') appears after a terminal step"
-                )
+                reasons.append(f"Step {idx} ('{step.tool_name}') appears after a terminal step")
 
             # Check tool existence in registry
             spec: ToolSpec | None = get_tool(step.tool_name)

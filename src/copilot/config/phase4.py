@@ -201,9 +201,7 @@ class RewardsConfig(BaseModel):
                 stems = [term, term.rstrip("s")] if term.endswith("s") else [term, f"{term}s"]
                 for s in stems:
                     if s in rule_lower:
-                        raise ValueError(
-                            f"XP rule '{rule_name}' contains forbidden term '{term}'"
-                        )
+                        raise ValueError(f"XP rule '{rule_name}' contains forbidden term '{term}'")
                     if (
                         f"skip {s}" in desc_lower
                         or f"reduce {s}" in desc_lower

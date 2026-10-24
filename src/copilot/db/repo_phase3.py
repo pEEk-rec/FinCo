@@ -384,7 +384,6 @@ def update_bucket(
     return cur.rowcount > 0
 
 
-
 def map_bucket_category(
     conn: sqlite3.Connection,
     user_id: str,
@@ -717,7 +716,6 @@ def get_memory_by_subject(
     d["statement_json"] = json.loads(d["statement_json"])
     d["user_confirmed"] = bool(d["user_confirmed"])
     return MemoryItem.model_validate(d)
-
 
 
 # ---------------------------------------------------------------------------------------------
@@ -1165,9 +1163,7 @@ def insert_reflection(conn: sqlite3.Connection, r: Reflection) -> Reflection:
     return r
 
 
-def list_reflections(
-    conn: sqlite3.Connection, user_id: str, task_id: str
-) -> list[Reflection]:
+def list_reflections(conn: sqlite3.Connection, user_id: str, task_id: str) -> list[Reflection]:
     rows = conn.execute(
         """
         SELECT * FROM reflections
@@ -1349,9 +1345,7 @@ def list_scheduled_jobs(
     return jobs
 
 
-def get_scheduled_job(
-    conn: sqlite3.Connection, user_id: str, job_kind: str
-) -> ScheduledJob | None:
+def get_scheduled_job(conn: sqlite3.Connection, user_id: str, job_kind: str) -> ScheduledJob | None:
     row = conn.execute(
         "SELECT * FROM scheduled_jobs WHERE user_id = ? AND job_kind = ?",
         (user_id, job_kind),
@@ -1377,9 +1371,7 @@ def get_scheduled_job_by_id(
     return ScheduledJob.model_validate(d)
 
 
-def list_due_jobs(
-    conn: sqlite3.Connection, user_id: str, as_of: str
-) -> list[ScheduledJob]:
+def list_due_jobs(conn: sqlite3.Connection, user_id: str, as_of: str) -> list[ScheduledJob]:
     """List enabled jobs due to run at or before as_of whose lease is free."""
     rows = conn.execute(
         """
@@ -1498,9 +1490,7 @@ def list_job_runs(
     return runs
 
 
-def get_latest_job_run(
-    conn: sqlite3.Connection, user_id: str, job_id: str
-) -> JobRun | None:
+def get_latest_job_run(conn: sqlite3.Connection, user_id: str, job_id: str) -> JobRun | None:
     row = conn.execute(
         "SELECT * FROM job_runs WHERE user_id = ? AND job_id = ? ORDER BY started_at DESC LIMIT 1",
         (user_id, job_id),
@@ -1691,7 +1681,3 @@ def delete_feedback_stat(
             (user_id,),
         )
     return cur.rowcount
-
-
-
-

@@ -1,0 +1,110 @@
+[
+  {
+    "name": "upi debit",
+    "sender": "ICICIB",
+    "text": "ICICI Bank Acct XX234 debited for Rs 250.00 on 18-Oct-26; RAMESH K credited. UPI:628912345685. Call 18002662 for dispute.",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 25000,
+      "account_last4": null,
+      "utr": "628912345685",
+      "display_name": "RAMESH K",
+      "vpa": null,
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "upi credit",
+    "sender": "ICICIT",
+    "text": "ICICI Bank Acct XX234 credited with Rs 5,000.00 on 18-Oct-26 from PRIYA S. UPI:628912345686",
+    "expect": {
+      "kind": "credit",
+      "direction": "credit",
+      "amount_paise": 500000,
+      "account_last4": null,
+      "utr": "628912345686",
+      "display_name": "PRIYA S",
+      "vpa": null,
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "card spend",
+    "sender": "ICICIB",
+    "text": "Rs 1,299.00 spent using ICICI Bank Card XX1234 on 18-Oct-26 on AMAZON. Avl Limit: Rs 50,000.00.",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 129900,
+      "account_last4": "1234",
+      "utr": null,
+      "display_name": "AMAZON",
+      "vpa": null,
+      "channel": "card",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "atm withdrawal",
+    "sender": "ICICIB",
+    "text": "ICICI Bank Acct XX234 debited with Rs 2,000.00 on 18-Oct-26 ATM WDL. Avl Bal Rs 9000.00",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 200000,
+      "account_last4": null,
+      "utr": null,
+      "display_name": "ATM cash withdrawal",
+      "vpa": null,
+      "channel": "atm",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "autopay",
+    "sender": "ICICIB",
+    "text": "ICICI Bank Acct XX234 debited for Rs 199.00 on 18-Oct-26 towards UPI AutoPay HOTSTAR. UPI:628912345687",
+    "expect": {
+      "kind": "autopay",
+      "direction": "debit",
+      "amount_paise": 19900,
+      "account_last4": null,
+      "utr": "628912345687",
+      "display_name": "HOTSTAR",
+      "vpa": null,
+      "channel": "autopay",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "reversal",
+    "sender": "ICICIB",
+    "text": "ICICI Bank Acct XX234 credited with Rs 250.00 on 18-Oct-26 as reversal of UPI:628912345685",
+    "expect": {
+      "kind": "reversal",
+      "direction": "credit",
+      "amount_paise": 25000,
+      "account_last4": null,
+      "utr": "628912345685",
+      "display_name": "Reversal",
+      "vpa": null,
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "otp",
+    "sender": "ICICIB",
+    "text": "123456 is the OTP for your ICICI Bank transaction of INR 250.00.",
+    "expect": "dropped:otp"
+  },
+  {
+    "name": "marketing",
+    "sender": "ICICIB",
+    "text": "Get 5% cashback on your next ICICI Bank credit card spend this weekend.",
+    "expect": "unparsed"
+  }
+]

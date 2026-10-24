@@ -266,7 +266,7 @@ def build_monthly_review(
         tx_days.add(tx_dt.day)
 
     now_ist = now_dt.astimezone(IST)
-    is_partial = (now_ist.year == year and now_ist.month == month and now_ist.day < days_in_month)
+    is_partial = now_ist.year == year and now_ist.month == month and now_ist.day < days_in_month
     days_recorded = now_ist.day if is_partial else days_in_month
     missing_days = max(0, days_recorded - len(tx_days))
 

@@ -21,47 +21,69 @@ interface Blob {
 const BLOBS: Blob[] = [
   {
     hue: '255, 122, 92',
-    r: 0.42,
-    ax: 0.32,
+    r: 0.4,
+    ax: 0.34,
     ay: 0.22,
     sx: 0.00021,
     sy: 0.00017,
     px: 0,
     py: 1,
-    pull: 0.06,
+    pull: 0.1,
   },
   {
     hue: '255, 182, 140',
-    r: 0.46,
-    ax: 0.28,
+    r: 0.44,
+    ax: 0.3,
     ay: 0.3,
     sx: 0.00015,
     sy: 0.00023,
     px: 2,
     py: 3,
-    pull: 0.1,
+    pull: 0.16,
   },
   {
     hue: '176, 160, 255',
-    r: 0.28,
-    ax: 0.38,
-    ay: 0.2,
+    r: 0.34,
+    ax: 0.4,
+    ay: 0.22,
     sx: 0.00026,
     sy: 0.00014,
     px: 4,
     py: 5,
-    pull: 0.14,
+    pull: 0.3,
   },
   {
     hue: '122, 208, 190',
-    r: 0.4,
-    ax: 0.22,
+    r: 0.38,
+    ax: 0.24,
     ay: 0.34,
     sx: 0.00012,
     sy: 0.00019,
     px: 6,
     py: 1,
-    pull: 0.04,
+    pull: 0.08,
+  },
+  {
+    hue: '255, 150, 200',
+    r: 0.32,
+    ax: 0.36,
+    ay: 0.26,
+    sx: 0.00018,
+    sy: 0.00021,
+    px: 1,
+    py: 4,
+    pull: 0.24,
+  },
+  {
+    hue: '130, 190, 255',
+    r: 0.34,
+    ax: 0.3,
+    ay: 0.3,
+    sx: 0.00014,
+    sy: 0.00016,
+    px: 5,
+    py: 2,
+    pull: 0.2,
   },
 ];
 
@@ -88,8 +110,8 @@ export function LiquidBackdrop() {
     };
 
     const draw = (t: number) => {
-      pointer.x += (pointer.tx - pointer.x) * 0.04;
-      pointer.y += (pointer.ty - pointer.y) * 0.04;
+      pointer.x += (pointer.tx - pointer.x) * 0.07;
+      pointer.y += (pointer.ty - pointer.y) * 0.07;
       ctx.clearRect(0, 0, w, h);
       ctx.globalCompositeOperation = 'source-over';
       for (const b of BLOBS) {
@@ -103,6 +125,14 @@ export function LiquidBackdrop() {
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, w, h);
       }
+      // A warm glow that sits under the pointer, so the light visibly follows the hand.
+      const gx = pointer.x * w;
+      const gy = pointer.y * h;
+      const glow = ctx.createRadialGradient(gx, gy, 0, gx, gy, 0.3 * Math.max(w, h));
+      glow.addColorStop(0, 'rgba(255, 140, 110, 0.38)');
+      glow.addColorStop(1, 'rgba(255, 140, 110, 0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, w, h);
     };
 
     const frame = (now: number) => {
@@ -141,7 +171,7 @@ export function LiquidBackdrop() {
     <canvas
       ref={ref}
       aria-hidden
-      className="no-print pointer-events-none fixed inset-0 -z-10 h-full w-full opacity-80"
+      className="no-print pointer-events-none fixed inset-0 -z-10 h-full w-full opacity-70"
       style={{ filter: 'blur(36px) saturate(1.15)' }}
     />
   );

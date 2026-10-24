@@ -42,7 +42,9 @@ export function DesignScreen() {
             </p>
             <p className="text-h2 font-medium">Section heading</p>
             <p className="text-body">Body text is fifteen pixels at regular weight.</p>
-            <p className="tabular text-hero font-light">{formatINR(123456789)}</p>
+            <p className="tabular text-[40px] font-extrabold sm:text-hero">
+              {formatINR(123456789)}
+            </p>
             <p className="label-mono text-ink-3">Mono label</p>
           </div>
         </Card>

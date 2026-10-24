@@ -129,8 +129,7 @@ def llm_critic_review(
         # Safety Rule 14: The LLM critic CANNOT introduce or change numbers
         if re.search(r"\d", text):
             msg = (
-                "LLM critic output contained numbers, violating Safety Rule 14. "
-                "Critique rejected."
+                "LLM critic output contained numbers, violating Safety Rule 14. Critique rejected."
             )
             logger.warning(msg)
             if conn and user_id:
@@ -143,7 +142,6 @@ def llm_critic_review(
                     run_id=task_id,
                 )
             raise ValueError(msg)
-
 
         data = json.loads(text)
         code = data.get("critique_code", "ok")
@@ -201,7 +199,7 @@ def run_review_and_revision(
                 logger.info("Critic rejected: %s", ve)
                 codes = ["ok"]
 
-        is_ok = (codes == ["ok"])
+        is_ok = codes == ["ok"]
 
         if is_ok:
             # Review passed
@@ -296,6 +294,5 @@ def run_review_and_revision(
             current_reports, ctx.user_id, task_id, conn=ctx.conn
         )
         round_idx += 1
-
 
     return current_merge, current_reports, reflections

@@ -228,3 +228,47 @@ The following invariants must be preserved across all future extensions of the c
   question response cache and a glossary prompt (`config/intent_glossary.yaml`).
 - **Concurrency:** one SQLite connection may be shared by threads, so `execute_tool` takes a
   per-connection lock around the savepoint, and tool registration is locked.
+
+## Capture additions: an event-driven loop with a human in it
+
+Everything above starts from a user's question or a schedule. Capture starts from **an event in the
+world**: a bank alert. It is the same architecture with a different trigger.
+
+```
+ bank SMS -> phone rule -> POST /api/capture/sms          simulator / manual entry
+                               |                                   |
+                  secret, rate, size, sender allowlist, OTP drop   |
+                               v                                   v
+                    parse in memory (templates), text discarded -> record_payment_event
+                                                                     |
+        counterparty kind -> ask policy -> 3 ranked guesses ----------+
+                               |
+              auto-tag (known shop, regular payment)   or   ask
+                               |                              |
+                     "Tagged for you. Change"        overlay / notification / Today
+                                                              |
+                                      label_payment_event (the user's tap)
+                                                              |
+              +-------------------+--------------------------+
+              v                   v                          v
+     merchant habit -> memory   signal weights -> learner   person policy (k of n)
+                                                              |
+        bank link (Account Aggregator) fetch -> ledger -> reconcile_payment_events
+                (consent state machine, revocable)     (UTR first, never on ambiguity)
+```
+
+- **Human in the loop at the moment of payment.** The agent proposes (ranked, explainable guesses);
+  only the user's tap becomes a label with `category_source = user`, and nothing automatic may overwrite
+  it. Fatigue rules (quiet hours, a daily budget, a per-payee cooldown) turn an ask into an inbox item
+  rather than an interruption.
+- **Every action is a tool through `execute_tool`.** Recording, labelling, simulating, reconciling,
+  consent changes and fetches are governed, audited and undoable where it makes sense. The agent is
+  denied every capture write; the webhook and the runtime jobs act as the system.
+- **Learning from labels reuses the Phase 3 learner.** Each ranking signal (payee history, time of
+  day, amount, day of month, name hint, recency) keeps a Beta posterior in `feedback_stats`; its weight is
+  the configured weight times a clamped multiplier, renormalised to 10000. Bounded, resettable, visible
+  in `copilot learning show`. Simulated events teach nothing unless a demo flag says so.
+- **Two lanes, one ledger.** The alert lane is fast and unverified; the bank link is slow and verified.
+  Reconciliation joins them, and spend views never count a payment in both.
+- **Privacy is structural.** Raw message text exists only in memory between the webhook and the parser.
+  Tables, logs, spans, notifications and model prompts are scanned by tests for a marker string.

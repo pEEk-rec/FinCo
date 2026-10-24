@@ -111,7 +111,6 @@ def execute_specialist_tool(
             f"Allowed: {sorted(allowed)}"
         )
 
-
     # First attempt
     res = execute_tool(ctx, tool_name, args)
     if not res.ok:
@@ -161,22 +160,26 @@ def _run_specialist_core(
                     ctx, role, "check_commitment_coverage", {"horizon_days": horizon}
                 )
                 if cal_res.ok and cal_res.data:
-                    findings.append({
-                        "metric": "calendar_coverage",
-                        "value": _to_dict(cal_res.data),
-                        "confidence": "high",
-                        "evidence": f"get_calendar(horizon_days={horizon})",
-                    })
+                    findings.append(
+                        {
+                            "metric": "calendar_coverage",
+                            "value": _to_dict(cal_res.data),
+                            "confidence": "high",
+                            "evidence": f"get_calendar(horizon_days={horizon})",
+                        }
+                    )
                 else:
                     gaps.append("Could not compute calendar cashflow projection")
 
                 if cov_res.ok and cov_res.data:
-                    findings.append({
-                        "metric": "commitment_coverage",
-                        "value": _to_dict(cov_res.data),
-                        "confidence": "high",
-                        "evidence": f"check_commitment_coverage(window={horizon})",
-                    })
+                    findings.append(
+                        {
+                            "metric": "commitment_coverage",
+                            "value": _to_dict(cov_res.data),
+                            "confidence": "high",
+                            "evidence": f"check_commitment_coverage(window={horizon})",
+                        }
+                    )
                 else:
                     gaps.append("Could not evaluate commitment coverage")
 
@@ -191,12 +194,14 @@ def _run_specialist_core(
                 }
                 res = execute_specialist_tool(ctx, role, "run_whatif", whatif_params)
                 if res.ok and res.data:
-                    findings.append({
-                        "metric": "scenario_cashflow",
-                        "value": _to_dict(res.data),
-                        "confidence": "high",
-                        "evidence": f"run_whatif({whatif_params['scenario']['kind']})",
-                    })
+                    findings.append(
+                        {
+                            "metric": "scenario_cashflow",
+                            "value": _to_dict(res.data),
+                            "confidence": "high",
+                            "evidence": f"run_whatif({whatif_params['scenario']['kind']})",
+                        }
+                    )
                 else:
                     gaps.append("Could not simulate cashflow scenario")
 
@@ -205,36 +210,42 @@ def _run_specialist_core(
                     ctx, role, "check_commitment_coverage", {"horizon_days": 60}
                 )
                 if res.ok and res.data:
-                    findings.append({
-                        "metric": "contribution_fit",
-                        "value": _to_dict(res.data),
-                        "confidence": "high",
-                        "evidence": "check_commitment_coverage(horizon_days=60)",
-                    })
+                    findings.append(
+                        {
+                            "metric": "contribution_fit",
+                            "value": _to_dict(res.data),
+                            "confidence": "high",
+                            "evidence": "check_commitment_coverage(horizon_days=60)",
+                        }
+                    )
                 else:
                     gaps.append("Could not evaluate cashflow contribution fit")
 
             elif kind == "forecast":
                 res = execute_specialist_tool(ctx, role, "forecast_month", {})
                 if res.ok and res.data:
-                    findings.append({
-                        "metric": "forecast",
-                        "value": _to_dict(res.data),
-                        "confidence": "high",
-                        "evidence": "forecast_month",
-                    })
+                    findings.append(
+                        {
+                            "metric": "forecast",
+                            "value": _to_dict(res.data),
+                            "confidence": "high",
+                            "evidence": "forecast_month",
+                        }
+                    )
                 else:
                     gaps.append("Could not forecast month spend")
 
             elif kind == "commitment_status":
                 res = execute_specialist_tool(ctx, role, "get_commitment_status", {})
                 if res.ok and res.data:
-                    findings.append({
-                        "metric": "commitments",
-                        "value": _to_dict(res.data),
-                        "confidence": "high",
-                        "evidence": "get_commitment_status",
-                    })
+                    findings.append(
+                        {
+                            "metric": "commitments",
+                            "value": _to_dict(res.data),
+                            "confidence": "high",
+                            "evidence": "get_commitment_status",
+                        }
+                    )
                 else:
                     gaps.append("Could not retrieve commitment status")
 
@@ -248,12 +259,14 @@ def _run_specialist_core(
                     ctx, role, "evaluate_goal_impact", {"amount_paise": amount}
                 )
                 if res.ok and res.data:
-                    findings.append({
-                        "metric": "goal_impact",
-                        "value": _to_dict(res.data),
-                        "confidence": "high",
-                        "evidence": f"evaluate_goal_impact(amount={amount})",
-                    })
+                    findings.append(
+                        {
+                            "metric": "goal_impact",
+                            "value": _to_dict(res.data),
+                            "confidence": "high",
+                            "evidence": f"evaluate_goal_impact(amount={amount})",
+                        }
+                    )
                 else:
                     gaps.append("Could not evaluate goal impact")
 
@@ -263,45 +276,52 @@ def _run_specialist_core(
                     ctx, role, "evaluate_goal_impact", {"amount_paise": amount}
                 )
                 if res.ok and res.data:
-                    findings.append({
-                        "metric": "scenario_goals",
-                        "value": _to_dict(res.data),
-                        "confidence": "high",
-                        "evidence": "evaluate_goal_impact",
-                    })
+                    findings.append(
+                        {
+                            "metric": "scenario_goals",
+                            "value": _to_dict(res.data),
+                            "confidence": "high",
+                            "evidence": "evaluate_goal_impact",
+                        }
+                    )
                 else:
                     gaps.append("Could not simulate goal scenario impact")
-
 
             elif kind == "bucket_allocation":
                 res = execute_specialist_tool(ctx, role, "list_buckets", {})
                 alloc_res = execute_specialist_tool(ctx, role, "get_allocation_summary", {})
                 if res.ok and res.data:
-                    findings.append({
-                        "metric": "buckets",
-                        "value": _to_dict(res.data),
-                        "confidence": "high",
-                        "evidence": "list_buckets",
-                    })
+                    findings.append(
+                        {
+                            "metric": "buckets",
+                            "value": _to_dict(res.data),
+                            "confidence": "high",
+                            "evidence": "list_buckets",
+                        }
+                    )
                 if alloc_res.ok and alloc_res.data:
-                    findings.append({
-                        "metric": "allocation_summary",
-                        "value": _to_dict(alloc_res.data),
-                        "confidence": "high",
-                        "evidence": "get_allocation_summary",
-                    })
+                    findings.append(
+                        {
+                            "metric": "allocation_summary",
+                            "value": _to_dict(alloc_res.data),
+                            "confidence": "high",
+                            "evidence": "get_allocation_summary",
+                        }
+                    )
                 if not findings:
                     gaps.append("Could not retrieve bucket allocations")
 
             elif kind == "tradeoff_analysis":
                 res = execute_specialist_tool(ctx, role, "compare_tradeoffs", params)
                 if res.ok and res.data:
-                    findings.append({
-                        "metric": "tradeoff_analysis",
-                        "value": _to_dict(res.data),
-                        "confidence": "high",
-                        "evidence": "compare_tradeoffs",
-                    })
+                    findings.append(
+                        {
+                            "metric": "tradeoff_analysis",
+                            "value": _to_dict(res.data),
+                            "confidence": "high",
+                            "evidence": "compare_tradeoffs",
+                        }
+                    )
                 else:
                     gaps.append("Could not compare tradeoffs")
 
@@ -312,12 +332,14 @@ def _run_specialist_core(
                 else:
                     res = execute_specialist_tool(ctx, role, "list_goals", {})
                 if res.ok and res.data:
-                    findings.append({
-                        "metric": "goal_progress",
-                        "value": _to_dict(res.data),
-                        "confidence": "high",
-                        "evidence": "get_goal_progress",
-                    })
+                    findings.append(
+                        {
+                            "metric": "goal_progress",
+                            "value": _to_dict(res.data),
+                            "confidence": "high",
+                            "evidence": "get_goal_progress",
+                        }
+                    )
                 else:
                     gaps.append("Could not retrieve goal progress")
 
@@ -328,12 +350,14 @@ def _run_specialist_core(
             if kind == "readiness_assessment":
                 res = execute_specialist_tool(ctx, role, "assess_investment_readiness", {})
                 if res.ok and res.data:
-                    findings.append({
-                        "metric": "readiness_level",
-                        "value": _to_dict(res.data),
-                        "confidence": "high",
-                        "evidence": "assess_investment_readiness",
-                    })
+                    findings.append(
+                        {
+                            "metric": "readiness_level",
+                            "value": _to_dict(res.data),
+                            "confidence": "high",
+                            "evidence": "assess_investment_readiness",
+                        }
+                    )
                 else:
                     gaps.append("Could not assess investment readiness")
 
@@ -344,12 +368,14 @@ def _run_specialist_core(
                 )
 
                 if res.ok and res.data:
-                    findings.append({
-                        "metric": "contribution_plan",
-                        "value": _to_dict(res.data),
-                        "confidence": "high",
-                        "evidence": f"plan_contributions(target_monthly_paise={target_paise})",
-                    })
+                    findings.append(
+                        {
+                            "metric": "contribution_plan",
+                            "value": _to_dict(res.data),
+                            "confidence": "high",
+                            "evidence": f"plan_contributions(target_monthly_paise={target_paise})",
+                        }
+                    )
                 else:
                     gaps.append("Could not generate contribution plan")
 
@@ -360,36 +386,42 @@ def _run_specialist_core(
             if kind in ("seasonal_patterns", "memory_retrieval"):
                 res = execute_specialist_tool(ctx, role, "list_memories", {"status": "active"})
                 if res.ok and res.data:
-                    findings.append({
-                        "metric": "active_memories",
-                        "value": _to_dict(res.data),
-                        "confidence": "medium",
-                        "evidence": "list_memories(status=active)",
-                    })
+                    findings.append(
+                        {
+                            "metric": "active_memories",
+                            "value": _to_dict(res.data),
+                            "confidence": "medium",
+                            "evidence": "list_memories(status=active)",
+                        }
+                    )
                 else:
                     gaps.append("Could not retrieve active memories")
 
             elif kind == "anomaly_check":
                 res = execute_specialist_tool(ctx, role, "detect_anomalies", {})
                 if res.ok and res.data:
-                    findings.append({
-                        "metric": "anomalies",
-                        "value": _to_dict(res.data),
-                        "confidence": "high",
-                        "evidence": "detect_anomalies",
-                    })
+                    findings.append(
+                        {
+                            "metric": "anomalies",
+                            "value": _to_dict(res.data),
+                            "confidence": "high",
+                            "evidence": "detect_anomalies",
+                        }
+                    )
                 else:
                     gaps.append("Could not detect anomalies")
 
             elif kind == "habit_investigation":
                 res = execute_specialist_tool(ctx, role, "explain_change", params)
                 if res.ok and res.data:
-                    findings.append({
-                        "metric": "habit_investigation",
-                        "value": _to_dict(res.data),
-                        "confidence": "high",
-                        "evidence": "explain_change",
-                    })
+                    findings.append(
+                        {
+                            "metric": "habit_investigation",
+                            "value": _to_dict(res.data),
+                            "confidence": "high",
+                            "evidence": "explain_change",
+                        }
+                    )
                 else:
                     gaps.append("Could not investigate habit change")
 
@@ -398,26 +430,28 @@ def _run_specialist_core(
 
         elif role == "CoachAgent":
             if kind in ("challenge_potential", "experiment_feasibility"):
-                res_offers = execute_specialist_tool(
-                    ctx, role, "list_offers", {"status": "shown"}
-                )
+                res_offers = execute_specialist_tool(ctx, role, "list_offers", {"status": "shown"})
                 res_exps = execute_specialist_tool(
                     ctx, role, "list_experiments", {"status": "active"}
                 )
                 if res_offers.ok and res_offers.data:
-                    findings.append({
-                        "metric": "available_offers",
-                        "value": _to_dict(res_offers.data),
-                        "confidence": "high",
-                        "evidence": "list_offers(status='shown')",
-                    })
+                    findings.append(
+                        {
+                            "metric": "available_offers",
+                            "value": _to_dict(res_offers.data),
+                            "confidence": "high",
+                            "evidence": "list_offers(status='shown')",
+                        }
+                    )
                 if res_exps.ok and res_exps.data:
-                    findings.append({
-                        "metric": "active_experiments",
-                        "value": _to_dict(res_exps.data),
-                        "confidence": "high",
-                        "evidence": "list_experiments(status='active')",
-                    })
+                    findings.append(
+                        {
+                            "metric": "active_experiments",
+                            "value": _to_dict(res_exps.data),
+                            "confidence": "high",
+                            "evidence": "list_experiments(status='active')",
+                        }
+                    )
                 if not findings:
                     gaps.append("Could not retrieve challenge potential or active experiments")
 
@@ -425,19 +459,23 @@ def _run_specialist_core(
                 res_prog = execute_specialist_tool(ctx, role, "get_user_progress", {})
                 res_bests = execute_specialist_tool(ctx, role, "get_personal_bests", {})
                 if res_prog.ok and res_prog.data:
-                    findings.append({
-                        "metric": "user_progress",
-                        "value": _to_dict(res_prog.data),
-                        "confidence": "high",
-                        "evidence": "get_user_progress",
-                    })
+                    findings.append(
+                        {
+                            "metric": "user_progress",
+                            "value": _to_dict(res_prog.data),
+                            "confidence": "high",
+                            "evidence": "get_user_progress",
+                        }
+                    )
                 if res_bests.ok and res_bests.data:
-                    findings.append({
-                        "metric": "personal_bests",
-                        "value": _to_dict(res_bests.data),
-                        "confidence": "high",
-                        "evidence": "get_personal_bests",
-                    })
+                    findings.append(
+                        {
+                            "metric": "personal_bests",
+                            "value": _to_dict(res_bests.data),
+                            "confidence": "high",
+                            "evidence": "get_personal_bests",
+                        }
+                    )
                 if not findings:
                     gaps.append("Could not retrieve progress or personal bests")
 
@@ -449,25 +487,28 @@ def _run_specialist_core(
                     res = execute_specialist_tool(ctx, role, "list_goals", {})
                 res_exps = execute_specialist_tool(ctx, role, "list_experiments", {})
                 if res.ok and res.data:
-                    findings.append({
-                        "metric": "goal_context",
-                        "value": _to_dict(res.data),
-                        "confidence": "high",
-                        "evidence": "goals",
-                    })
+                    findings.append(
+                        {
+                            "metric": "goal_context",
+                            "value": _to_dict(res.data),
+                            "confidence": "high",
+                            "evidence": "goals",
+                        }
+                    )
                 if res_exps.ok and res_exps.data:
-                    findings.append({
-                        "metric": "experiments",
-                        "value": _to_dict(res_exps.data),
-                        "confidence": "high",
-                        "evidence": "list_experiments",
-                    })
+                    findings.append(
+                        {
+                            "metric": "experiments",
+                            "value": _to_dict(res_exps.data),
+                            "confidence": "high",
+                            "evidence": "list_experiments",
+                        }
+                    )
                 if not findings:
                     gaps.append("Could not retrieve goal coaching details")
 
             else:
                 gaps.append(f"Unhandled coaching question kind: {kind}")
-
 
     except PermissionError as p_err:
         status = "failed"

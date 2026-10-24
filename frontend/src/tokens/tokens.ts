@@ -26,6 +26,8 @@ export const colors = {
   'brand-ink': '#FFFFFF',
   'brand-tint': '#FDECE7',
   coral: '#FF7A5C',
+  'brand-edge': '#6E2012',
+  sun: '#FFD166',
   peach: '#FFB68C',
   gold: '#9A600A',
   'gold-tint': '#FBF0DA',
@@ -56,7 +58,7 @@ export const categoryPalette = [
   { fg: '#4D514D', bg: '#EFEDE7', mark: '#8A8E89' },
 ] as const;
 
-export const radius = { control: '12px', card: '20px', chip: '999px' } as const;
+export const radius = { control: '14px', card: '24px', chip: '999px' } as const;
 
 export const shadow = { popover: '0 16px 40px rgba(80, 40, 20, 0.14)' } as const;
 
@@ -78,13 +80,13 @@ export const fonts = {
 
 /** [size px, line-height, weight] — see PLAN_UI 2.3. */
 export const typeScale = {
-  display: [64, 1.0, 300],
-  h1: [32, 1.15, 300],
-  h2: [20, 1.3, 500],
+  display: [72, 0.95, 800],
+  h1: [38, 1.05, 800],
+  h2: [20, 1.3, 700],
   body: [15, 1.5, 400],
   small: [13, 1.45, 400],
-  label: [11, 1.4, 500],
-  hero: [48, 1.0, 300],
+  label: [11, 1.4, 700],
+  hero: [64, 0.95, 800],
   cell: [14, 1.4, 400],
 } as const;
 
@@ -103,6 +105,10 @@ export const contrastPairs: { fg: ColorName; bg: ColorName; kind: 'text' | 'larg
     { fg: 'ink-3' as const, bg, kind: 'text' as const },
   ]),
   { fg: 'ink-inverse', bg: 'ink', kind: 'text' },
+  { fg: 'ink', bg: 'coral', kind: 'text' },
+  { fg: 'ink', bg: 'sun', kind: 'text' },
+  { fg: 'ink', bg: 'peach', kind: 'text' },
+  { fg: 'ink-inverse', bg: 'brand-edge', kind: 'text' },
   { fg: 'brand-ink', bg: 'brand', kind: 'text' },
   { fg: 'brand', bg: 'surface', kind: 'text' },
   { fg: 'brand', bg: 'brand-tint', kind: 'text' },

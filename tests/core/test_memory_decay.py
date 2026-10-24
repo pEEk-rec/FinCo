@@ -81,6 +81,7 @@ def _setup_test_user(conn: sqlite3.Connection, user_id: str = "u_mem"):
 # 1. Exact Decay Tests at 0, 1, and 2 Half-Lives
 # -------------------------------------------------------------------------------------------------
 
+
 def test_decay_exact_values_at_half_lives():
     """
     Assert exact confidence values at 0, 1, and 2 half-lives.
@@ -156,6 +157,7 @@ def test_decay_user_preference_never_decays():
 # 2. Threshold Boundaries
 # -------------------------------------------------------------------------------------------------
 
+
 def test_threshold_boundaries():
     """
     Verify threshold boundary transitions:
@@ -190,6 +192,7 @@ def test_threshold_boundaries():
 # -------------------------------------------------------------------------------------------------
 # 3. Contradicted User-Confirmed Memory Status & "Still true?"
 # -------------------------------------------------------------------------------------------------
+
 
 def test_user_confirmed_contradicted_memory_becomes_stale_with_still_true():
     """
@@ -240,6 +243,7 @@ def test_user_confirmed_contradicted_memory_becomes_stale_with_still_true():
 # -------------------------------------------------------------------------------------------------
 # 4. Drift Scenario: Habit Changes Mid-History
 # -------------------------------------------------------------------------------------------------
+
 
 def test_drift_scenario_habit_change(conn: sqlite3.Connection):
     """
@@ -325,6 +329,7 @@ def test_drift_scenario_habit_change(conn: sqlite3.Connection):
 # -------------------------------------------------------------------------------------------------
 # 5. Alerts Damping Integration
 # -------------------------------------------------------------------------------------------------
+
 
 def test_alerts_damped_only_by_active_exception_for_same_category_and_period(
     conn: sqlite3.Connection,
@@ -427,6 +432,7 @@ def test_alerts_damped_only_by_active_exception_for_same_category_and_period(
 # -------------------------------------------------------------------------------------------------
 # 6. Investigation Hypothesis 'known_exception'
 # -------------------------------------------------------------------------------------------------
+
 
 def test_investigation_hypothesis_known_exception():
     """
@@ -531,6 +537,7 @@ def test_investigation_hypothesis_known_exception():
 # 7. Suppression Cooldown Boundary Tests (Day 29, 30, 31)
 # -------------------------------------------------------------------------------------------------
 
+
 def test_advice_suppression_cooldown_boundaries(conn: sqlite3.Connection):
     """
     Rejected advice kinds for a subject are suppressed during cooldown (advice_cooldown_days = 30):
@@ -590,6 +597,7 @@ def test_advice_suppression_cooldown_boundaries(conn: sqlite3.Connection):
 # 8. Consumer findings memories_json Population
 # -------------------------------------------------------------------------------------------------
 
+
 def test_memories_json_population_in_recommendations(conn: sqlite3.Connection):
     """
     Consumer recommendations populate memories_json with active memory items.
@@ -630,9 +638,7 @@ def test_memories_json_population_in_recommendations(conn: sqlite3.Connection):
     assert rec.memories[0]["id"] == "mem_rec_active"
 
     insert_recommendation(conn, rec)
-    row = conn.execute(
-        "SELECT memories_json FROM advice_items WHERE id = ?", (rec.id,)
-    ).fetchone()
+    row = conn.execute("SELECT memories_json FROM advice_items WHERE id = ?", (rec.id,)).fetchone()
     assert row is not None
     stored_memories = json.loads(row["memories_json"])
     assert len(stored_memories) == 1
@@ -642,6 +648,7 @@ def test_memories_json_population_in_recommendations(conn: sqlite3.Connection):
 # -------------------------------------------------------------------------------------------------
 # 9. Property Tests: Confidence Monotonicity with Age and Boundedness
 # -------------------------------------------------------------------------------------------------
+
 
 def test_confidence_never_increases_with_age_alone():
     """

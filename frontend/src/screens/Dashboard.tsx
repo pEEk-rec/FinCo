@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 
 import { ApiError, type Dashboard } from '../api/client';
-import { useDashboard } from '../api/hooks';
+import { useCaptureInbox, useDashboard } from '../api/hooks';
 import { BarList, type BarRow } from '../charts/BarList';
 import { PaceChart } from '../charts/PaceChart';
 import { Badge } from '../components/Badge';
@@ -50,14 +50,14 @@ function PaceCard({ data }: { data: Dashboard }) {
         : { text: T.overPace(delta), tone: 'negative' as const };
   const forecast = pace.forecast;
   return (
-    <Card className="lg:col-span-2" labelledBy="pace-title">
+    <Card className="lg:col-span-2" labelledBy="pace-title" tone="slab">
       <CardHeader
         id="pace-title"
         label={T.month}
         action={{ to: '/transactions', text: copy.nav.transactions }}
       />
       <div className="px-6 pt-8 pb-6">
-        <div className="flex items-center gap-6">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <LiquidVessel
             // What is left of the budget, as liquid: it drains as the month is spent.
             fraction={
@@ -70,12 +70,12 @@ function PaceCard({ data }: { data: Dashboard }) {
             shape="drop"
           />
           <div className="flex flex-col items-start gap-1">
-            <span className="label-mono text-ink-3">{T.leftToSpend}</span>
+            <span className="label-mono text-ink">{T.leftToSpend}</span>
             <NumberTicker
               value={formatINR(pace.left_to_spend_paise, { paise: 'never' })}
-              className="tabular text-hero font-light tracking-[-0.02em]"
+              className="tabular text-[44px] leading-none tracking-[-0.04em] sm:text-hero"
             />
-            <span className="text-small text-ink-2">
+            <span className="text-small font-medium text-ink">
               {pace.over_budget
                 ? T.overBy(formatINR(Math.abs(pace.left_to_spend_paise), { paise: 'never' }))
                 : T.ofBudget(formatINR(pace.total_limit_paise, { paise: 'never' }))}
@@ -97,7 +97,7 @@ function PaceCard({ data }: { data: Dashboard }) {
             callout={callout}
           />
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-small text-ink-2">
+        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-small text-ink">
           <span className="inline-flex items-center gap-2">
             <span aria-hidden className="h-0.5 w-5 bg-ink" />
             {T.actual}
@@ -281,9 +281,21 @@ function Loading() {
 
 export function DashboardScreen() {
   const query = useDashboard();
+  const inbox = useCaptureInbox();
   const data = query.data;
+  const waiting = inbox.data?.pending_count ?? 0;
   return (
-    <Page title={data ? <Headline data={data} /> : T.title} wide>
+    <Page
+      title={data ? <Headline data={data} /> : T.title}
+      wide
+      actions={
+        <Link to="/today">
+          <Button variant={waiting > 0 ? 'primary' : 'secondary'}>
+            {waiting > 0 ? `Review today: ${waiting} to tag` : 'Review today'}
+          </Button>
+        </Link>
+      }
+    >
       {query.isPending ? (
         <Loading />
       ) : query.error ? (

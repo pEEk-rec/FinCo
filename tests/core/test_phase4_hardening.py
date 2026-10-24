@@ -220,15 +220,23 @@ def test_private_text_never_reaches_logs_spans_or_audit_metadata(caplog):
 
     with caplog.at_level(logging.DEBUG):
         designed = run(
-            "design_experiment", START,
-            metric_code="category_spend", categories=["food"], duration_days=14,
+            "design_experiment",
+            START,
+            metric_code="category_spend",
+            categories=["food"],
+            duration_days=14,
         )
         exp_id = designed.data.experiment.id
         run("start_experiment", START, experiment_id=exp_id)
         run("create_checkins", "2026-09-09")
         run("create_due_reviews", "2026-09-16")
-        run("submit_review_feedback", "2026-09-17", experiment_id=exp_id, user_helpful=True,
-            feedback_text=secret_note)
+        run(
+            "submit_review_feedback",
+            "2026-09-17",
+            experiment_id=exp_id,
+            user_helpful=True,
+            feedback_text=secret_note,
+        )
         memory = record_experiment_outcome_memory(conn, USER, exp_id, clock=_clock("2026-09-18"))
         run("suggest_challenges", "2026-09-22")
         run("award_xp_and_badges", "2026-09-23")

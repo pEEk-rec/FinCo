@@ -118,8 +118,13 @@ def award_xp_and_badges_handler(ctx: ExecutionContext, **kwargs) -> AwardXpAndBa
     # 1. Check-ins the user answered. Each one is rewarded once (idempotency key).
     for chk in list_experiment_checkins(ctx.conn, ctx.user_id):
         if chk.user_response is not None and core_award_xp(
-            ctx.conn, ctx.user_id, "checkin_answered", "checkin", chk.id,
-            period_day=today.isoformat(), clock=clock_dt,
+            ctx.conn,
+            ctx.user_id,
+            "checkin_answered",
+            "checkin",
+            chk.id,
+            period_day=today.isoformat(),
+            clock=clock_dt,
         ):
             xp_count += 1
 
@@ -137,8 +142,13 @@ def award_xp_and_badges_handler(ctx: ExecutionContext, **kwargs) -> AwardXpAndBa
         percent = goal_progress(ctx.conn, ctx.user_id, goal, today).percent_bp // 100
         for mark in (25, 50, 75, 100):
             if percent >= mark and core_award_xp(
-                ctx.conn, ctx.user_id, f"goal_milestone_{mark}", "goal", goal.id,
-                period_day=today.isoformat(), clock=clock_dt,
+                ctx.conn,
+                ctx.user_id,
+                f"goal_milestone_{mark}",
+                "goal",
+                goal.id,
+                period_day=today.isoformat(),
+                clock=clock_dt,
             ):
                 xp_count += 1
 
@@ -158,8 +168,13 @@ def award_xp_and_badges_handler(ctx: ExecutionContext, **kwargs) -> AwardXpAndBa
         >= TAGGING_WEEK_MIN_BP
     ):
         if core_award_xp(
-            ctx.conn, ctx.user_id, "tagging_completeness_week", "week", week_start.isoformat(),
-            period_day=today.isoformat(), clock=clock_dt,
+            ctx.conn,
+            ctx.user_id,
+            "tagging_completeness_week",
+            "week",
+            week_start.isoformat(),
+            period_day=today.isoformat(),
+            clock=clock_dt,
         ):
             xp_count += 1
 
@@ -170,8 +185,13 @@ def award_xp_and_badges_handler(ctx: ExecutionContext, **kwargs) -> AwardXpAndBa
         (ctx.user_id,),
     ).fetchall():
         if core_award_xp(
-            ctx.conn, ctx.user_id, "memory_confirmation", "memory", row["id"],
-            period_day=today.isoformat(), clock=clock_dt,
+            ctx.conn,
+            ctx.user_id,
+            "memory_confirmation",
+            "memory",
+            row["id"],
+            period_day=today.isoformat(),
+            clock=clock_dt,
         ):
             xp_count += 1
 

@@ -349,11 +349,15 @@ def test_xp_events_uniqueness_and_append_only_triggers(conn):
     assert get_user_xp_for_day(conn, "user_alice", "2026-09-08") == 0
 
     # UPDATE trigger blocks modification (append-only)
-    with pytest.raises(sqlite3.IntegrityError, match="xp_events is append-only, UPDATE is not allowed"):
+    with pytest.raises(
+        sqlite3.IntegrityError, match="xp_events is append-only, UPDATE is not allowed"
+    ):
         conn.execute("UPDATE xp_events SET points = 100 WHERE id = 'xp_01'")
 
     # DELETE trigger blocks removal (append-only)
-    with pytest.raises(sqlite3.IntegrityError, match="xp_events is append-only, DELETE is not allowed"):
+    with pytest.raises(
+        sqlite3.IntegrityError, match="xp_events is append-only, DELETE is not allowed"
+    ):
         conn.execute("DELETE FROM xp_events WHERE id = 'xp_01'")
 
 

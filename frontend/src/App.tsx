@@ -2,7 +2,9 @@ import { Route, Routes } from 'react-router';
 
 import { Shell } from './components/Shell';
 import { AgentScreen } from './screens/Agent';
+import { CaptureScreen } from './screens/Capture';
 import { ChallengesScreen } from './screens/Challenges';
+import { TodayScreen } from './screens/Today';
 import { ConnectScreen } from './screens/Connect';
 import { DashboardScreen } from './screens/Dashboard';
 import { DesignScreen } from './screens/Design';
@@ -22,6 +24,8 @@ export function App() {
         <Route index element={<DashboardScreen />} />
         <Route path="transactions" element={<TransactionsScreen />} />
         <Route path="review" element={<ReviewScreen />} />
+        <Route path="capture" element={<CaptureScreen />} />
+        <Route path="today" element={<TodayScreen />} />
         <Route path="goals" element={<GoalsScreen />} />
         <Route path="challenges" element={<ChallengesScreen />} />
         <Route path="progress" element={<ProgressScreen />} />

@@ -241,7 +241,9 @@ def test_forbidden_content_rejection():
 
     # Investment recommendation forbidden
     v_inv = validate_advice(
-        AdviceDraft(text="You should buy mutual funds with your extra ₹10,000.", finding_ids=["f1"]),
+        AdviceDraft(
+            text="You should buy mutual funds with your extra ₹10,000.", finding_ids=["f1"]
+        ),
         findings,
     )
     assert not v_inv.ok
@@ -257,7 +259,9 @@ def test_forbidden_content_rejection():
 
     # Guarantees forbidden
     v_guar = validate_advice(
-        AdviceDraft(text="This approach is completely risk-free and guarantees results.", finding_ids=["f1"]),
+        AdviceDraft(
+            text="This approach is completely risk-free and guarantees results.", finding_ids=["f1"]
+        ),
         findings,
     )
     assert not v_guar.ok
@@ -473,4 +477,3 @@ def test_approval_triggers_no_action():
     snap_tx_after = conn.execute("SELECT * FROM transactions").fetchall()
     assert snap_acc_after == snap_acc_before
     assert snap_tx_after == snap_tx_before
-

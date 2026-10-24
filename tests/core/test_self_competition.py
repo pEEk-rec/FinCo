@@ -381,7 +381,9 @@ def test_broken_streak_wording_no_shame():
     # Scan for forbidden words
     lower = info.display_text.lower()
     for term in FORBIDDEN_SHAME_TERMS:
-        assert term not in lower, f"Shame term '{term}' found in display_text: '{info.display_text}'"
+        assert term not in lower, (
+            f"Shame term '{term}' found in display_text: '{info.display_text}'"
+        )
 
 
 # ---------------------------------------------------------------------------------------------
@@ -525,4 +527,3 @@ def test_checkin_streak_integration(conn):
     info = calculate_checkin_streak(conn, "u_alice", as_of)
     assert info.is_active
     assert info.current_streak == 8  # 8 continuous days (Sep 1 to Sep 8) with answered checkins
-

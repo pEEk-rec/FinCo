@@ -475,9 +475,7 @@ def generate_transactions_v3(
                 }
             )
             if profile == "hard" and merch.code in hard_aliases and b.rng.random() < 0.6:
-                tx = tx.model_copy(
-                    update={"merchant_raw": f"POS/DEBIT/{hard_aliases[merch.code]}"}
-                )
+                tx = tx.model_copy(update={"merchant_raw": f"POS/DEBIT/{hard_aliases[merch.code]}"})
             result.transactions.append(tx)
             add_truth(tx, merch.category, False, merch.recurring)
 

@@ -115,18 +115,22 @@ def calculate_baseline(
 
         # 0. A window the user's data does not reach back to cannot say what was usual
         if first_txn_date is None or w_start < first_txn_date:
-            exclusions.append({
-                "window": f"{w_start_str}..{w_end_str}",
-                "reason": "before_first_transaction",
-            })
+            exclusions.append(
+                {
+                    "window": f"{w_start_str}..{w_end_str}",
+                    "reason": "before_first_transaction",
+                }
+            )
             continue
 
         # 1. Check account existence
         if earliest_account_date and w_start < earliest_account_date:
-            exclusions.append({
-                "window": f"{w_start_str}..{w_end_str}",
-                "reason": "account_not_yet_created",
-            })
+            exclusions.append(
+                {
+                    "window": f"{w_start_str}..{w_end_str}",
+                    "reason": "account_not_yet_created",
+                }
+            )
             continue
 
         # 2. Check overlap with contextual exceptions
@@ -135,10 +139,12 @@ def calculate_baseline(
         for _mem_id, ex_from, ex_to, ex_reason in exception_windows:
             if ex_from <= w_end and ex_to >= w_start:  # the ranges share at least one day
                 overlap_exception = True
-                exclusions.append({
-                    "window": f"{w_start_str}..{w_end_str}",
-                    "reason": f"contextual_exception_{ex_reason}",
-                })
+                exclusions.append(
+                    {
+                        "window": f"{w_start_str}..{w_end_str}",
+                        "reason": f"contextual_exception_{ex_reason}",
+                    }
+                )
                 break
 
         if overlap_exception:
@@ -154,10 +160,12 @@ def calculate_baseline(
                     e_e = er["window_end"]
                     if not (w_end_str < e_s or w_start_str > e_e):
                         overlap_exp = True
-                        exclusions.append({
-                            "window": f"{w_start_str}..{w_end_str}",
-                            "reason": "overlapping_experiment",
-                        })
+                        exclusions.append(
+                            {
+                                "window": f"{w_start_str}..{w_end_str}",
+                                "reason": "overlapping_experiment",
+                            }
+                        )
                         break
             except Exception:
                 pass
@@ -229,9 +237,7 @@ def evaluate_outcome(
             else observed_value >= target_value
         )
         effect = (
-            target_value - observed_value
-            if direction == "lower"
-            else observed_value - target_value
+            target_value - observed_value if direction == "lower" else observed_value - target_value
         )
         # 10000 = no evidence of a difference; the column allows 1 to 10000
         return "no_baseline", 10000, effect, target_met

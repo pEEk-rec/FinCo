@@ -141,9 +141,7 @@ def run_simulation(
             rest_weeks_count += 1
             continue
 
-        for rank, (cand, prop_bp) in enumerate(
-            zip(selected_offers, propensities, strict=False), 1
-        ):
+        for rank, (cand, prop_bp) in enumerate(zip(selected_offers, propensities, strict=False), 1):
             offers_shown += 1
             pref = persona.get_preference(cand.template_code, w)
 

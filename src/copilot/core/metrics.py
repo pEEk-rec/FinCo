@@ -28,9 +28,8 @@ def _date_to_utc_bounds(start_str: str, end_str: str) -> tuple[str, str]:
     s_date = date.fromisoformat(start_str)
     e_date = date.fromisoformat(end_str)
     start_ist = datetime(s_date.year, s_date.month, s_date.day, 0, 0, 0, tzinfo=IST)
-    end_ist = (
-        datetime(e_date.year, e_date.month, e_date.day, 0, 0, 0, tzinfo=IST)
-        + timedelta(days=1)
+    end_ist = datetime(e_date.year, e_date.month, e_date.day, 0, 0, 0, tzinfo=IST) + timedelta(
+        days=1
     )
     return to_utc_iso(start_ist), to_utc_iso(end_ist)
 

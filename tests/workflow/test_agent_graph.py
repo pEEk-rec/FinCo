@@ -150,7 +150,9 @@ def test_agent_graph_clarification_interrupt_and_resume(conn):
         "clock": "2026-09-15T12:00:00Z",
         "planner_mode": "deterministic",
     }
-    thread_config = {"configurable": {"thread_id": "thread_clarify_1", "conn": conn, "actor": "agent"}}
+    thread_config = {
+        "configurable": {"thread_id": "thread_clarify_1", "conn": conn, "actor": "agent"}
+    }
 
     # First invoke should trigger clarify interrupt
     _ = graph.invoke(initial_state, config=thread_config)

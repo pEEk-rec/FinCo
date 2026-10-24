@@ -118,7 +118,13 @@ def test_category_spend_with_refunds_transfers_and_commitments(conn):
 
     # Refund in dining_out (credit of 10000 => amount_paise -10000)
     _insert_txn(
-        conn, "user_alice", "t3", "2026-09-16T08:00:00Z", -10000, direction="credit", category_id="dining_out"
+        conn,
+        "user_alice",
+        "t3",
+        "2026-09-16T08:00:00Z",
+        -10000,
+        direction="credit",
+        category_id="dining_out",
     )
 
     # Transfer debit (excluded)
@@ -187,12 +193,16 @@ def test_merchant_group_spend_matching(conn):
     _insert_txn(
         conn, "user_alice", "t2", "2026-09-15T10:00:00Z", 35000, merchant_raw="Zomato Orders"
     )
-    _insert_txn(
-        conn, "user_alice", "t3", "2026-09-16T10:00:00Z", 20000, merchant_raw="BookMyShow"
-    )
+    _insert_txn(conn, "user_alice", "t3", "2026-09-16T10:00:00Z", 20000, merchant_raw="BookMyShow")
     # Refund from Swiggy
     _insert_txn(
-        conn, "user_alice", "t4", "2026-09-17T10:00:00Z", -5000, direction="credit", merchant_raw="Swiggy Refund"
+        conn,
+        "user_alice",
+        "t4",
+        "2026-09-17T10:00:00Z",
+        -5000,
+        direction="credit",
+        merchant_raw="Swiggy Refund",
     )
 
     # Merchant group: ["swiggy", "zomato"]
@@ -230,9 +240,33 @@ def test_txn_count_and_no_spend_days(conn):
 def test_tagging_completeness_and_checkin_rate(conn):
     """tagging_completeness and checkin_rate return integer basis points [0, 10000]."""
     # 4 transactions: 3 with non-guess category source ('user', 'rule', 'override'), 1 with 'guess'
-    _insert_txn(conn, "user_alice", "t1", "2026-09-14T08:00:00Z", 1000, category_id="dining", category_source="user")
-    _insert_txn(conn, "user_alice", "t2", "2026-09-14T09:00:00Z", 1000, category_id="dining", category_source="rule")
-    _insert_txn(conn, "user_alice", "t3", "2026-09-14T10:00:00Z", 1000, category_id="dining", category_source="override")
+    _insert_txn(
+        conn,
+        "user_alice",
+        "t1",
+        "2026-09-14T08:00:00Z",
+        1000,
+        category_id="dining",
+        category_source="user",
+    )
+    _insert_txn(
+        conn,
+        "user_alice",
+        "t2",
+        "2026-09-14T09:00:00Z",
+        1000,
+        category_id="dining",
+        category_source="rule",
+    )
+    _insert_txn(
+        conn,
+        "user_alice",
+        "t3",
+        "2026-09-14T10:00:00Z",
+        1000,
+        category_id="dining",
+        category_source="override",
+    )
     _insert_txn(
         conn,
         "user_alice",
@@ -444,11 +478,15 @@ def test_rank_p_exact_math_k3_and_k6():
     assert p_low == 2500
 
     # v between 1st and 2nd (1 element <= v): (1 + 1) / 4 = 2/4 = 5000 bp
-    _, p_mid, _, _ = evaluate_outcome(15000, base3, target_value=15000, metric_code="category_spend")
+    _, p_mid, _, _ = evaluate_outcome(
+        15000, base3, target_value=15000, metric_code="category_spend"
+    )
     assert p_mid == 5000
 
     # v > all (3 elements <= v): (1 + 3) / 4 = 4/4 = 10000 bp
-    _, p_high, _, _ = evaluate_outcome(35000, base3, target_value=15000, metric_code="category_spend")
+    _, p_high, _, _ = evaluate_outcome(
+        35000, base3, target_value=15000, metric_code="category_spend"
+    )
     assert p_high == 10000
 
     # K=6: window values = [10000, 20000, 30000, 40000, 50000, 60000]
@@ -460,7 +498,9 @@ def test_rank_p_exact_math_k3_and_k6():
         high=60000,
     )
     # 0 elements <= v: (1 + 0) / 7 = 10000 // 7 = 1428 bp
-    _, p6_low, _, _ = evaluate_outcome(5000, base6, target_value=25000, metric_code="category_spend")
+    _, p6_low, _, _ = evaluate_outcome(
+        5000, base6, target_value=25000, metric_code="category_spend"
+    )
     assert p6_low == 1428
 
 

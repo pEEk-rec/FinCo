@@ -1,11 +1,18 @@
 @import 'tailwindcss';
 @import '../tokens/generated.css';
 
+@theme {
+  --color-white: #ffffff;
+}
+
 @import '@fontsource-variable/newsreader/opsz.css';
 @import '@fontsource-variable/newsreader/opsz-italic.css';
 @import '@fontsource/geist-sans/300.css';
 @import '@fontsource/geist-sans/400.css';
 @import '@fontsource/geist-sans/500.css';
+@import '@fontsource/geist-sans/600.css';
+@import '@fontsource/geist-sans/700.css';
+@import '@fontsource/geist-sans/800.css';
 @import '@fontsource/geist-mono/500.css';
 
 @layer base {
@@ -31,7 +38,7 @@
   ::selection {
     background: color-mix(in srgb, var(--color-brand) 35%, transparent);
   }
-  /* Quiet scrollbars that suit the dark room. */
+  /* Quiet scrollbars. */
   * {
     scrollbar-width: thin;
     scrollbar-color: var(--color-hairline-strong) transparent;
@@ -61,43 +68,69 @@
 }
 
 @utility label-mono {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: var(--text-label);
   line-height: var(--text-label--line-height);
-  font-weight: 500;
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
+/* Display type: heavy, tight sans with an italic serif accent on <em> (editorial against bold). */
 @utility serif-light {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+.serif-light em {
   font-family: var(--font-serif);
-  font-weight: 300;
-  font-optical-sizing: auto;
-  letter-spacing: -0.01em;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--color-brand);
 }
 
-/* A pane of frosted paper: translucent so the moving light shows through, edged with a hairline.
-   Where the pointer is, a soft coral sheen follows it (--mx/--my are set by the Card). */
+/* A flat card: white, a crisp edge, a thin solid base. No blur, no glow. */
 @utility glass {
-  background-color: color-mix(in srgb, var(--color-surface) 74%, transparent);
-  background-image: radial-gradient(
-    420px circle at var(--mx, -999px) var(--my, -999px),
-    color-mix(in srgb, var(--color-coral) 13%, transparent),
-    transparent 46%
-  );
-  backdrop-filter: blur(20px) saturate(1.25);
-  -webkit-backdrop-filter: blur(20px) saturate(1.25);
-  border: 1px solid color-mix(in srgb, var(--color-hairline) 85%, transparent);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 1px 2px rgba(80, 40, 20, 0.04),
-    0 14px 34px -20px rgba(80, 40, 20, 0.22);
+  background-color: var(--color-surface);
+  border: 1.5px solid color-mix(in srgb, var(--color-ink) 16%, transparent);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--color-ink) 9%, transparent);
+  transition:
+    transform 160ms var(--ease-out-soft),
+    box-shadow 160ms var(--ease-out-soft);
+}
+
+/* The one loud panel on a screen: coral slab, ink edge, a hard offset base (neo-pop). */
+@utility slab {
+  background-color: var(--color-coral);
+  color: var(--color-ink);
+  border: 2px solid var(--color-ink);
+  box-shadow: 6px 6px 0 var(--color-ink);
+}
+@utility slab-sun {
+  background-color: var(--color-sun);
+  color: var(--color-ink);
+  border: 2px solid var(--color-ink);
+  box-shadow: 6px 6px 0 var(--color-ink);
 }
 
 @utility glow-brand {
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--color-coral) 45%, transparent),
-    0 12px 32px -12px color-mix(in srgb, var(--color-coral) 55%, transparent);
+  box-shadow: 0 5px 0 var(--color-brand-edge);
+}
+
+/* A chunky, pressable button: it stands on a hard edge and sinks when pressed. */
+@utility pop {
+  box-shadow: 0 4px 0 var(--edge);
+  transform: translateY(0);
+}
+.pop:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--edge);
+}
+.pop:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--edge);
 }
 
 @keyframes liquid-slide {
@@ -146,6 +179,119 @@
 }
 @utility rise {
   animation: rise-in 520ms var(--ease-out-soft) both;
+}
+
+/* Landing page: Frosted glass pill CTA and nav buttons */
+@utility glass-pill {
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  border-radius: 9999px;
+  color: #ffffff;
+  transition: all 220ms var(--ease-out-soft);
+}
+.glass-pill:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.65);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.28);
+}
+.glass-pill:active {
+  transform: translateY(1px);
+}
+
+@utility glass-pill-primary {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  border-radius: 9999px;
+  color: #1f1a17;
+  font-weight: 600;
+  transition: all 220ms var(--ease-out-soft);
+}
+.glass-pill-primary:hover {
+  background: #ffffff;
+  box-shadow:
+    0 8px 30px rgba(255, 255, 255, 0.35),
+    0 4px 12px rgba(0, 0, 0, 0.25);
+  transform: translateY(-1px);
+}
+.glass-pill-primary:active {
+  transform: translateY(1px);
+}
+
+/* Calm, poetic editorial serif for landing headlines */
+@utility landing-serif {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+}
+.landing-serif em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 300;
+  color: #ffb68c;
+}
+
+/* Landing hero cinematic transparent video scrim */
+@utility hero-scrim {
+  background:
+    radial-gradient(
+      circle at 50% 45%,
+      rgba(10, 8, 7, 0.12) 0%,
+      rgba(10, 8, 7, 0.28) 60%,
+      rgba(10, 8, 7, 0.65) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(10, 8, 7, 0.4) 0%,
+      rgba(10, 8, 7, 0.08) 35%,
+      rgba(10, 8, 7, 0.22) 70%,
+      rgba(13, 11, 10, 0.85) 100%
+    );
+}
+
+@keyframes aurora-drift-1 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(60px, -40px) scale(1.15);
+  }
+}
+@keyframes aurora-drift-2 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-50px, 50px) scale(1.2);
+  }
+}
+@keyframes aurora-drift-3 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(40px, 30px) scale(0.9);
+  }
+}
+
+.aurora-blob-1 {
+  animation: aurora-drift-1 22s ease-in-out infinite alternate;
+}
+.aurora-blob-2 {
+  animation: aurora-drift-2 28s ease-in-out infinite alternate;
+}
+.aurora-blob-3 {
+  animation: aurora-drift-3 18s ease-in-out infinite alternate;
 }
 
 @media print {

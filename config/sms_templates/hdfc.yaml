@@ -1,0 +1,45 @@
+# SMS templates for HDFC Bank (PLAN_CAPTURE Stage C2).
+# Written from the message shapes banks publish; to be checked against the owner's own redacted
+# corpus (scripts/redact_sms.py) before the bank is enabled in sms_senders.yaml.
+# A template: name, kind (debit, credit, reversal, autopay, upi_lite_summary, otp), a regex with
+# named groups from: amount, account, utr, counterparty, balance, channel, date, time.
+# Single-quoted YAML keeps every backslash as written.
+bank: hdfc
+status: ready
+templates:
+  - name: otp_guard
+    kind: otp
+    drop: true
+    pattern: '(?i)\b(otp|one[- ]time password|verification code)\b'
+
+  - name: upi_sent
+    kind: debit
+    pattern: '(?i)^sent rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+from hdfc bank a/c \*?(?P<account>\d{4})\s+to (?P<counterparty>.+?) on (?P<date>\d{1,2}/\d{1,2}/\d{2,4})\s+ref (?P<utr>\d{9,12})'
+
+  - name: upi_debited
+    kind: debit
+    pattern: '(?i)rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+debited from a/c \**(?P<account>\d{4}) on (?P<date>\d{1,2}-\d{1,2}-\d{2,4}) to vpa (?P<counterparty>\S+) \(upi ref no (?P<utr>\d{9,12})\)'
+
+  - name: card_spend
+    kind: debit
+    pattern: '(?i)^spent rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+on hdfc bank card (?P<account>\d{4}) at (?P<counterparty>.+?) on (?P<date>\d{4}-\d{2}-\d{2}):(?P<time>\d{2}:\d{2}:\d{2})'
+
+  - name: atm_withdrawal
+    kind: debit
+    pattern: '(?i)rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+withdrawn from hdfc bank a/c \w*?(?P<account>\d{4}) at (?P<channel>atm) on (?P<date>\d{1,2}-\d{1,2}-\d{2,4})'
+
+  - name: autopay_debit
+    kind: autopay
+    pattern: '(?i)rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+debited from a/c \**(?P<account>\d{4}) on (?P<date>\d{1,2}-\d{1,2}-\d{2,4}) for upi autopay mandate (?P<counterparty>.+?) \(ref (?P<utr>\d{9,12})\)'
+
+  - name: upi_credit
+    kind: credit
+    pattern: '(?i)credit alert!?\s*rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+credited to hdfc bank a/c \w*?(?P<account>\d{4}) on (?P<date>\d{1,2}-\d{1,2}-\d{2,4}) from vpa (?P<counterparty>\S+) \(upi (?P<utr>\d{9,12})\)'
+
+  - name: upi_reversal
+    kind: reversal
+    pattern: '(?i)rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+credited to a/c \**(?P<account>\d{4}) on (?P<date>\d{1,2}-\d{1,2}-\d{2,4}) towards reversal of upi txn ref (?P<utr>\d{9,12})'
+
+  - name: upi_lite_daily
+    kind: upi_lite_summary
+    pattern: '(?i)^upi lite: rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+spent today from hdfc bank upi lite on (?P<date>\d{1,2}-\d{1,2}-\d{2,4})'

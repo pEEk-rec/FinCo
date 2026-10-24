@@ -4,6 +4,58 @@
  */
 
 export interface paths {
+    "/api/aa/consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Aa Consent Get */
+        get: operations["aa_consent_get_api_aa_consent_get"];
+        put?: never;
+        /** Aa Consent Create */
+        post: operations["aa_consent_create_api_aa_consent_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/aa/consent/{consent_id}/{action}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Aa Consent Action */
+        post: operations["aa_consent_action_api_aa_consent__consent_id___action__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/aa/fetch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Aa Fetch Now */
+        post: operations["aa_fetch_now_api_aa_fetch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/adjustments": {
         parameters: {
             query?: never;
@@ -238,6 +290,224 @@ export interface paths {
         };
         /** Calendar Forecast Api */
         get: operations["calendar_forecast_api_api_calendar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/capture/bridge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Capture Bridge */
+        get: operations["capture_bridge_api_capture_bridge_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/capture/counterparty-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Capture Policy */
+        post: operations["capture_policy_api_capture_counterparty_policy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/capture/inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Capture Inbox */
+        get: operations["capture_inbox_api_capture_inbox_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/capture/labels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Capture Label */
+        post: operations["capture_label_api_capture_labels_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/capture/push/action": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Push Action
+         * @description A notification button. The first answer wins; the other devices' notifications close.
+         */
+        post: operations["push_action_api_capture_push_action_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/capture/push/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Push Status */
+        get: operations["push_status_api_capture_push_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/capture/push/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Push Subscribe */
+        post: operations["push_subscribe_api_capture_push_subscribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/capture/push/unsubscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Push Unsubscribe */
+        post: operations["push_unsubscribe_api_capture_push_unsubscribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/capture/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Capture Simulate */
+        post: operations["capture_simulate_api_capture_simulate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/capture/sms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Capture Sms
+         * @description The phone's SMS forwarder posts here. Order matters: secret, rate limit and size are
+         *     checked before any message is looked at; the sender allowlist is checked before the
+         *     text is parsed; and the text is never stored, logged or returned.
+         */
+        post: operations["capture_sms_api_capture_sms_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/capture/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Capture Stream
+         * @description Server-sent events: a prompt appears the moment the ask policy says ask.
+         */
+        get: operations["capture_stream_api_capture_stream_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/capture/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Capture Today
+         * @description One day, every payment in and out, grouped by what is left for you to do.
+         */
+        get: operations["capture_today_api_capture_today_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1462,6 +1732,46 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** BankLinkView */
+        BankLinkView: {
+            /** Approved At */
+            approved_at: string | null;
+            /** Can */
+            can: ("approve" | "pause" | "resume" | "revoke")[];
+            /** Connector */
+            connector: string;
+            /** Created At */
+            created_at: string;
+            /** Data Kept */
+            data_kept: string;
+            /** Expires At */
+            expires_at: string | null;
+            /** How Long */
+            how_long: string;
+            /** How Often */
+            how_often: string;
+            /** Id */
+            id: string;
+            /** Last Fetch At */
+            last_fetch_at: string | null;
+            /** Purpose */
+            purpose: string;
+            /** Range From */
+            range_from: string;
+            /** Range To */
+            range_to: string;
+            /** Revoke */
+            revoke: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "active" | "paused" | "revoked" | "expired";
+            /** What */
+            what: string[];
+            /** Why */
+            why: string;
+        };
         /** BestView */
         BestView: {
             /** Achieved At */
@@ -1479,6 +1789,34 @@ export interface components {
             unit: "money" | "count" | "days" | "percent_bp";
             /** Window Days */
             window_days: number;
+        };
+        /** BridgeBankOut */
+        BridgeBankOut: {
+            /** Bank */
+            bank: string;
+            /** Drifting */
+            drifting: boolean;
+            /** Enabled */
+            enabled: boolean;
+            /** Failure Bp */
+            failure_bp: number;
+            /** Last Received At */
+            last_received_at: string | null;
+            /** Name */
+            name: string;
+            /** Parsed */
+            parsed: number;
+            /** Unparsed */
+            unparsed: number;
+        };
+        /** BridgeHealthOut */
+        BridgeHealthOut: {
+            /** Any Enabled */
+            any_enabled: boolean;
+            /** Banks */
+            banks: components["schemas"]["BridgeBankOut"][];
+            /** Secret Configured */
+            secret_configured: boolean;
         };
         /** BucketAllocateIn */
         BucketAllocateIn: {
@@ -1549,6 +1887,91 @@ export interface components {
             spent_paise: number;
             /** Total Limit Paise */
             total_limit_paise: number;
+        };
+        /**
+         * CaptureInboxOut
+         * @description Payments waiting to be tagged, plus what the simulator panel offers.
+         */
+        CaptureInboxOut: {
+            /** Banks */
+            banks: {
+                [key: string]: string;
+            }[];
+            /** Credit Kinds */
+            credit_kinds: string[];
+            /** Kinds */
+            kinds: string[];
+            /** Pending Count */
+            pending_count: number;
+            /** Prompts */
+            prompts: components["schemas"]["PromptView"][];
+        };
+        /** CaptureLabelIn */
+        CaptureLabelIn: {
+            /** Category Id */
+            category_id?: string | null;
+            /** Credit Kind */
+            credit_kind?: string | null;
+            /** Event Id */
+            event_id: string;
+            /** Linked Event Id */
+            linked_event_id?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Rank Picked */
+            rank_picked?: number | null;
+        };
+        /** CapturePolicyIn */
+        CapturePolicyIn: {
+            /** Category Id */
+            category_id?: string | null;
+            /** Counterparty Key */
+            counterparty_key: string;
+            /**
+             * Policy
+             * @enum {string}
+             */
+            policy: "learn" | "always_ask" | "always_category";
+        };
+        /** CaptureSimulateIn */
+        CaptureSimulateIn: {
+            /** Amount Paise */
+            amount_paise: number;
+            /**
+             * Bank
+             * @enum {string}
+             */
+            bank: "hdfc" | "sbi" | "icici" | "axis" | "kotak";
+            /**
+             * Counterparty
+             * @default
+             */
+            counterparty: string;
+            /**
+             * Kind
+             * @default debit
+             * @enum {string}
+             */
+            kind: "debit" | "credit" | "card" | "atm" | "autopay" | "reversal";
+            /** Vpa */
+            vpa?: string | null;
+        };
+        /**
+         * CaptureSmsOut
+         * @description What the phone is told. Never echoes the message.
+         */
+        CaptureSmsOut: {
+            /** Decision */
+            decision: string | null;
+            /** Event Id */
+            event_id: string | null;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "recorded" | "duplicate" | "dropped" | "unparsed";
+            /** Reason */
+            reason: string | null;
         };
         /**
          * CategorisationEvent
@@ -1700,6 +2123,10 @@ export interface components {
              */
             status: "pending" | "active" | "expired" | "revoked";
         };
+        /** ConsentOut */
+        ConsentOut: {
+            consent: components["schemas"]["BankLinkView"] | null;
+        };
         /**
          * ConsentView
          * @description A consent as the user sees it (expiry applied at read time).
@@ -1726,6 +2153,32 @@ export interface components {
              * @enum {string}
              */
             status: "pending" | "active" | "expired" | "revoked";
+        };
+        /** CounterpartyProfile */
+        CounterpartyProfile: {
+            /** Counterparty Key */
+            counterparty_key: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "merchant" | "person" | "self" | "cash" | "unknown";
+            /**
+             * Policy
+             * @enum {string}
+             */
+            policy: "learn" | "always_ask" | "always_category";
+            /** Policy Category Id */
+            policy_category_id: string | null;
+            /** Recent Categories */
+            recent_categories: string[];
+            /**
+             * Seen Count
+             * @default 0
+             */
+            seen_count: number;
         };
         /**
          * Dashboard
@@ -1790,6 +2243,22 @@ export interface components {
              * @default 0
              */
             review_queue_size: number;
+        };
+        /** DayCounts */
+        DayCounts: {
+            /** Auto */
+            auto: number;
+            /** By You */
+            by_you: number;
+            /** Needs You */
+            needs_you: number;
+        };
+        /** DayTotals */
+        DayTotals: {
+            /** In Paise */
+            in_paise: number;
+            /** Out Paise */
+            out_paise: number;
         };
         /** EvidenceItem */
         EvidenceItem: {
@@ -1954,6 +2423,43 @@ export interface components {
             window_end: string;
             /** Window Start */
             window_start: string;
+        };
+        /** FetchOut */
+        FetchOut: {
+            /**
+             * Already Known
+             * @default 0
+             */
+            already_known: number;
+            /**
+             * Ambiguous
+             * @default 0
+             */
+            ambiguous: number;
+            /** Consent Id */
+            consent_id: string;
+            /**
+             * Fetched
+             * @default 0
+             */
+            fetched: number;
+            /**
+             * Inserted
+             * @default 0
+             */
+            inserted: number;
+            /**
+             * Matched
+             * @default 0
+             */
+            matched: number;
+            /**
+             * Out Of Range
+             * @default 0
+             */
+            out_of_range: number;
+            /** Skipped */
+            skipped: string | null;
         };
         /**
          * ForecastBand
@@ -2120,6 +2626,17 @@ export interface components {
             goals: components["schemas"]["Goal"][];
             /** Progress */
             progress: components["schemas"]["GoalProgress"][];
+        };
+        /** GuessView */
+        GuessView: {
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+            /** Reasons */
+            reasons: string[];
+            /** Score Bp */
+            score_bp: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2303,6 +2820,12 @@ export interface components {
             };
             investigation: components["schemas"]["Investigation"];
         };
+        /** LabelPaymentEventOutput */
+        LabelPaymentEventOutput: {
+            /** Audit Event Id */
+            audit_event_id: string | null;
+            event: components["schemas"]["PaymentEvent"];
+        };
         /** LearningResetIn */
         LearningResetIn: {
             /** Subject Key */
@@ -2473,6 +2996,64 @@ export interface components {
             /** Paise */
             paise: number;
         };
+        /** PaymentEvent */
+        PaymentEvent: {
+            /** Account Last4 */
+            account_last4: string | null;
+            /** Amount Paise */
+            amount_paise: number;
+            /** Bank */
+            bank: string | null;
+            /** Category Id */
+            category_id: string | null;
+            /** Category Source */
+            category_source: ("user" | "auto" | "guess") | null;
+            /** Channel */
+            channel: string;
+            /** Counterparty Key */
+            counterparty_key: string;
+            /**
+             * Counterparty Kind
+             * @enum {string}
+             */
+            counterparty_kind: "merchant" | "person" | "self" | "cash" | "unknown";
+            /** Created At */
+            created_at: string;
+            /** Credit Kind */
+            credit_kind: string | null;
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "debit" | "credit";
+            /** Display Name */
+            display_name: string;
+            /** Id */
+            id: string;
+            /**
+             * Needs Review
+             * @default false
+             */
+            needs_review: boolean;
+            /** Occurred At */
+            occurred_at: string;
+            /** Simulated */
+            simulated: boolean;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "sms" | "notification" | "manual" | "simulator";
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "detected" | "posted" | "reversed" | "reconciled" | "orphaned";
+            /** User Id */
+            user_id: string;
+            /** Utr */
+            utr: string | null;
+        };
         /**
          * Period
          * @description A calendar month in IST.
@@ -2544,6 +3125,103 @@ export interface components {
             /** Months Projected */
             months_projected: number;
             scenario: components["schemas"]["Scenario"];
+        };
+        /** PromptView */
+        PromptView: {
+            /** Created At */
+            created_at: string;
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "ask" | "inbox" | "auto_label" | "guess_only" | "no_ask";
+            event: components["schemas"]["PaymentEvent"];
+            /** Expires At */
+            expires_at: string | null;
+            /** Guesses */
+            guesses: components["schemas"]["GuessView"][];
+            /** Prompt Id */
+            prompt_id: string;
+            /** Reason */
+            reason: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "answered" | "expired" | "dismissed" | "not_needed";
+        };
+        /**
+         * PushActionIn
+         * @description A press on a notification button. Authorised by its single-use token, not a login.
+         */
+        PushActionIn: {
+            /**
+             * Credit
+             * @default false
+             */
+            credit: boolean;
+            /** Label */
+            label: string;
+            /** Prompt Id */
+            prompt_id: string;
+            /**
+             * Rank
+             * @default 0
+             */
+            rank: number;
+            /** Token */
+            token: string;
+        };
+        /** PushActionOut */
+        PushActionOut: {
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "tagged" | "already_tagged";
+        };
+        /** PushDeviceOut */
+        PushDeviceOut: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+        };
+        /** PushKeysIn */
+        PushKeysIn: {
+            /** Auth */
+            auth: string;
+            /** P256Dh */
+            p256dh: string;
+        };
+        /** PushStatusOut */
+        PushStatusOut: {
+            /** Devices */
+            devices: components["schemas"]["PushDeviceOut"][];
+            /** Enabled */
+            enabled: boolean;
+            /** Lock Screen Safe */
+            lock_screen_safe: boolean;
+            /** Max Actions */
+            max_actions: number;
+            /** Public Key */
+            public_key: string;
+        };
+        /** PushSubscribeIn */
+        PushSubscribeIn: {
+            /** Endpoint */
+            endpoint: string;
+            keys: components["schemas"]["PushKeysIn"];
+            /**
+             * Label
+             * @default This device
+             */
+            label: string;
+        };
+        /** PushUnsubscribeIn */
+        PushUnsubscribeIn: {
+            /** Endpoint */
+            endpoint: string;
         };
         /** RecategorizeIn */
         RecategorizeIn: {
@@ -2813,6 +3491,10 @@ export interface components {
             /** User Id */
             user_id: string;
         };
+        /** SetCounterpartyPolicyOutput */
+        SetCounterpartyPolicyOutput: {
+            profile: components["schemas"]["CounterpartyProfile"];
+        };
         /**
          * SimilarItem
          * @description A past transaction from the same merchant and how it was categorised.
@@ -2828,6 +3510,22 @@ export interface components {
             id: string;
             /** Occurred At */
             occurred_at: string;
+        };
+        /** SimulatePaymentOutput */
+        SimulatePaymentOutput: {
+            /** Created */
+            created: boolean;
+            /** Decision */
+            decision: string;
+            event: components["schemas"]["PaymentEvent"];
+            /** Guesses */
+            guesses: {
+                [key: string]: unknown;
+            }[];
+            /** Reason */
+            reason: string;
+            /** Sample Text */
+            sample_text: string;
         };
         /** StreakView */
         StreakView: {
@@ -2881,6 +3579,73 @@ export interface components {
             title: string;
             /** Ts */
             ts: string;
+        };
+        /** TodayItem */
+        TodayItem: {
+            /** Amount Paise */
+            amount_paise: number;
+            /** Category Name */
+            category_name: string | null;
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "debit" | "credit";
+            event: components["schemas"]["PaymentEvent"] | null;
+            /**
+             * Group
+             * @enum {string}
+             */
+            group: "needs_you" | "auto" | "by_you";
+            /**
+             * Guesses
+             * @default []
+             */
+            guesses: components["schemas"]["GuessView"][];
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "event" | "ledger";
+            /** Name */
+            name: string;
+            /**
+             * Needs Review Link
+             * @default false
+             */
+            needs_review_link: boolean;
+            /** Prompt Id */
+            prompt_id: string | null;
+            /** Prompt Status */
+            prompt_status: string | null;
+            /** Reason */
+            reason: string | null;
+            /** Reason Code */
+            reason_code: string | null;
+            /**
+             * Reversed
+             * @default false
+             */
+            reversed: boolean;
+            /** Simulated */
+            simulated: boolean;
+            /** Time */
+            time: string;
+            /** Verified */
+            verified: boolean;
+        };
+        /** TodayView */
+        TodayView: {
+            counts: components["schemas"]["DayCounts"];
+            /** Day */
+            day: string;
+            /** Is Today */
+            is_today: boolean;
+            /** Items */
+            items: components["schemas"]["TodayItem"][];
+            totals: components["schemas"]["DayTotals"];
         };
         /** TraceNodeOut */
         TraceNodeOut: {
@@ -3042,6 +3807,206 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    aa_consent_get_api_aa_consent_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    aa_consent_create_api_aa_consent_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    aa_consent_action_api_aa_consent__consent_id___action__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                consent_id: string;
+                action: "approve" | "pause" | "resume" | "revoke";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    aa_fetch_now_api_aa_fetch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FetchOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     list_adjustments_api_api_adjustments_get: {
         parameters: {
             query?: {
@@ -3892,6 +4857,672 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    capture_bridge_api_capture_bridge_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BridgeHealthOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    capture_policy_api_capture_counterparty_policy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CapturePolicyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetCounterpartyPolicyOutput"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    capture_inbox_api_capture_inbox_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaptureInboxOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    capture_label_api_capture_labels_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CaptureLabelIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabelPaymentEventOutput"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    push_action_api_capture_push_action_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushActionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushActionOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    push_status_api_capture_push_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushStatusOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    push_subscribe_api_capture_push_subscribe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushSubscribeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushDeviceOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    push_unsubscribe_api_capture_push_unsubscribe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushUnsubscribeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    capture_simulate_api_capture_simulate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CaptureSimulateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulatePaymentOutput"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    capture_sms_api_capture_sms_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaptureSmsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    capture_stream_api_capture_stream_get: {
+        parameters: {
+            query?: {
+                once?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    capture_today_api_capture_today_get: {
+        parameters: {
+            query?: {
+                day?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TodayView"];
                 };
             };
             /** @description Unauthorized */

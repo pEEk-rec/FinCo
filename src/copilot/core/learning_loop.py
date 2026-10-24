@@ -398,13 +398,15 @@ def get_contribution_plan_experiment_options(
         if outcome == "beyond_usual_range" or (st.get("target_met") and effect_val < 0):
             saving_paise = abs(effect_val)
             saving_rupees = saving_paise // 100
-            options.append({
-                "id": f"opt_exp_{uuid.uuid4().hex[:8]}",
-                "template_code": template_code,
-                "title": f"Repeat experiment '{title}': historical effect ~₹{saving_rupees:,}",
-                "expected_effect_paise": saving_paise,
-                "evidence_memory_id": m.id,
-            })
+            options.append(
+                {
+                    "id": f"opt_exp_{uuid.uuid4().hex[:8]}",
+                    "template_code": template_code,
+                    "title": f"Repeat experiment '{title}': historical effect ~₹{saving_rupees:,}",
+                    "expected_effect_paise": saving_paise,
+                    "evidence_memory_id": m.id,
+                }
+            )
 
     return options
 

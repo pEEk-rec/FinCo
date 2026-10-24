@@ -41,16 +41,22 @@ class V5Persona:
 
 PERSONAS: dict[str, V5Persona] = {
     "reducer": V5Persona(
-        "reducer", "Orders in less: about 35% lower spend in the window",
-        prob_cut_bp=2000, amount_cut_bp=1900,
+        "reducer",
+        "Orders in less: about 35% lower spend in the window",
+        prob_cut_bp=2000,
+        amount_cut_bp=1900,
     ),
     "null": V5Persona("null", "No change: the window looks like any other"),
     "festival": V5Persona(
-        "festival", "A festival inside the window and one in the history, both declared",
-        festival_days=(4, 8), festival_multiplier=3, historic_festival_window=3,
+        "festival",
+        "A festival inside the window and one in the history, both declared",
+        festival_days=(4, 8),
+        festival_multiplier=3,
+        historic_festival_window=3,
     ),
     "recategoriser": V5Persona(
-        "recategoriser", "No real change, but moves 45% of window payments to another category",
+        "recategoriser",
+        "No real change, but moves 45% of window payments to another category",
         recategorise_share_bp=4500,
     ),
 }
@@ -129,8 +135,10 @@ def generate_persona_data(
         if rng.randrange(100) < prob:
             amount = max(100, mean + rng.randint(-persona.spread_paise, persona.spread_paise))
             category = CATEGORY
-            if in_window and persona.recategorise_share_bp and (
-                rng.randrange(10000) < persona.recategorise_share_bp
+            if (
+                in_window
+                and persona.recategorise_share_bp
+                and (rng.randrange(10000) < persona.recategorise_share_bp)
             ):
                 category = OTHER_CATEGORY  # the move happens later, through the real tool
                 recategorised += amount

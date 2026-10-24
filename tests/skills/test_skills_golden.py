@@ -70,7 +70,10 @@ def _setup_full_persona(conn: sqlite3.Connection, user_id: str):
         ("education", "c_education"),
         ("utilities", "c_utilities"),
     ]:
-        insert_category(conn, Category(id=cat_id, user_id=user_id, name=cat_name, created_at="2026-01-01T00:00:00Z"))
+        insert_category(
+            conn,
+            Category(id=cat_id, user_id=user_id, name=cat_name, created_at="2026-01-01T00:00:00Z"),
+        )
 
     # Add 3 months of transactions for stable history
     for m in range(7, 11):
@@ -122,6 +125,7 @@ def _setup_full_persona(conn: sqlite3.Connection, user_id: str):
 
     # Active goal
     from copilot.models.agentic import Goal
+
     insert_goal(
         conn,
         Goal(
@@ -237,4 +241,6 @@ def test_skill_eval_cases(conn, skill_name, case_file):
     assert res.status == case_data["expected_status"], f"Eval case {case_file} failed: {res.reason}"
 
     for expected_key in case_data.get("expected_outputs_contain", []):
-        assert expected_key in res.outputs, f"Missing output '{expected_key}' in {skill_name} result"
+        assert expected_key in res.outputs, (
+            f"Missing output '{expected_key}' in {skill_name} result"
+        )

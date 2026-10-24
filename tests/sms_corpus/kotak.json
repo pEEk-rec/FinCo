@@ -1,0 +1,110 @@
+[
+  {
+    "name": "upi sent",
+    "sender": "KOTAKB",
+    "text": "Sent Rs.250.00 from Kotak Bank AC X1234 to ramesh.k@ybl on 18-10-26.UPI Ref 628912345691. Not you, https://kotak.com/KBANKT/Fraud",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 25000,
+      "account_last4": "1234",
+      "utr": "628912345691",
+      "display_name": "Ramesh K",
+      "vpa": "ramesh.k@ybl",
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "upi received",
+    "sender": "KMBLBK",
+    "text": "Received Rs.5000.00 in your Kotak Bank AC X1234 from priya.s@okaxis on 18-10-26.UPI Ref 628912345692.",
+    "expect": {
+      "kind": "credit",
+      "direction": "credit",
+      "amount_paise": 500000,
+      "account_last4": "1234",
+      "utr": "628912345692",
+      "display_name": "Priya S",
+      "vpa": "priya.s@okaxis",
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "card spend",
+    "sender": "KOTAKB",
+    "text": "Rs.1299.00 spent on your Kotak Credit Card ending 4321 at AMAZON on 18-10-2026.",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 129900,
+      "account_last4": "4321",
+      "utr": null,
+      "display_name": "AMAZON",
+      "vpa": null,
+      "channel": "card",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "atm withdrawal",
+    "sender": "KOTAKB",
+    "text": "Rs.2000.00 withdrawn from Kotak Bank AC X1234 at ATM on 18-10-26.",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 200000,
+      "account_last4": "1234",
+      "utr": null,
+      "display_name": "ATM cash withdrawal",
+      "vpa": null,
+      "channel": "atm",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "autopay",
+    "sender": "KOTAKB",
+    "text": "Rs.199.00 debited from Kotak Bank AC X1234 on 18-10-26 for UPI AutoPay PRIME VIDEO.UPI Ref 628912345693",
+    "expect": {
+      "kind": "autopay",
+      "direction": "debit",
+      "amount_paise": 19900,
+      "account_last4": "1234",
+      "utr": "628912345693",
+      "display_name": "PRIME VIDEO",
+      "vpa": null,
+      "channel": "autopay",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "reversal",
+    "sender": "KOTAKB",
+    "text": "Rs.250.00 reversed to your Kotak Bank AC X1234 on 18-10-26.UPI Ref 628912345691",
+    "expect": {
+      "kind": "reversal",
+      "direction": "credit",
+      "amount_paise": 25000,
+      "account_last4": "1234",
+      "utr": "628912345691",
+      "display_name": "Reversal",
+      "vpa": null,
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "otp",
+    "sender": "KOTAKB",
+    "text": "Use OTP 771203 to complete your Kotak transaction.",
+    "expect": "dropped:otp"
+  },
+  {
+    "name": "unknown format",
+    "sender": "KOTAKB",
+    "text": "Kotak: Rs.250.00 transferred. Check the app for details.",
+    "expect": "unparsed"
+  }
+]

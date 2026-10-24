@@ -141,8 +141,6 @@ def _add_month_txs(
         )
 
 
-
-
 # =================================================================================================
 # 1. Criterion 1: Enough History Boundaries
 # =================================================================================================
@@ -519,7 +517,9 @@ def test_level_mapping_classes(conn):
     assert res_bld.level == "building"
 
     # Level 4: ready_with_conditions (debt is undeclared -> unknown)
-    conn.execute("DELETE FROM user_preferences WHERE user_id = ? AND key = 'high_cost_debt'", (user_id,))
+    conn.execute(
+        "DELETE FROM user_preferences WHERE user_id = ? AND key = 'high_cost_debt'", (user_id,)
+    )
     res_rwc = assess_readiness(conn, user_id, today)
     assert res_rwc.level == "ready_with_conditions"
 
@@ -557,7 +557,15 @@ def test_four_personas_readiness(conn):
     u_spender = "p_no_buffer_spender"
     _setup_user_and_accounts(conn, u_spender)
     for mo in (7, 8, 9):
-        _add_month_txs(conn, u_spender, 2026, mo, income_paise=3000000, essential_spend_paise=2500000, discretionary_spend_paise=500000)
+        _add_month_txs(
+            conn,
+            u_spender,
+            2026,
+            mo,
+            income_paise=3000000,
+            essential_spend_paise=2500000,
+            discretionary_spend_paise=500000,
+        )
     set_user_preference(conn, u_spender, "emergency_reserve_paise", 0, "2026-10-15T00:00:00Z")
     res_spender = assess_readiness(conn, u_spender, today)
     assert res_spender.level == "not_ready"
@@ -565,9 +573,15 @@ def test_four_personas_readiness(conn):
     # 3. Volatile Freelancer (positive net surplus in 2 months, but erratic income -> high CV > 50%)
     u_free = "p_volatile_freelancer"
     _setup_user_and_accounts(conn, u_free)
-    _add_month_txs(conn, u_free, 2026, 7, income_paise=3000000, essential_spend_paise=2000000)  # +10k
-    _add_month_txs(conn, u_free, 2026, 8, income_paise=9000000, essential_spend_paise=2000000)  # +70k
-    _add_month_txs(conn, u_free, 2026, 9, income_paise=3000000, essential_spend_paise=2000000)  # +10k
+    _add_month_txs(
+        conn, u_free, 2026, 7, income_paise=3000000, essential_spend_paise=2000000
+    )  # +10k
+    _add_month_txs(
+        conn, u_free, 2026, 8, income_paise=9000000, essential_spend_paise=2000000
+    )  # +70k
+    _add_month_txs(
+        conn, u_free, 2026, 9, income_paise=3000000, essential_spend_paise=2000000
+    )  # +10k
     set_user_preference(conn, u_free, "emergency_reserve_paise", 10000000, "2026-10-15T00:00:00Z")
     set_user_preference(conn, u_free, "high_cost_debt", False, "2026-10-15T00:00:00Z")
     res_free = assess_readiness(conn, u_free, today)
@@ -579,9 +593,13 @@ def test_four_personas_readiness(conn):
     u_stud = "p_stable_student"
     _setup_user_and_accounts(conn, u_stud)
     for mo in (7, 8, 9):
-        _add_month_txs(conn, u_stud, 2026, mo, income_paise=1500000, essential_spend_paise=1000000)  # +5k
+        _add_month_txs(
+            conn, u_stud, 2026, mo, income_paise=1500000, essential_spend_paise=1000000
+        )  # +5k
     # Has partial emergency reserve (1 month instead of 3)
-    set_user_preference(conn, u_stud, "emergency_reserve_paise", 1000000, "2026-10-15T00:00:00Z")  # 10k < 30k
+    set_user_preference(
+        conn, u_stud, "emergency_reserve_paise", 1000000, "2026-10-15T00:00:00Z"
+    )  # 10k < 30k
     res_stud = assess_readiness(conn, u_stud, today)
     assert res_stud.level == "not_ready"
 
@@ -606,22 +624,43 @@ def test_readiness_forbidden_content_scan(conn):
 
     # Additional strict banned words check
     banned_words = [
-        "stock", "equity", "mutual fund", "sip", "crypto", "bitcoin",
-        "market", "bullish", "bearish", "return", "cagr", "interest rate",
-        "yield", "guarantee", "assured", "transfer", "withdraw", "deposit",
+        "stock",
+        "equity",
+        "mutual fund",
+        "sip",
+        "crypto",
+        "bitcoin",
+        "market",
+        "bullish",
+        "bearish",
+        "return",
+        "cagr",
+        "interest rate",
+        "yield",
+        "guarantee",
+        "assured",
+        "transfer",
+        "withdraw",
+        "deposit",
     ]
 
     for c in res.criteria:
-        text_to_check = f"{c.name} {c.value_text} {c.threshold_text} {c.what_would_change_it}".lower()
+        text_to_check = (
+            f"{c.name} {c.value_text} {c.threshold_text} {c.what_would_change_it}".lower()
+        )
 
         # Check against _FORBIDDEN patterns from advice engine
         for reason, pat in _FORBIDDEN:
-            assert not pat.search(text_to_check), f"Criterion {c.name} matched forbidden pattern: {reason}"
+            assert not pat.search(text_to_check), (
+                f"Criterion {c.name} matched forbidden pattern: {reason}"
+            )
 
         # Check banned words
         for bw in banned_words:
             # Word boundary regex
-            assert not re.search(rf"\b{bw}\b", text_to_check), f"Criterion {c.name} contains banned word {bw!r}"
+            assert not re.search(rf"\b{bw}\b", text_to_check), (
+                f"Criterion {c.name} contains banned word {bw!r}"
+            )
 
 
 # =================================================================================================

@@ -11,7 +11,6 @@ Key invariants:
 5. Multi-tenant isolation enforced on every query and mutation.
 """
 
-
 from __future__ import annotations
 
 import json
@@ -117,6 +116,7 @@ class MemoryCandidate:
 # 5 Deterministic Observers (PLAN_PHASE3 Section 5.8)
 # ---------------------------------------------------------------------------------------------
 
+
 def observe_recurring_patterns(
     conn: sqlite3.Connection,
     user_id: str,
@@ -152,12 +152,14 @@ def observe_recurring_patterns(
     cat_txs: dict[str, list[dict[str, Any]]] = {}
     for r in rows:
         cid = r[1] or "uncategorized"
-        cat_txs.setdefault(cid, []).append({
-            "id": r[0],
-            "category_id": cid,
-            "occurred_at": r[2],
-            "amount_paise": r[3],
-        })
+        cat_txs.setdefault(cid, []).append(
+            {
+                "id": r[0],
+                "category_id": cid,
+                "occurred_at": r[2],
+                "amount_paise": r[3],
+            }
+        )
 
     candidates: list[MemoryCandidate] = []
 
@@ -564,6 +566,22 @@ def observe_preferences(
     return candidates
 
 
+def _simulated_only_merchants(conn: sqlite3.Connection, user_id: str) -> set[str]:
+    """Merchant names that only simulated payments ever used, unless simulation may teach."""
+    from copilot.config.capture import load_capture_config
+    from copilot.core.capture_logic import normalise_name
+
+    if load_capture_config().learn_from_simulated:
+        return set()
+    simulated: set[str] = set()
+    real: set[str] = set()
+    for name, sim in conn.execute(
+        "SELECT display_name, simulated FROM payment_events WHERE user_id = ?", (user_id,)
+    ):
+        (simulated if sim else real).add(normalise_name(name))
+    return simulated - real
+
+
 def observe_merchant_habits(
     conn: sqlite3.Connection,
     user_id: str,
@@ -574,6 +592,7 @@ def observe_merchant_habits(
     Observer 5: Observes user merchant category overrides and capture labels.
     """
     candidates: list[MemoryCandidate] = []
+    simulated_only = _simulated_only_merchants(conn, user_id)
 
     rows = conn.execute(
         """
@@ -587,6 +606,8 @@ def observe_merchant_habits(
 
     for r in rows:
         oid, merchant, cat_id, created_at = r
+        if merchant in simulated_only:
+            continue  # a pretend payment is not a habit (unless a demo says it is)
         subject_key = f"merchant:{merchant}"
 
         candidates.append(
@@ -618,6 +639,7 @@ def observe_merchant_habits(
 # ---------------------------------------------------------------------------------------------
 # Deterministic Confidence & Status Evaluation (PLAN_PHASE3 Section 5.9)
 # ---------------------------------------------------------------------------------------------
+
 
 def compute_memory_confidence(
     item: MemoryItem,
@@ -677,7 +699,7 @@ def compute_memory_confidence(
             decay = Decimal("1.0")
         else:
             exponent = age_days / float(half_life)
-            decay_float = 0.5 ** exponent
+            decay_float = 0.5**exponent
             decay = Decimal(str(decay_float))
 
     confidence = int(math.floor(Decimal(str(evidence_bp)) * decay))
@@ -732,6 +754,7 @@ def determine_memory_status(
 # Core Memory Operations
 # ---------------------------------------------------------------------------------------------
 
+
 def refresh_memories(
     conn: sqlite3.Connection,
     user_id: str,
@@ -766,9 +789,7 @@ def refresh_memories(
             # Create new memory item
             new_id = f"mem_{uuid.uuid4().hex[:12]}"
             init_status = "active" if cand.user_confirmed else "candidate"
-            last_ev = (
-                cand.evidence_items[0].observed_at if cand.evidence_items else clock_iso
-            )
+            last_ev = cand.evidence_items[0].observed_at if cand.evidence_items else clock_iso
             item = MemoryItem(
                 id=new_id,
                 user_id=user_id,
@@ -873,7 +894,6 @@ def forget_memory(
     return success
 
 
-
 def edit_memory_statement_bounded(
     conn: sqlite3.Connection,
     user_id: str,
@@ -969,7 +989,6 @@ def edit_memory_statement_bounded(
             ErrorCode.INVALID_INPUT,
             f"Editing statement for kind {item.kind} not supported.",
         )
-
 
     update_memory_statement(conn, user_id, memory_id, new_statement)
 
@@ -1109,6 +1128,7 @@ def record_contextual_exception(
 # Memory Consumer Integration Helpers (PLAN_PHASE3 Section 5.8 & 5.9)
 # ---------------------------------------------------------------------------------------------
 
+
 def get_active_contextual_exception(
     conn: sqlite3.Connection,
     user_id: str,
@@ -1143,13 +1163,9 @@ def get_active_contextual_exception(
         stmt_period = str(stmt.get("period", "")).strip()
 
         matches_cat = (
-            stmt_cat in (clean_cat, "general", "all")
-            or f"category:{clean_cat}" in item.subject_key
+            stmt_cat in (clean_cat, "general", "all") or f"category:{clean_cat}" in item.subject_key
         )
-        matches_period = (
-            stmt_period == period
-            or f"period:{period}" in item.subject_key
-        )
+        matches_period = stmt_period == period or f"period:{period}" in item.subject_key
 
         if matches_cat and matches_period:
             ev_list = list_memory_evidence(conn, user_id, item.id)
@@ -1205,8 +1221,8 @@ def check_advice_suppression(
         item_kind = stmt.get("advice_kind")
         item_sub = stmt.get("subject", "global")
 
-        matches_kind = (item_kind == advice_kind or item_kind == "all")
-        matches_sub = (item_sub in (subject, "global") or subject in (item_sub, "global"))
+        matches_kind = item_kind == advice_kind or item_kind == "all"
+        matches_sub = item_sub in (subject, "global") or subject in (item_sub, "global")
 
         if matches_kind and matches_sub:
             ev_list = list_memory_evidence(conn, user_id, item.id)
@@ -1236,4 +1252,3 @@ def check_advice_suppression(
                 return True, item
 
     return False, None
-

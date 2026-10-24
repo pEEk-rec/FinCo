@@ -57,7 +57,6 @@ def route_after_multi_agent(state: AgenticState) -> str:
     return "finalize"
 
 
-
 def route_after_clarify(state: AgenticState) -> str:
     """Route after clarify: stopped (inconclusive) to finalize, error to error, else plan."""
     if state.get("status") == "failed":
@@ -178,7 +177,6 @@ def build_planner_agent_graph(
             "error": "error",
         },
     )
-
 
     builder.add_conditional_edges(
         "clarify",

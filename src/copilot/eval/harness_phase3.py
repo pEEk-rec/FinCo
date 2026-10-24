@@ -160,9 +160,7 @@ def _setup_test_db(seed: int) -> tuple[sqlite3.Connection, str]:
         ("shopping", "Shopping"),
     ]
     for cid, cname in categories:
-        insert_category(
-            conn, Category(id=cid, user_id=user_id, name=cname, created_at=now_str)
-        )
+        insert_category(conn, Category(id=cid, user_id=user_id, name=cname, created_at=now_str))
     return conn, user_id
 
 
@@ -442,9 +440,7 @@ def eval_learning(seeds: list[int]) -> LearningEvalResult:
         # Record positive feedback on category alert
         record_feedback(conn, user_id, "alert_kind", "spike", signal="useful", config=cfg)
         record_feedback(conn, user_id, "alert_kind", "spike", signal="useful", config=cfg)
-        mult, p, alpha, beta = get_learned_multiplier(
-            conn, user_id, "alert_kind", "spike", cfg
-        )
+        mult, p, alpha, beta = get_learned_multiplier(conn, user_id, "alert_kind", "spike", cfg)
 
         if not (0.5 <= mult <= 1.5):
             convergence_pass = False
@@ -615,8 +611,8 @@ def run_phase3_evaluation(
 
     md_content = f"""# Finance Copilot — Phase 3 Evaluation Report
 
-**Generated:** {report_dict['timestamp']}  
-**Evaluation Duration:** {report_dict['duration_seconds']}s  
+**Generated:** {report_dict["timestamp"]}  
+**Evaluation Duration:** {report_dict["duration_seconds"]}s  
 **Held-Out Seeds:** `{held_out_seeds}`  
 **Architecture:** Multi-Agent Supervisor + Parallel Specialists + Governance Reviewer  
 
@@ -627,28 +623,28 @@ def run_phase3_evaluation(
 | Subsystem | Metric | Target | Measured | Result |
 |---|---|---|---|:---:|
 | **Commitments** | Schedule Expansion Exactness | 100% | **{res_commitments.expansion_accuracy_pct}%** | PASS |
-| **Commitments** | Cadence Coverage (Monthly, Quarterly, Annual, Weekly) | 100% | **{'PASS' if res_commitments.cadence_coverage_pass else 'FAIL'}** | PASS |
-| **Commitments** | Certainty Logic (Firm vs. Estimated) | 100% | **{'PASS' if res_commitments.certainty_handling_pass else 'FAIL'}** | PASS |
-| **Calendar** | Running Balance Conservation of Paise | 100% | **{'PASS' if res_calendar.balance_conservation_pass else 'FAIL'}** | PASS |
+| **Commitments** | Cadence Coverage (Monthly, Quarterly, Annual, Weekly) | 100% | **{"PASS" if res_commitments.cadence_coverage_pass else "FAIL"}** | PASS |
+| **Commitments** | Certainty Logic (Firm vs. Estimated) | 100% | **{"PASS" if res_commitments.certainty_handling_pass else "FAIL"}** | PASS |
+| **Calendar** | Running Balance Conservation of Paise | 100% | **{"PASS" if res_calendar.balance_conservation_pass else "FAIL"}** | PASS |
 | **Calendar** | Shortfall Detection Precision | 100% | **{res_calendar.shortfall_detection_accuracy_pct}%** | PASS |
-| **Calendar** | Minimum Buffer Adherence | 100% | **{'PASS' if res_calendar.min_buffer_adherence_pass else 'FAIL'}** | PASS |
-| **Virtual Buckets** | 1-to-1 Category Uniqueness Invariant | 100% | **{'PASS' if res_buckets.uniqueness_invariant_pass else 'FAIL'}** | PASS |
-| **Virtual Buckets** | Allocation & Release Conservation | 100% | **{'PASS' if res_buckets.unallocated_conservation_pass else 'FAIL'}** | PASS |
-| **Virtual Buckets** | Two-Step Reallocation Governance | 100% | **{'PASS' if res_buckets.governance_two_step_pass else 'FAIL'}** | PASS |
+| **Calendar** | Minimum Buffer Adherence | 100% | **{"PASS" if res_calendar.min_buffer_adherence_pass else "FAIL"}** | PASS |
+| **Virtual Buckets** | 1-to-1 Category Uniqueness Invariant | 100% | **{"PASS" if res_buckets.uniqueness_invariant_pass else "FAIL"}** | PASS |
+| **Virtual Buckets** | Allocation & Release Conservation | 100% | **{"PASS" if res_buckets.unallocated_conservation_pass else "FAIL"}** | PASS |
+| **Virtual Buckets** | Two-Step Reallocation Governance | 100% | **{"PASS" if res_buckets.governance_two_step_pass else "FAIL"}** | PASS |
 | **Readiness** | Persona Multi-Tier Classification Accuracy | >= 95% | **{res_readiness.classification_accuracy_pct}%** | PASS |
-| **Readiness** | High-Interest Debt & Cushion Guardrails | 0 Violations | **{'PASS' if res_readiness.debt_guardrail_pass else 'FAIL'}** | PASS |
+| **Readiness** | High-Interest Debt & Cushion Guardrails | 0 Violations | **{"PASS" if res_readiness.debt_guardrail_pass else "FAIL"}** | PASS |
 | **Long-Term Memory** | Memory Extraction Precision | >= 90% | **{res_memory.extraction_precision_pct}%** | PASS |
 | **Long-Term Memory** | Verifiable Selective Forgetting | 100% | **{res_memory.forgetting_verifiability_pct}%** | PASS |
-| **Long-Term Memory** | Contextual Exception Learning Isolation | 100% | **{'PASS' if res_memory.contextual_exception_isolation_pass else 'FAIL'}** | PASS |
+| **Long-Term Memory** | Contextual Exception Learning Isolation | 100% | **{"PASS" if res_memory.contextual_exception_isolation_pass else "FAIL"}** | PASS |
 | **Orchestration** | Supervisor Sub-Question Decomposition Accuracy | >= 90% | **{res_orchestration.supervisor_decomposition_accuracy_pct}%** | PASS |
 | **Orchestration** | Parallel Execution Speed-Up | >= 2.0x | **{res_orchestration.parallel_speedup_factor}x** | PASS |
 | **Orchestration** | Reviewer/Critic Hallucination Catch Rate | >= 80% | **{res_orchestration.reviewer_catch_rate_pct}%** | PASS |
-| **Learning** | Beta-Binomial Posterior Update Convergence | 100% | **{'PASS' if res_learning.convergence_pass else 'FAIL'}** | PASS |
+| **Learning** | Beta-Binomial Posterior Update Convergence | 100% | **{"PASS" if res_learning.convergence_pass else "FAIL"}** | PASS |
 | **Learning** | Hard Floor Safety Violations | 0 | **{res_learning.hard_floor_violations}** | PASS |
-| **Safety & Runtime** | Distributed Lease Atomicity (Zero Duplicates) | 100% | **{'PASS' if res_safety.lease_atomicity_pass else 'FAIL'}** | PASS |
-| **Safety & Runtime** | Trace Attribute PII Sanitization | 100% | **{'PASS' if res_safety.trace_sanitization_pass else 'FAIL'}** | PASS |
+| **Safety & Runtime** | Distributed Lease Atomicity (Zero Duplicates) | 100% | **{"PASS" if res_safety.lease_atomicity_pass else "FAIL"}** | PASS |
+| **Safety & Runtime** | Trace Attribute PII Sanitization | 100% | **{"PASS" if res_safety.trace_sanitization_pass else "FAIL"}** | PASS |
 | **Safety & Runtime** | Floating-Point Math Violations on Currency | 0 | **{res_safety.zero_float_violations}** | PASS |
-| **Safety & Runtime** | Tool Choke Point Enforcement (`execute_tool`) | 100% | **{'PASS' if res_safety.governance_choke_point_pass else 'FAIL'}** | PASS |
+| **Safety & Runtime** | Tool Choke Point Enforcement (`execute_tool`) | 100% | **{"PASS" if res_safety.governance_choke_point_pass else "FAIL"}** | PASS |
 
 ---
 

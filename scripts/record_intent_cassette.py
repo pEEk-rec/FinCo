@@ -63,9 +63,7 @@ def main() -> int:
     data = json.loads((ROOT / "eval" / "data" / "phase4_intents.json").read_text("utf-8"))
     lo, hi = args.offset, args.offset + PER_INTENT
     questions = [(i, q) for i in PHASE4_INTENTS for q in data["held_out"][i][lo:hi]]
-    questions += [
-        ("negative", q) for q in data["negatives"][args.offset : args.offset + NEGATIVES]
-    ]
+    questions += [("negative", q) for q in data["negatives"][args.offset : args.offset + NEGATIVES]]
     llm = build_llm()
     if llm is None:
         print("No model is configured (keys missing, or FINCO_LLM=off). Nothing recorded.")

@@ -311,7 +311,16 @@ def test_cli_challenges_lifecycle(cli_db: str):
     # 3. Dismiss offer
     dis_res = runner.invoke(
         app,
-        ["challenges", "dismiss", "off_cli_2", "--reason", "Busy weekend", "--db", cli_db, "--json"],
+        [
+            "challenges",
+            "dismiss",
+            "off_cli_2",
+            "--reason",
+            "Busy weekend",
+            "--db",
+            cli_db,
+            "--json",
+        ],
     )
     assert dis_res.exit_code == 0, dis_res.output
     dis_json = json.loads(dis_res.output)
@@ -385,7 +394,16 @@ def test_cli_adjustments_lifecycle(cli_db: str):
     # 3. Reject
     rej_res = runner.invoke(
         app,
-        ["adjustments", "reject", "adj_cli_2", "--reason", "I want to continue", "--db", cli_db, "--json"],
+        [
+            "adjustments",
+            "reject",
+            "adj_cli_2",
+            "--reason",
+            "I want to continue",
+            "--db",
+            cli_db,
+            "--json",
+        ],
     )
     assert rej_res.exit_code == 0, rej_res.output
     rej_json = json.loads(rej_res.output)
@@ -507,7 +525,9 @@ def test_phase4_demo_script_e2e(cli_db: str):
             propensity_bp=5000,
             policy_version="v1_thompson",
             rng_seed=42,
-            reason_json={"text": "Typical delivery spend ₹3,500; medium target ₹2,000 saves ₹1,500"},
+            reason_json={
+                "text": "Typical delivery spend ₹3,500; medium target ₹2,000 saves ₹1,500"
+            },
             status="shown",
             created_at="2024-03-18T00:00:00Z",
         )
@@ -672,3 +692,18 @@ def test_phase4_demo_script_e2e(cli_db: str):
     tl_res = runner.invoke(app, ["timeline", "--db", cli_db])
     assert tl_res.exit_code == 0, tl_res.output
     assert "Agent Activity Timeline" in tl_res.output
+
+
+def test_cli_learning_show_includes_how_payment_guesses_are_weighted(cli_db: str):
+    res = runner.invoke(app, ["learning", "show", "--db", cli_db])
+    assert res.exit_code == 0, res.output
+    assert "payment guesses are weighted" in res.output
+    rows = json.loads(
+        runner.invoke(
+            app, ["learning", "show", "--subject", "capture", "--db", cli_db, "--json"]
+        ).output
+    )
+    assert {r["signal"] for r in rows} >= {"counterparty_history", "recency"}
+    assert all(r["base_bp"] == r["effective_bp"] for r in rows), "nothing learned yet"
+    reset = runner.invoke(app, ["learning", "reset", "--subject", "capture_signal", "--db", cli_db])
+    assert reset.exit_code == 0, reset.output

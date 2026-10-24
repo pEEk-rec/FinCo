@@ -87,7 +87,6 @@ def export_failures(
         """
     ).fetchall()
 
-
     for r in task_rows:
         tid = r[0]
         if tid not in candidate_tasks:
@@ -101,7 +100,6 @@ def export_failures(
             }
         else:
             candidate_tasks[tid]["raw_text"] = r[2]
-
 
     # Write candidates to YAML files
     for tid, data in candidate_tasks.items():

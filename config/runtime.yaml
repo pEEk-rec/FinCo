@@ -33,6 +33,15 @@ jobs:
   create_due_reviews:
     schedule: "daily@09:00"
     enabled: true
+  capture_reconcile:
+    schedule: "every_60_minutes"
+    enabled: true
+  aa_fetch:
+    schedule: "daily@06:30"
+    enabled: true
+  capture_expire_prompts:
+    schedule: "every_60_minutes"
+    enabled: true
   expire_offers:
     schedule: "daily@00:15"
     enabled: true

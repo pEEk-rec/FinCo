@@ -1,0 +1,34 @@
+# SMS templates for ICICI Bank (PLAN_CAPTURE Stage C2). See hdfc.yaml for the format and the
+# note on checking against the owner's own corpus before enabling. ICICI shows only the last
+# three account digits, so the parser keeps no account tail for it and relies on the UTR.
+bank: icici
+status: ready
+templates:
+  - name: otp_guard
+    kind: otp
+    drop: true
+    pattern: '(?i)\b(otp|one[- ]time password|verification code)\b'
+
+  - name: upi_debit
+    kind: debit
+    pattern: '(?i)^icici bank acct x*(?P<account>\d{3,4}) debited for rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+on (?P<date>\d{1,2}-[a-z]{3}-\d{2,4});\s*(?P<counterparty>.+?) credited\. upi:(?P<utr>\d{9,12})'
+
+  - name: card_spend
+    kind: debit
+    pattern: '(?i)^rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+spent using icici bank card x*(?P<account>\d{4}) on (?P<date>\d{1,2}-[a-z]{3}-\d{2,4}) on (?P<counterparty>.+?)\. avl limit'
+
+  - name: atm_withdrawal
+    kind: debit
+    pattern: '(?i)^icici bank acct x*(?P<account>\d{3,4}) debited with rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+on (?P<date>\d{1,2}-[a-z]{3}-\d{2,4}) (?P<channel>atm) wdl'
+
+  - name: autopay_debit
+    kind: autopay
+    pattern: '(?i)^icici bank acct x*(?P<account>\d{3,4}) debited for rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+on (?P<date>\d{1,2}-[a-z]{3}-\d{2,4}) towards upi autopay (?P<counterparty>.+?)\. upi:(?P<utr>\d{9,12})'
+
+  - name: upi_credit
+    kind: credit
+    pattern: '(?i)^icici bank acct x*(?P<account>\d{3,4}) credited with rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+on (?P<date>\d{1,2}-[a-z]{3}-\d{2,4}) from (?P<counterparty>.+?)\. upi:(?P<utr>\d{9,12})'
+
+  - name: upi_reversal
+    kind: reversal
+    pattern: '(?i)^icici bank acct x*(?P<account>\d{3,4}) credited with rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+on (?P<date>\d{1,2}-[a-z]{3}-\d{2,4}) as reversal of upi:(?P<utr>\d{9,12})'

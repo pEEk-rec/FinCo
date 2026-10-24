@@ -766,11 +766,8 @@ def multi_agent_node(state: AgenticState, config: RunnableConfig | None = None) 
         "ended_at": to_utc_iso(now_utc(state.get("clock"))),
         "duration_ms": duration,
         "tools_called": [
-            r.get("agent_role")
-            for r in subgraph_result.get("reports", [])
-            if isinstance(r, dict)
+            r.get("agent_role") for r in subgraph_result.get("reports", []) if isinstance(r, dict)
         ],
-
         "counts": {
             "subquestions": len(subgraph_result.get("subquestions", [])),
             "reports": len(subgraph_result.get("reports", [])),
@@ -787,4 +784,3 @@ def multi_agent_node(state: AgenticState, config: RunnableConfig | None = None) 
         "final_narration": subgraph_result.get("final_narration"),
         "trace": [trace_entry],
     }
-

@@ -15,7 +15,6 @@ Verifies hand-computed boundary conditions on both sides of every threshold:
 - goal impact evaluation
 """
 
-
 import pytest
 
 from copilot.config.phase2 import GoalsConfig
@@ -410,7 +409,13 @@ def test_goal_progress_sources_and_isolation():
     insert_category(conn, Category(id="food", user_id="u1", name="Food", created_at=T0))
     insert_account(
         conn,
-        Account(id="acc_saved", user_id="u1", name="Savings", opening_balance_paise=5000000, created_at=T0),
+        Account(
+            id="acc_saved",
+            user_id="u1",
+            name="Savings",
+            opening_balance_paise=5000000,
+            created_at=T0,
+        ),
     )
 
     # 1. Manual source: base current_paise + sum of contributions
@@ -572,7 +577,9 @@ def test_goal_feasibility_regression_with_phase2():
 
     # Test across various targets
     for target in (8_000_00, 12_000_00, 18_000_00):
-        g = make_goal(goal_id=f"g_{target}", target_paise=target, current_paise=0, deadline="2026-10-31")
+        g = make_goal(
+            goal_id=f"g_{target}", target_paise=target, current_paise=0, deadline="2026-10-31"
+        )
         p2_status, _, _ = goal_status(g, today, surplus)
 
         # Mock the surplus in DB by inserting transactions that create this exact surplus

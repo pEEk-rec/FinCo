@@ -22,3 +22,12 @@ This file tracks minor, non-blocking items (naming, doc typos, future enhancemen
 | CLI | `copilot experiments show` | The hypothesis line prints "Intervention: None / Target: None" for offer-created experiments. | Cosmetic |
 | Demo | `scripts/demo_phase4.sh` | Needs one direct database edit (a lower food budget) because no CLI command sets a budget. | Documented |
 | Exceptions | `memory exception` | A range can be at most 93 days and covers one category per command. | By design |
+
+## Capture track
+- **Sender IDs are unverified.** Every bank ships `enabled: false`; nothing is read until the owner confirms the sender from a real alert.
+- **Templates are written from published alert styles**, not from the owner's real SMS. The corpus is invented. Real accuracy needs the owner's redacted export.
+- **UPI Lite** spends do not appear per payment in the passbook or the alert (one summary a day); they are captured only as a daily summary.
+- **The AA sandbox connector has not run against a live gateway**; only a local fake. Approving a sandbox consent in FinCo checks that the aggregator reports it active first.
+- **Web Push on iPhone** needs the app added to the home screen first, and delivery depends on the platform; the Today screen is the fallback.
+- **Automatic tags are not perfect:** about 86% were right in the simulation, lowest for people paid for several reasons (open question C-6).
+- **The merchant-hint signal does not learn**, because the model's hint is not stored and so cannot be replayed at label time.

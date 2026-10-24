@@ -170,6 +170,7 @@ def evaluate_alerts_handler(
 
     # Days in month and current day in IST
     import calendar
+
     days_in_month = calendar.monthrange(year, month)[1]
     now_ist = now.astimezone(IST)
     if period == now_ist.strftime("%Y-%m"):
@@ -271,9 +272,7 @@ def evaluate_alerts_handler(
         )
 
         subj_key = f"budget_risk:{cat_id}"
-        m, p, a_m, b_m = get_learned_multiplier(
-            ctx.conn, ctx.user_id, "alert_kind", subj_key
-        )
+        m, p, a_m, b_m = get_learned_multiplier(ctx.conn, ctx.user_id, "alert_kind", subj_key)
         alert_ctx = {
             "budget_status": budget_status,
             "spent_paise": spent,

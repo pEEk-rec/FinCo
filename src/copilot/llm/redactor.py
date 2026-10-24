@@ -12,13 +12,9 @@ from copilot.llm.client import LLMClient
 # Account and card numbers: 10+ digits or 4x4 card numbers
 # Phone numbers: Indian 10-digit mobile numbers with optional +91/0
 _UPI_RE = re.compile(r"\b[a-zA-Z0-9.\-_]+@[a-zA-Z0-9.\-_]+\b")
-_ACCOUNT_RE = re.compile(
-    r"\b(?:\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}|\d{10,20})\b"
-)
+_ACCOUNT_RE = re.compile(r"\b(?:\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}|\d{10,20})\b")
 _PHONE_RE = re.compile(r"\b(?:\+91[\-\s]?|0)?[6-9]\d{9}\b")
-_SECRET_RE = re.compile(
-    r"\b(?:otp|pin|cvv|password)\s*[:=]?\s*[\w\d]+\b", re.IGNORECASE
-)
+_SECRET_RE = re.compile(r"\b(?:otp|pin|cvv|password)\s*[:=]?\s*[\w\d]+\b", re.IGNORECASE)
 
 
 def redact(text: str) -> str:

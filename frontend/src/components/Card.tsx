@@ -1,32 +1,30 @@
-import type { PointerEvent, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 
 import { cx } from './cx';
 
-/** Lets the coral sheen follow the pointer across a glass pane (pure decoration). */
-function followPointer(e: PointerEvent<HTMLElement>) {
-  const box = e.currentTarget.getBoundingClientRect();
-  e.currentTarget.style.setProperty('--mx', `${e.clientX - box.left}px`);
-  e.currentTarget.style.setProperty('--my', `${e.clientY - box.top}px`);
-}
-
-/** A pane of frosted paper over the moving light. */
+/** A flat white card with a crisp edge. `tone` makes it the screen's one loud slab. */
 export function Card({
   children,
   className,
   as: Tag = 'section',
   labelledBy,
+  tone = 'plain',
 }: {
   children: ReactNode;
   className?: string;
   as?: 'section' | 'div' | 'article' | 'aside';
   labelledBy?: string;
+  tone?: 'plain' | 'slab' | 'sun';
 }) {
   return (
     <Tag
       aria-labelledby={labelledBy}
-      onPointerMove={followPointer}
-      className={cx('glass rounded-card', className)}
+      className={cx(
+        tone === 'slab' ? 'slab' : tone === 'sun' ? 'slab-sun' : 'glass',
+        'rounded-card',
+        className,
+      )}
     >
       {children}
     </Tag>
@@ -46,8 +44,8 @@ export function CardHeader({
   children?: ReactNode;
 }) {
   return (
-    <header className="flex min-h-12 items-center justify-between gap-4 border-b border-hairline px-6 py-3">
-      <h2 id={id} className="label-mono text-ink-2">
+    <header className="flex min-h-12 items-center justify-between gap-4 border-b-[1.5px] border-ink/10 px-6 py-3">
+      <h2 id={id} className="label-mono text-ink">
         {label}
       </h2>
       <div className="flex items-center gap-2">
@@ -55,7 +53,7 @@ export function CardHeader({
         {action ? (
           <Link
             to={action.to}
-            className="text-small text-ink-3 transition-colors duration-fast hover:text-ink"
+            className="text-small font-semibold text-ink underline-offset-4 transition-colors duration-fast hover:underline"
           >
             {action.text}
             <span aria-hidden> →</span>
@@ -84,7 +82,7 @@ export function Stat({
       <span
         className={cx(
           'tabular text-ink',
-          size === 'hero' ? 'text-hero font-light tracking-[-0.02em]' : 'text-h2',
+          size === 'hero' ? 'text-hero tracking-[-0.04em]' : 'text-h2',
         )}
       >
         {value}

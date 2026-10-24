@@ -215,4 +215,3 @@ def load_alerts_config(path: Path | None = None) -> AlertsConfig:
 def load_explanation_templates(path: Path | None = None) -> ExplanationTemplatesConfig:
     p = path or (CONFIG_DIR / "explanation_templates.yaml")
     return ExplanationTemplatesConfig.model_validate(load_yaml(p))
-

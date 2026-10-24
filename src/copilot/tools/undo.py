@@ -27,7 +27,11 @@ def undo_handler(ctx: "ExecutionContext", audit_event_id: str) -> UndoOutput:
         raise ToolFailure(ErrorCode.NOT_FOUND, f"Audit event {audit_event_id} not found")
 
     # We only support undoing certain event types right now
-    if event.event_type not in ("transaction_recategorized", "override_applied"):
+    if event.event_type not in (
+        "transaction_recategorized",
+        "override_applied",
+        "payment_labeled",
+    ):
         raise ToolFailure(ErrorCode.INVALID_INPUT, f"Cannot undo event type {event.event_type}")
 
     # We must ensure we haven't already undone this by checking metadata.undone_event_id.
@@ -42,7 +46,21 @@ def undo_handler(ctx: "ExecutionContext", audit_event_id: str) -> UndoOutput:
             ErrorCode.INVALID_INPUT, f"Event {audit_event_id} has already been undone"
         )
 
-    if event.entity_type == "transaction":
+    if event.entity_type == "payment_event":
+        from copilot.core.capture import undo_label
+
+        if event.before is None or event.after is None or event.entity_id is None:
+            raise ToolFailure(ErrorCode.INVALID_INPUT, "Missing state data for event")
+        undo_label(
+            ctx.conn,
+            ctx.user_id,
+            event.entity_id,
+            event.before,
+            event.after,
+            event.metadata or {},
+        )
+
+    elif event.entity_type == "transaction":
         before = event.before
         after = event.after
         if before is None or after is None:

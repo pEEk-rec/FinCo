@@ -680,6 +680,139 @@
         "title": "BadgeView",
         "type": "object"
       },
+      "BankLinkView": {
+        "properties": {
+          "approved_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "can": {
+            "items": {
+              "enum": [
+                "approve",
+                "pause",
+                "resume",
+                "revoke"
+              ],
+              "type": "string"
+            },
+            "title": "Can",
+            "type": "array"
+          },
+          "connector": {
+            "title": "Connector",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "data_kept": {
+            "title": "Data Kept",
+            "type": "string"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "how_long": {
+            "title": "How Long",
+            "type": "string"
+          },
+          "how_often": {
+            "title": "How Often",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "last_fetch_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Fetch At"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "range_from": {
+            "title": "Range From",
+            "type": "string"
+          },
+          "range_to": {
+            "title": "Range To",
+            "type": "string"
+          },
+          "revoke": {
+            "title": "Revoke",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "active",
+              "paused",
+              "revoked",
+              "expired"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "what": {
+            "items": {
+              "type": "string"
+            },
+            "title": "What",
+            "type": "array"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "approved_at",
+          "can",
+          "connector",
+          "created_at",
+          "data_kept",
+          "expires_at",
+          "how_long",
+          "how_often",
+          "id",
+          "last_fetch_at",
+          "purpose",
+          "range_from",
+          "range_to",
+          "revoke",
+          "status",
+          "what",
+          "why"
+        ],
+        "title": "BankLinkView",
+        "type": "object"
+      },
       "BestView": {
         "properties": {
           "achieved_at": {
@@ -722,6 +855,87 @@
           "window_days"
         ],
         "title": "BestView",
+        "type": "object"
+      },
+      "BridgeBankOut": {
+        "properties": {
+          "bank": {
+            "title": "Bank",
+            "type": "string"
+          },
+          "drifting": {
+            "title": "Drifting",
+            "type": "boolean"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "failure_bp": {
+            "title": "Failure Bp",
+            "type": "integer"
+          },
+          "last_received_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Received At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "parsed": {
+            "title": "Parsed",
+            "type": "integer"
+          },
+          "unparsed": {
+            "title": "Unparsed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bank",
+          "drifting",
+          "enabled",
+          "failure_bp",
+          "last_received_at",
+          "name",
+          "parsed",
+          "unparsed"
+        ],
+        "title": "BridgeBankOut",
+        "type": "object"
+      },
+      "BridgeHealthOut": {
+        "properties": {
+          "any_enabled": {
+            "title": "Any Enabled",
+            "type": "boolean"
+          },
+          "banks": {
+            "items": {
+              "$ref": "#/components/schemas/BridgeBankOut"
+            },
+            "title": "Banks",
+            "type": "array"
+          },
+          "secret_configured": {
+            "title": "Secret Configured",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "any_enabled",
+          "banks",
+          "secret_configured"
+        ],
+        "title": "BridgeHealthOut",
         "type": "object"
       },
       "BucketAllocateIn": {
@@ -925,6 +1139,275 @@
           "total_limit_paise"
         ],
         "title": "BudgetPace",
+        "type": "object"
+      },
+      "CaptureInboxOut": {
+        "description": "Payments waiting to be tagged, plus what the simulator panel offers.",
+        "properties": {
+          "banks": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Banks",
+            "type": "array"
+          },
+          "credit_kinds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Credit Kinds",
+            "type": "array"
+          },
+          "kinds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Kinds",
+            "type": "array"
+          },
+          "pending_count": {
+            "title": "Pending Count",
+            "type": "integer"
+          },
+          "prompts": {
+            "items": {
+              "$ref": "#/components/schemas/PromptView"
+            },
+            "title": "Prompts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "banks",
+          "credit_kinds",
+          "kinds",
+          "pending_count",
+          "prompts"
+        ],
+        "title": "CaptureInboxOut",
+        "type": "object"
+      },
+      "CaptureLabelIn": {
+        "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "credit_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credit Kind"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "linked_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linked Event Id"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "rank_picked": {
+            "anyOf": [
+              {
+                "maximum": 5.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank Picked"
+          }
+        },
+        "required": [
+          "event_id"
+        ],
+        "title": "CaptureLabelIn",
+        "type": "object"
+      },
+      "CapturePolicyIn": {
+        "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "counterparty_key": {
+            "minLength": 1,
+            "title": "Counterparty Key",
+            "type": "string"
+          },
+          "policy": {
+            "enum": [
+              "learn",
+              "always_ask",
+              "always_category"
+            ],
+            "title": "Policy",
+            "type": "string"
+          }
+        },
+        "required": [
+          "counterparty_key",
+          "policy"
+        ],
+        "title": "CapturePolicyIn",
+        "type": "object"
+      },
+      "CaptureSimulateIn": {
+        "properties": {
+          "amount_paise": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100000000.0,
+            "title": "Amount Paise",
+            "type": "integer"
+          },
+          "bank": {
+            "enum": [
+              "hdfc",
+              "sbi",
+              "icici",
+              "axis",
+              "kotak"
+            ],
+            "title": "Bank",
+            "type": "string"
+          },
+          "counterparty": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Counterparty",
+            "type": "string"
+          },
+          "kind": {
+            "default": "debit",
+            "enum": [
+              "debit",
+              "credit",
+              "card",
+              "atm",
+              "autopay",
+              "reversal"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "vpa": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vpa"
+          }
+        },
+        "required": [
+          "bank",
+          "amount_paise"
+        ],
+        "title": "CaptureSimulateIn",
+        "type": "object"
+      },
+      "CaptureSmsOut": {
+        "description": "What the phone is told. Never echoes the message.",
+        "properties": {
+          "decision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "outcome": {
+            "enum": [
+              "recorded",
+              "duplicate",
+              "dropped",
+              "unparsed"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "decision",
+          "event_id",
+          "outcome",
+          "reason"
+        ],
+        "title": "CaptureSmsOut",
         "type": "object"
       },
       "CategorisationEvent": {
@@ -1372,6 +1855,26 @@
         "title": "ConsentDecisionOut",
         "type": "object"
       },
+      "ConsentOut": {
+        "additionalProperties": false,
+        "properties": {
+          "consent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BankLinkView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "consent"
+        ],
+        "title": "ConsentOut",
+        "type": "object"
+      },
       "ConsentView": {
         "description": "A consent as the user sees it (expiry applied at read time).",
         "properties": {
@@ -1443,6 +1946,73 @@
           "status"
         ],
         "title": "ConsentView",
+        "type": "object"
+      },
+      "CounterpartyProfile": {
+        "additionalProperties": false,
+        "properties": {
+          "counterparty_key": {
+            "title": "Counterparty Key",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "merchant",
+              "person",
+              "self",
+              "cash",
+              "unknown"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "policy": {
+            "enum": [
+              "learn",
+              "always_ask",
+              "always_category"
+            ],
+            "title": "Policy",
+            "type": "string"
+          },
+          "policy_category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Category Id"
+          },
+          "recent_categories": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Recent Categories",
+            "type": "array"
+          },
+          "seen_count": {
+            "default": 0,
+            "title": "Seen Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "counterparty_key",
+          "display_name",
+          "kind",
+          "policy",
+          "policy_category_id",
+          "recent_categories",
+          "seen_count"
+        ],
+        "title": "CounterpartyProfile",
         "type": "object"
       },
       "Dashboard": {
@@ -1580,6 +2150,47 @@
           "review_queue_size"
         ],
         "title": "DataQualityNotes",
+        "type": "object"
+      },
+      "DayCounts": {
+        "properties": {
+          "auto": {
+            "title": "Auto",
+            "type": "integer"
+          },
+          "by_you": {
+            "title": "By You",
+            "type": "integer"
+          },
+          "needs_you": {
+            "title": "Needs You",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "auto",
+          "by_you",
+          "needs_you"
+        ],
+        "title": "DayCounts",
+        "type": "object"
+      },
+      "DayTotals": {
+        "properties": {
+          "in_paise": {
+            "title": "In Paise",
+            "type": "integer"
+          },
+          "out_paise": {
+            "title": "Out Paise",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "in_paise",
+          "out_paise"
+        ],
+        "title": "DayTotals",
         "type": "object"
       },
       "EvidenceItem": {
@@ -2103,6 +2714,68 @@
         "title": "ExperimentView",
         "type": "object"
       },
+      "FetchOut": {
+        "additionalProperties": false,
+        "properties": {
+          "already_known": {
+            "default": 0,
+            "title": "Already Known",
+            "type": "integer"
+          },
+          "ambiguous": {
+            "default": 0,
+            "title": "Ambiguous",
+            "type": "integer"
+          },
+          "consent_id": {
+            "title": "Consent Id",
+            "type": "string"
+          },
+          "fetched": {
+            "default": 0,
+            "title": "Fetched",
+            "type": "integer"
+          },
+          "inserted": {
+            "default": 0,
+            "title": "Inserted",
+            "type": "integer"
+          },
+          "matched": {
+            "default": 0,
+            "title": "Matched",
+            "type": "integer"
+          },
+          "out_of_range": {
+            "default": 0,
+            "title": "Out Of Range",
+            "type": "integer"
+          },
+          "skipped": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped"
+          }
+        },
+        "required": [
+          "already_known",
+          "ambiguous",
+          "consent_id",
+          "fetched",
+          "inserted",
+          "matched",
+          "out_of_range",
+          "skipped"
+        ],
+        "title": "FetchOut",
+        "type": "object"
+      },
       "ForecastBand": {
         "description": "Run-rate forecast of budgeted spend with a low/high range.",
         "properties": {
@@ -2609,6 +3282,38 @@
           "progress"
         ],
         "title": "GoalsOut",
+        "type": "object"
+      },
+      "GuessView": {
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "score_bp": {
+            "title": "Score Bp",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "label",
+          "name",
+          "reasons",
+          "score_bp"
+        ],
+        "title": "GuessView",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -3129,6 +3834,31 @@
         "title": "InvestigationOut",
         "type": "object"
       },
+      "LabelPaymentEventOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "audit_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audit Event Id"
+          },
+          "event": {
+            "$ref": "#/components/schemas/PaymentEvent"
+          }
+        },
+        "required": [
+          "audit_event_id",
+          "event"
+        ],
+        "title": "LabelPaymentEventOutput",
+        "type": "object"
+      },
       "LearningResetIn": {
         "properties": {
           "subject_key": {
@@ -3595,6 +4325,188 @@
         "title": "PacePoint",
         "type": "object"
       },
+      "PaymentEvent": {
+        "additionalProperties": false,
+        "properties": {
+          "account_last4": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Last4"
+          },
+          "amount_paise": {
+            "exclusiveMinimum": 0.0,
+            "title": "Amount Paise",
+            "type": "integer"
+          },
+          "bank": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bank"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "category_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "user",
+                  "auto",
+                  "guess"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Source"
+          },
+          "channel": {
+            "title": "Channel",
+            "type": "string"
+          },
+          "counterparty_key": {
+            "title": "Counterparty Key",
+            "type": "string"
+          },
+          "counterparty_kind": {
+            "enum": [
+              "merchant",
+              "person",
+              "self",
+              "cash",
+              "unknown"
+            ],
+            "title": "Counterparty Kind",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "credit_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credit Kind"
+          },
+          "direction": {
+            "enum": [
+              "debit",
+              "credit"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "needs_review": {
+            "default": false,
+            "title": "Needs Review",
+            "type": "boolean"
+          },
+          "occurred_at": {
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "source": {
+            "enum": [
+              "sms",
+              "notification",
+              "manual",
+              "simulator"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "detected",
+              "posted",
+              "reversed",
+              "reconciled",
+              "orphaned"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          },
+          "utr": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Utr"
+          }
+        },
+        "required": [
+          "account_last4",
+          "amount_paise",
+          "bank",
+          "category_id",
+          "category_source",
+          "channel",
+          "counterparty_key",
+          "counterparty_kind",
+          "created_at",
+          "credit_kind",
+          "direction",
+          "display_name",
+          "id",
+          "needs_review",
+          "occurred_at",
+          "simulated",
+          "source",
+          "state",
+          "user_id",
+          "utr"
+        ],
+        "title": "PaymentEvent",
+        "type": "object"
+      },
       "Period": {
         "description": "A calendar month in IST.",
         "properties": {
@@ -3773,6 +4685,252 @@
           "scenario"
         ],
         "title": "Projection",
+        "type": "object"
+      },
+      "PromptView": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "ask",
+              "inbox",
+              "auto_label",
+              "guess_only",
+              "no_ask"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "event": {
+            "$ref": "#/components/schemas/PaymentEvent"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "guesses": {
+            "items": {
+              "$ref": "#/components/schemas/GuessView"
+            },
+            "title": "Guesses",
+            "type": "array"
+          },
+          "prompt_id": {
+            "title": "Prompt Id",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "answered",
+              "expired",
+              "dismissed",
+              "not_needed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "decision",
+          "event",
+          "expires_at",
+          "guesses",
+          "prompt_id",
+          "reason",
+          "status"
+        ],
+        "title": "PromptView",
+        "type": "object"
+      },
+      "PushActionIn": {
+        "description": "A press on a notification button. Authorised by its single-use token, not a login.",
+        "properties": {
+          "credit": {
+            "default": false,
+            "title": "Credit",
+            "type": "boolean"
+          },
+          "label": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "prompt_id": {
+            "title": "Prompt Id",
+            "type": "string"
+          },
+          "rank": {
+            "default": 0,
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Rank",
+            "type": "integer"
+          },
+          "token": {
+            "maxLength": 100,
+            "minLength": 10,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt_id",
+          "token",
+          "label"
+        ],
+        "title": "PushActionIn",
+        "type": "object"
+      },
+      "PushActionOut": {
+        "properties": {
+          "outcome": {
+            "enum": [
+              "tagged",
+              "already_tagged"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome"
+        ],
+        "title": "PushActionOut",
+        "type": "object"
+      },
+      "PushDeviceOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "PushDeviceOut",
+        "type": "object"
+      },
+      "PushKeysIn": {
+        "properties": {
+          "auth": {
+            "maxLength": 100,
+            "minLength": 6,
+            "title": "Auth",
+            "type": "string"
+          },
+          "p256dh": {
+            "maxLength": 200,
+            "minLength": 10,
+            "title": "P256Dh",
+            "type": "string"
+          }
+        },
+        "required": [
+          "p256dh",
+          "auth"
+        ],
+        "title": "PushKeysIn",
+        "type": "object"
+      },
+      "PushStatusOut": {
+        "properties": {
+          "devices": {
+            "items": {
+              "$ref": "#/components/schemas/PushDeviceOut"
+            },
+            "title": "Devices",
+            "type": "array"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "lock_screen_safe": {
+            "title": "Lock Screen Safe",
+            "type": "boolean"
+          },
+          "max_actions": {
+            "title": "Max Actions",
+            "type": "integer"
+          },
+          "public_key": {
+            "title": "Public Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "devices",
+          "enabled",
+          "lock_screen_safe",
+          "max_actions",
+          "public_key"
+        ],
+        "title": "PushStatusOut",
+        "type": "object"
+      },
+      "PushSubscribeIn": {
+        "properties": {
+          "endpoint": {
+            "maxLength": 600,
+            "minLength": 12,
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "keys": {
+            "$ref": "#/components/schemas/PushKeysIn"
+          },
+          "label": {
+            "default": "This device",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "endpoint",
+          "keys"
+        ],
+        "title": "PushSubscribeIn",
+        "type": "object"
+      },
+      "PushUnsubscribeIn": {
+        "properties": {
+          "endpoint": {
+            "maxLength": 600,
+            "minLength": 12,
+            "title": "Endpoint",
+            "type": "string"
+          }
+        },
+        "required": [
+          "endpoint"
+        ],
+        "title": "PushUnsubscribeIn",
         "type": "object"
       },
       "RecategorizeIn": {
@@ -4499,6 +5657,19 @@
         "title": "Session",
         "type": "object"
       },
+      "SetCounterpartyPolicyOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "$ref": "#/components/schemas/CounterpartyProfile"
+          }
+        },
+        "required": [
+          "profile"
+        ],
+        "title": "SetCounterpartyPolicyOutput",
+        "type": "object"
+      },
       "SimilarItem": {
         "description": "A past transaction from the same merchant and how it was categorised.",
         "properties": {
@@ -4545,6 +5716,48 @@
           "occurred_at"
         ],
         "title": "SimilarItem",
+        "type": "object"
+      },
+      "SimulatePaymentOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "created": {
+            "title": "Created",
+            "type": "boolean"
+          },
+          "decision": {
+            "title": "Decision",
+            "type": "string"
+          },
+          "event": {
+            "$ref": "#/components/schemas/PaymentEvent"
+          },
+          "guesses": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Guesses",
+            "type": "array"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "sample_text": {
+            "title": "Sample Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "created",
+          "decision",
+          "event",
+          "guesses",
+          "reason",
+          "sample_text"
+        ],
+        "title": "SimulatePaymentOutput",
         "type": "object"
       },
       "StreakView": {
@@ -4693,6 +5906,198 @@
           "ts"
         ],
         "title": "TimelineEntry",
+        "type": "object"
+      },
+      "TodayItem": {
+        "properties": {
+          "amount_paise": {
+            "title": "Amount Paise",
+            "type": "integer"
+          },
+          "category_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Name"
+          },
+          "direction": {
+            "enum": [
+              "debit",
+              "credit"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "event": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "group": {
+            "enum": [
+              "needs_you",
+              "auto",
+              "by_you"
+            ],
+            "title": "Group",
+            "type": "string"
+          },
+          "guesses": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/GuessView"
+            },
+            "title": "Guesses",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "event",
+              "ledger"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "needs_review_link": {
+            "default": false,
+            "title": "Needs Review Link",
+            "type": "boolean"
+          },
+          "prompt_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Id"
+          },
+          "prompt_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Status"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Code"
+          },
+          "reversed": {
+            "default": false,
+            "title": "Reversed",
+            "type": "boolean"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "time": {
+            "title": "Time",
+            "type": "string"
+          },
+          "verified": {
+            "title": "Verified",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "amount_paise",
+          "category_name",
+          "direction",
+          "event",
+          "group",
+          "guesses",
+          "id",
+          "kind",
+          "name",
+          "needs_review_link",
+          "prompt_id",
+          "prompt_status",
+          "reason",
+          "reason_code",
+          "reversed",
+          "simulated",
+          "time",
+          "verified"
+        ],
+        "title": "TodayItem",
+        "type": "object"
+      },
+      "TodayView": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/DayCounts"
+          },
+          "day": {
+            "title": "Day",
+            "type": "string"
+          },
+          "is_today": {
+            "title": "Is Today",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TodayItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/DayTotals"
+          }
+        },
+        "required": [
+          "counts",
+          "day",
+          "is_today",
+          "items",
+          "totals"
+        ],
+        "title": "TodayView",
         "type": "object"
       },
       "TraceNodeOut": {
@@ -5113,6 +6518,232 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/aa/consent": {
+      "get": {
+        "operationId": "aa_consent_get_api_aa_consent_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Aa Consent Get"
+      },
+      "post": {
+        "operationId": "aa_consent_create_api_aa_consent_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Aa Consent Create"
+      }
+    },
+    "/api/aa/consent/{consent_id}/{action}": {
+      "post": {
+        "operationId": "aa_consent_action_api_aa_consent__consent_id___action__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "consent_id",
+            "required": true,
+            "schema": {
+              "title": "Consent Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action",
+            "required": true,
+            "schema": {
+              "enum": [
+                "approve",
+                "pause",
+                "resume",
+                "revoke"
+              ],
+              "title": "Action",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Aa Consent Action"
+      }
+    },
+    "/api/aa/fetch": {
+      "post": {
+        "operationId": "aa_fetch_now_api_aa_fetch_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FetchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Aa Fetch Now"
+      }
+    },
     "/api/adjustments": {
       "get": {
         "operationId": "list_adjustments_api_api_adjustments_get",
@@ -6178,6 +7809,759 @@
           }
         },
         "summary": "Calendar Forecast Api"
+      }
+    },
+    "/api/capture/bridge": {
+      "get": {
+        "operationId": "capture_bridge_api_capture_bridge_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BridgeHealthOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Capture Bridge"
+      }
+    },
+    "/api/capture/counterparty-policy": {
+      "post": {
+        "operationId": "capture_policy_api_capture_counterparty_policy_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CapturePolicyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetCounterpartyPolicyOutput"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Capture Policy"
+      }
+    },
+    "/api/capture/inbox": {
+      "get": {
+        "operationId": "capture_inbox_api_capture_inbox_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptureInboxOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Capture Inbox"
+      }
+    },
+    "/api/capture/labels": {
+      "post": {
+        "operationId": "capture_label_api_capture_labels_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptureLabelIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelPaymentEventOutput"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Capture Label"
+      }
+    },
+    "/api/capture/push/action": {
+      "post": {
+        "description": "A notification button. The first answer wins; the other devices' notifications close.",
+        "operationId": "push_action_api_capture_push_action_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushActionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushActionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Push Action"
+      }
+    },
+    "/api/capture/push/status": {
+      "get": {
+        "operationId": "push_status_api_capture_push_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Push Status"
+      }
+    },
+    "/api/capture/push/subscribe": {
+      "post": {
+        "operationId": "push_subscribe_api_capture_push_subscribe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscribeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushDeviceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Push Subscribe"
+      }
+    },
+    "/api/capture/push/unsubscribe": {
+      "post": {
+        "operationId": "push_unsubscribe_api_capture_push_unsubscribe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushUnsubscribeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Push Unsubscribe Api Capture Push Unsubscribe Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Push Unsubscribe"
+      }
+    },
+    "/api/capture/simulate": {
+      "post": {
+        "operationId": "capture_simulate_api_capture_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptureSimulateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulatePaymentOutput"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Capture Simulate"
+      }
+    },
+    "/api/capture/sms": {
+      "post": {
+        "description": "The phone's SMS forwarder posts here. Order matters: secret, rate limit and size are\nchecked before any message is looked at; the sender allowlist is checked before the\ntext is parsed; and the text is never stored, logged or returned.",
+        "operationId": "capture_sms_api_capture_sms_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptureSmsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "summary": "Capture Sms"
+      }
+    },
+    "/api/capture/stream": {
+      "get": {
+        "description": "Server-sent events: a prompt appears the moment the ask policy says ask.",
+        "operationId": "capture_stream_api_capture_stream_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "once",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Once",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Capture Stream"
+      }
+    },
+    "/api/capture/today": {
+      "get": {
+        "description": "One day, every payment in and out, grouped by what is left for you to do.",
+        "operationId": "capture_today_api_capture_today_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "day",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Day"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Capture Today"
       }
     },
     "/api/categories": {

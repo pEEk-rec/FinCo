@@ -98,6 +98,22 @@ tools:
 
   # Phase 4 Experiments
   design_experiment:           {agent: needs_approval, user: allow}
+  record_payment_event:        {decision: allow}
+  simulate_payment_event:      {agent: deny, user: allow}
+  label_payment_event:         {agent: deny, user: allow}
+  set_counterparty_policy:     {agent: deny, user: allow}
+  expire_capture_prompts:      {decision: allow}
+  reconcile_payment_events:    {decision: allow}
+  register_push_subscription:  {agent: deny, user: allow}
+  remove_push_subscription:    {agent: deny, user: allow}
+  capture_coverage:            {decision: allow}
+  aa_status:                   {decision: allow}
+  create_aa_consent:           {agent: deny, user: allow}
+  set_aa_consent_state:        {agent: deny, user: allow}
+  fetch_aa_data:               {agent: deny, user: allow, decision: allow}
+  run_aa_cycle:                {decision: allow}
+  set_account_last4:           {agent: deny, user: allow}
+  pending_prompts:             {decision: allow}
   start_experiment:            {agent: deny, user: allow}
   pause_experiment:            {agent: deny, user: allow}
   resume_experiment:           {agent: deny, user: allow}

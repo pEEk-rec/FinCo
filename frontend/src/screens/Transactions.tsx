@@ -228,7 +228,7 @@ function Detail({ id }: { id: string }) {
         <NumberTicker
           value={formatINR(Math.abs(tx.amount_paise), { sign: 'never' })}
           className={cx(
-            'tabular mt-2 text-[28px] font-light',
+            'tabular mt-2 text-[28px] font-extrabold',
             tx.direction === 'credit' && 'text-positive',
           )}
         />

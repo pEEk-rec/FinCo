@@ -1,0 +1,27 @@
+# Bank sender allowlist (PLAN_CAPTURE section 0.2, ADR-0001 D7). A message from any sender not
+# listed here, or from a bank marked enabled: false, is dropped in memory without being read.
+#
+# These are the usual DLT headers, written from general knowledge and NOT checked against your
+# phone. Open one real alert from each bank you use, copy the exact sender shown, fix it here,
+# then set enabled: true once that bank's templates (sms_templates/<bank>.yaml) are ready.
+banks:
+  hdfc:
+    name: HDFC Bank
+    sender_ids: [HDFCBK, HDFCBN]
+    enabled: false
+  sbi:
+    name: State Bank of India
+    sender_ids: [SBIINB, SBIPSG, SBIUPI]
+    enabled: false
+  icici:
+    name: ICICI Bank
+    sender_ids: [ICICIB, ICICIT]
+    enabled: false
+  axis:
+    name: Axis Bank
+    sender_ids: [AXISBK, AXISBN]
+    enabled: false
+  kotak:
+    name: Kotak Mahindra Bank
+    sender_ids: [KOTAKB, KMBLBK]
+    enabled: false

@@ -85,9 +85,12 @@ def test_no_span_attribute_contains_user_text(conn: sqlite3.Connection) -> None:
 
     # 2. Free-form user prose in values must raise ValueError
     with pytest.raises(ValueError, match="Safety Rule 19 violation"):
-        sanitize_and_validate_attrs({
-            "notes": "Hello copilot please buy groceries from BigBasket for my dinner party tonight" * 2
-        })
+        sanitize_and_validate_attrs(
+            {
+                "notes": "Hello copilot please buy groceries from BigBasket for my dinner party tonight"
+                * 2
+            }
+        )
 
     # 3. Allowed structural attributes must succeed
     allowed = {
@@ -103,7 +106,11 @@ def test_no_span_attribute_contains_user_text(conn: sqlite3.Connection) -> None:
 
     # 4. Scan database: assert no persisted span contains prohibited keys or user text
     with trace_context(user_id="u1", trace_id="tr_scan_test", conn=conn):
-        with span(kind="tool", name="check_balance", attrs={"tool_name": "check_balance", "account_id": "acc_1"}):
+        with span(
+            kind="tool",
+            name="check_balance",
+            attrs={"tool_name": "check_balance", "account_id": "acc_1"},
+        ):
             pass
 
     rows = conn.execute("SELECT attrs_json FROM trace_spans WHERE user_id = 'u1'").fetchall()
@@ -124,7 +131,9 @@ def test_export_trace_spans_jsonl(conn: sqlite3.Connection, tmp_path: Path) -> N
             pass
 
     out_file = tmp_path / "traces" / "trace_export.jsonl"
-    jsonl_str = export_trace_spans_jsonl(conn, user_id="u1", trace_id="tr_export_test", output_path=out_file)
+    jsonl_str = export_trace_spans_jsonl(
+        conn, user_id="u1", trace_id="tr_export_test", output_path=out_file
+    )
 
     assert out_file.is_file()
     lines = [json.loads(line) for line in jsonl_str.strip().split("\n")]

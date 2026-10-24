@@ -102,9 +102,7 @@ def decompose_spend_change(
     stopped_merchants = b_merchants - t_merchants
     common_merchants = b_merchants & t_merchants
 
-    new_merchant_paise = sum(
-        sum(t.amount_paise for t in t_by_merch[m]) for m in new_merchants
-    )
+    new_merchant_paise = sum(sum(t.amount_paise for t in t_by_merch[m]) for m in new_merchants)
     stopped_merchant_paise = -sum(
         sum(t.amount_paise for t in b_by_merch[m]) for m in stopped_merchants
     )
@@ -134,10 +132,7 @@ def decompose_spend_change(
         ticket_effect_paise = 0
 
     sum_effects = (
-        volume_effect_paise
-        + ticket_effect_paise
-        + new_merchant_paise
-        + stopped_merchant_paise
+        volume_effect_paise + ticket_effect_paise + new_merchant_paise + stopped_merchant_paise
     )
     residual_paise = total_change - sum_effects
 
@@ -333,9 +328,7 @@ def test_new_merchant(
         return "neutral", 0, 0, []
 
     b_merchants = {_merchant_key(t) for t in b_spend}
-    new_txs = [
-        t for t in t_spend if _merchant_key(t) not in b_merchants
-    ]
+    new_txs = [t for t in t_spend if _merchant_key(t) not in b_merchants]
 
     new_spend = sum(t.amount_paise for t in new_txs)
     supported = (
@@ -384,16 +377,8 @@ def test_recurring_change(
     t_counts = Counter(_merchant_key(t) for t in t_spend)
     b_counts = Counter(_merchant_key(t) for t in b_spend)
 
-    t_by_m = {
-        _merchant_key(t): t.amount_paise
-        for t in t_spend
-        if t_counts[_merchant_key(t)] == 1
-    }
-    b_by_m = {
-        _merchant_key(t): t.amount_paise
-        for t in b_spend
-        if b_counts[_merchant_key(t)] == 1
-    }
+    t_by_m = {_merchant_key(t): t.amount_paise for t in t_spend if t_counts[_merchant_key(t)] == 1}
+    b_by_m = {_merchant_key(t): t.amount_paise for t in b_spend if b_counts[_merchant_key(t)] == 1}
 
     delta_rec = 0
     changed_tx_ids = []
@@ -654,6 +639,7 @@ def run_investigation_suite(
     if active_exception is None and conn is not None:
         try:
             from copilot.core.memory import get_active_contextual_exception
+
             active_exc_item = get_active_contextual_exception(conn, user_id, cat_id, period)
             if active_exc_item:
                 active_exception = {
@@ -792,7 +778,8 @@ def run_investigation_suite(
     total_base = sum(t.amount_paise for t in b_spend)
     has_decisive_structural_cause = any(
         h.status == "supported"
-        and h.code in (
+        and h.code
+        in (
             "one_off_large",
             "new_merchant",
             "miscategorization",
@@ -815,9 +802,9 @@ def run_investigation_suite(
         outcome = "needs_clarification"
     elif is_noise_level:
         outcome = "inconclusive"
-    elif (
-        explained_share_bp >= config.explained_share_threshold_bp
-        and confidence_label in ("high", "medium")
+    elif explained_share_bp >= config.explained_share_threshold_bp and confidence_label in (
+        "high",
+        "medium",
     ):
         outcome = "explained"
     elif explained_share_bp > 0:

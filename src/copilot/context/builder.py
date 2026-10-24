@@ -187,9 +187,7 @@ class ContextBuilder:
 
         # 2. Intent summary
         if intent is not None:
-            intent_dict = (
-                intent.model_dump() if hasattr(intent, "model_dump") else dict(intent)
-            )
+            intent_dict = intent.model_dump() if hasattr(intent, "model_dump") else dict(intent)
             intent_lines = [f"{k}: {v}" for k, v in intent_dict.items() if v is not None]
             intent_str = "INTENT SPECIFICATION:\n" + "\n".join(intent_lines)
             intent_redacted, r_count = redact_and_count(intent_str)
@@ -228,8 +226,7 @@ class ContextBuilder:
 
         if sub_questions:
             sq_list = [
-                sq.model_dump() if hasattr(sq, "model_dump") else dict(sq)
-                for sq in sub_questions
+                sq.model_dump() if hasattr(sq, "model_dump") else dict(sq) for sq in sub_questions
             ]
             sqs_str = f"SUB-QUESTIONS LIST:\n{json.dumps(sq_list, indent=2)}"
             sqs_redacted, r_count = redact_and_count(sqs_str)
@@ -348,9 +345,7 @@ class ContextBuilder:
         if memories:
             for m in memories:
                 mid = m.id if hasattr(m, "id") else m.get("id", "mem_unknown")
-                subj = (
-                    m.subject_key if hasattr(m, "subject_key") else m.get("subject_key", "")
-                )
+                subj = m.subject_key if hasattr(m, "subject_key") else m.get("subject_key", "")
                 kind = m.kind if hasattr(m, "kind") else m.get("kind", "")
                 stmt = (
                     m.statement_json

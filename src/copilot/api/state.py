@@ -37,6 +37,12 @@ class ApiState:
     policy: PolicySettings | None = None
     #: "auto" resolves from .env on first use; None disables the model; tests pass a fake client.
     llm: "LLMClient | GuardedLLM | None | Literal['auto']" = "auto"
+    #: The SMS bridge's secret and bank allowlist. None means: read them from disk and
+    #: config. Tests pass their own.
+    capture_secret: str | None = None
+    capture_senders: object | None = None
+    #: Sends Web Push messages. None means the real sender; tests pass a fake.
+    push_sender: object | None = None
 
     def get_llm(self) -> "LLMClient | GuardedLLM | None":
         """The optional language-model client (built once, lazily)."""
@@ -57,7 +63,7 @@ class ApiState:
         return conn
 
     def context(
-        self, conn: sqlite3.Connection, actor: Literal["user", "agent"] = "user"
+        self, conn: sqlite3.Connection, actor: Literal["user", "agent", "system"] = "user"
     ) -> ExecutionContext:
         """Execution context for one request. User actions run as actor 'user'."""
         return ExecutionContext(

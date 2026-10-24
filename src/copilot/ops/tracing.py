@@ -155,16 +155,12 @@ def span(
     Propagates parent-child relationships and commits completed spans to DB.
     """
     if kind not in VALID_SPAN_KINDS:
-        raise ValueError(
-            f"Invalid span kind '{kind}'. Must be one of: {sorted(VALID_SPAN_KINDS)}"
-        )
+        raise ValueError(f"Invalid span kind '{kind}'. Must be one of: {sorted(VALID_SPAN_KINDS)}")
 
     clean_attrs = sanitize_and_validate_attrs(attrs)
 
     resolved_user_id = user_id or _current_user_id.get() or "system"
-    resolved_trace_id = (
-        trace_id or _current_trace_id.get() or f"tr_{uuid.uuid4().hex[:16]}"
-    )
+    resolved_trace_id = trace_id or _current_trace_id.get() or f"tr_{uuid.uuid4().hex[:16]}"
     parent_span_id = _current_parent_span_id.get()
     span_id = f"sp_{uuid.uuid4().hex[:16]}"
     span_db_id = f"span_{uuid.uuid4().hex[:16]}"

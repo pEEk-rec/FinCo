@@ -400,9 +400,7 @@ def build_timeline(
         )
 
     # 12. Tradeoff Analyses
-    tradeoff_query = (
-        "SELECT id, run_id, created_at FROM tradeoff_analyses WHERE user_id = ? ORDER BY created_at ASC"  # noqa: E501
-    )
+    tradeoff_query = "SELECT id, run_id, created_at FROM tradeoff_analyses WHERE user_id = ? ORDER BY created_at ASC"  # noqa: E501
     for r in conn.execute(tradeoff_query, (user_id,)).fetchall():
         row = dict(r)
         raw_entries.append(

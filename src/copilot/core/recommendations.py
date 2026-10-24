@@ -219,20 +219,24 @@ def build_recommendation(
                 first_amount = format_inr(c.result)
                 break
 
-        safe_text = fallback_tmpl.format(
-            amount_inr=first_amount,
-            unexplained_inr=first_amount,
-            spent_inr=first_amount,
-            limit_inr=first_amount,
-            category="general",
-            percent="100",
-            surplus_inr=first_amount,
-            remaining_inr=first_amount,
-            target_reduction_inr=first_amount,
-            projected_surplus_inr=first_amount,
-            goal_name="Goal",
-            exceed_inr=first_amount,
-        ) if fallback_tmpl else "Analysis completed. Review spending to maintain cashflow buffer."
+        safe_text = (
+            fallback_tmpl.format(
+                amount_inr=first_amount,
+                unexplained_inr=first_amount,
+                spent_inr=first_amount,
+                limit_inr=first_amount,
+                category="general",
+                percent="100",
+                surplus_inr=first_amount,
+                remaining_inr=first_amount,
+                target_reduction_inr=first_amount,
+                projected_surplus_inr=first_amount,
+                goal_name="Goal",
+                exceed_inr=first_amount,
+            )
+            if fallback_tmpl
+            else "Analysis completed. Review spending to maintain cashflow buffer."
+        )
 
         final_text = safe_text
         assump_list.append(

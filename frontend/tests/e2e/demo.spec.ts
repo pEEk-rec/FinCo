@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
-import { getJson, signIn } from './helpers';
+import { API, authHeaders, getJson, signIn } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -28,10 +28,15 @@ test.beforeEach(async ({ page }) => {
   await signIn(page);
 });
 
-test('welcome page is restrained and links to the app', async ({ page }) => {
+test('welcome page is only the name, the promise, one button and three points', async ({
+  page,
+}) => {
   await page.goto('/welcome');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('ledger');
-  await expect(page.getByText('It cannot move money.')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Every rupee, understood.');
+  await expect(page.getByText('A calm ledger for living expenses.')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'FinCo' })).toBeVisible();
+  await expect(page.getByRole('listitem')).toHaveCount(3);
+  await expect(page.getByRole('link')).toHaveCount(2); // the name and the one button
   await expectNoSeriousA11yIssues(page, 'welcome');
   await page.getByRole('link', { name: 'Open the dashboard' }).click();
   await expect(page).toHaveURL(/:\d+\/$/);
@@ -278,4 +283,213 @@ test('challenges: find one, start it, pause, resume; progress shows the level', 
   await expect(page.getByText('Level', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Badges' })).toBeVisible();
   await expectNoSeriousA11yIssues(page, 'progress');
+});
+
+test('capture: simulate a payment, tag it with a key, undo, then tag through Other', async ({
+  page,
+  request,
+}) => {
+  await page.goto('/capture');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('as they happen');
+  await expect(page.getByText('All caught up')).toBeVisible();
+
+  const simulate = async (utr: string, who: string) => {
+    await page.getByLabel('Amount (rupees)').fill('250');
+    await page.getByLabel('To', { exact: true }).fill(who);
+    await page.getByRole('button', { name: 'Send the alert' }).click();
+    await expect(page.getByRole('article', { name: new RegExp(who, 'i') })).toBeVisible();
+    return utr;
+  };
+
+  await simulate('a', 'Corner Juice Shop');
+  const card = page.getByRole('article', { name: /Corner Juice Shop/i });
+  await expect(card.getByText('Simulated payment')).toBeVisible();
+  await expect(page.getByText('What the phone would have sent')).toBeVisible();
+  await expectNoSeriousA11yIssues(page, 'capture');
+
+  // tag with the keyboard: the first guess
+  await page.keyboard.press('1');
+  await expect(page.getByText(/^Tagged /)).toBeVisible();
+  await expect(card).toHaveCount(0);
+  let inbox = await getJson<{ pending_count: number }>(request, '/capture/inbox');
+  expect(inbox.pending_count).toBe(0);
+
+  // undo brings it back
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(page.getByRole('article', { name: /Corner Juice Shop/i })).toBeVisible();
+
+  // tag through the quick sheet with a search
+  await page.getByRole('button', { name: 'Other…' }).click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByLabel('Search categories').fill('shop');
+  await sheet.getByRole('list', { name: 'Categories' }).getByRole('button').first().click();
+  await expect(page.getByRole('article', { name: /Corner Juice Shop/i })).toHaveCount(0);
+  inbox = await getJson<{ pending_count: number }>(request, '/capture/inbox');
+  expect(inbox.pending_count).toBe(0);
+});
+
+test('capture overlay: a payment interrupts on any page, Later sends it to the inbox', async ({
+  page,
+  request,
+}) => {
+  const simulate = async (who: string, vpa?: string) => {
+    const res = await request.post(`${API}/capture/simulate`, {
+      headers: authHeaders,
+      data: { bank: 'axis', kind: 'debit', amount_paise: 31000, counterparty: who, vpa },
+    });
+    expect(res.ok()).toBeTruthy();
+    return (await res.json()) as { event: { id: string } };
+  };
+
+  await page.goto('/goals');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('saving for');
+  await simulate('Lakeside Tea Traders');
+  const overlay = page.getByRole('article', { name: /Lakeside Tea Traders/i });
+  await expect(overlay).toBeVisible({ timeout: 10_000 });
+  await expect(overlay.getByText('Simulated payment')).toBeVisible();
+  await expectNoSeriousA11yIssues(page, 'overlay');
+
+  // Escape means later: it leaves the screen but stays in the inbox
+  await page.keyboard.press('Escape');
+  await expect(overlay).toHaveCount(0);
+  const inbox = await getJson<{ pending_count: number }>(request, '/capture/inbox');
+  expect(inbox.pending_count).toBe(1);
+
+  // a second payment prompts again; a key tags it from this page
+  await simulate('Harbour Fruit Traders');
+  const second = page.getByRole('article', { name: /Harbour Fruit Traders/i });
+  await expect(second).toBeVisible({ timeout: 10_000 });
+  await page.keyboard.press('1');
+  await expect(second).toHaveCount(0);
+  await expect(page.getByText(/^Tagged /).first()).toBeVisible();
+
+  // the one sent to later is waiting on the Tag payments page, and the overlay stays out of the way
+  await page.goto('/capture');
+  await expect(page.getByRole('article', { name: /Lakeside Tea Traders/i })).toBeVisible();
+  await page
+    .getByRole('article', { name: /Lakeside Tea Traders/i })
+    .getByRole('button')
+    .first()
+    .click();
+  await expect(page.getByText('All caught up')).toBeVisible();
+});
+
+test('today: money in and out, tag what is left, change what was tagged for you', async ({
+  page,
+  request,
+}) => {
+  const simulate = async (data: Record<string, unknown>) => {
+    const res = await request.post(`${API}/capture/simulate`, { headers: authHeaders, data });
+    expect(res.ok()).toBeTruthy();
+    return (await res.json()) as { event: { id: string } };
+  };
+  await simulate({
+    bank: 'axis',
+    kind: 'debit',
+    amount_paise: 41000,
+    counterparty: 'Morning Bakery Traders',
+  });
+  await simulate({
+    bank: 'axis',
+    kind: 'credit',
+    amount_paise: 250000,
+    counterparty: 'Priya S',
+    vpa: 'priya.s@okaxis',
+  });
+
+  await page.goto('/today');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('what is left to tag');
+  await expect(page.getByRole('heading', { name: 'Needs you' })).toBeVisible();
+  await expect(page.getByText('Money in')).toBeVisible();
+  await expect(page.getByText('Money out')).toBeVisible();
+  await expect(page.getByRole('article', { name: /Morning Bakery Traders/i })).toBeVisible();
+  await expect(page.getByRole('article', { name: /Priya S/i })).toBeVisible();
+  await expectNoSeriousA11yIssues(page, 'today');
+
+  // tag the payment out with its first guess, and the credit through Other
+  await page
+    .getByRole('article', { name: /Morning Bakery Traders/i })
+    .getByRole('button')
+    .first()
+    .click();
+  await expect(page.getByRole('heading', { name: 'Tagged by you' })).toBeVisible();
+  const credit = page.getByRole('article', { name: /Priya S/i });
+  await credit.getByRole('button', { name: 'Other…' }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('list', { name: 'Categories' })
+    .getByRole('button')
+    .first()
+    .click();
+  await expect(page.getByRole('article', { name: /Priya S/i })).toHaveCount(0);
+
+  const today = await getJson<{
+    totals: { in_paise: number; out_paise: number };
+    counts: { needs_you: number; by_you: number };
+  }>(request, '/capture/today');
+  expect(today.totals.in_paise).toBeGreaterThanOrEqual(250000);
+  expect(today.totals.out_paise).toBeGreaterThanOrEqual(41000);
+  expect(today.counts.needs_you).toBe(0);
+
+  // a tagged row can be changed
+  await page.getByRole('button', { name: 'Change' }).first().click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+});
+
+test('a tapped notification link opens that payment, and the app is installable', async ({
+  page,
+  request,
+}) => {
+  const res = await request.post(`${API}/capture/simulate`, {
+    headers: authHeaders,
+    data: {
+      bank: 'axis',
+      kind: 'debit',
+      amount_paise: 55500,
+      counterparty: 'Lantern Cafe Traders',
+    },
+  });
+  expect(res.ok()).toBeTruthy();
+  const inbox = await getJson<{ prompts: { prompt_id: string }[] }>(request, '/capture/inbox');
+  const id = inbox.prompts[0]!.prompt_id;
+  await page.goto(`/capture?prompt=${id}`);
+  await expect(page.getByRole('dialog').getByText('What was this?')).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  const manifest = await page.request.get('/manifest.webmanifest');
+  expect(manifest.ok()).toBeTruthy();
+  const body = (await manifest.json()) as {
+    name: string;
+    display: string;
+    icons: { sizes: string }[];
+  };
+  expect(body.name).toBe('FinCo');
+  expect(body.display).toBe('standalone');
+  expect(body.icons.map((i) => i.sizes)).toEqual(expect.arrayContaining(['192x192', '512x512']));
+  const sw = await page.request.get('/sw.js');
+  expect(sw.ok()).toBeTruthy();
+  expect(await sw.text()).toContain('notificationclick');
+  expect((await page.request.get('/icons/icon-192.png')).ok()).toBeTruthy();
+
+  await page.goto('/');
+  await expect(page.getByRole('link', { name: /Review today/ })).toBeVisible();
+});
+
+test('bank link: set up, approve, fetch, then revoke stops it', async ({ page }) => {
+  await page.goto('/connect');
+  const card = page.getByRole('region', { name: 'Bank link' });
+  await expect(card).toBeVisible();
+  await card.getByRole('button', { name: 'Set up the link' }).click();
+  await expect(card.getByText('Waiting for approval')).toBeVisible();
+  await expect(card.getByText('Customer', { exact: false })).toHaveCount(0); // plain words, not codes
+  await expect(card.getByText('Fetched copies are deleted after', { exact: false })).toBeVisible();
+  await card.getByRole('button', { name: 'Approve' }).click();
+  await expect(card.getByText('Active', { exact: true })).toBeVisible();
+  await card.getByRole('button', { name: 'Fetch now' }).click();
+  await expect(card.getByRole('status')).toContainText('Added');
+  await card.getByRole('button', { name: 'Revoke' }).click();
+  await expect(card.getByText('Revoked', { exact: true })).toBeVisible();
+  await expect(card.getByRole('button', { name: 'Fetch now' })).toHaveCount(0);
+  await expectNoSeriousA11yIssues(page, 'bank link');
 });

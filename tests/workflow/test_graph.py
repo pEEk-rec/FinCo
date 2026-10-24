@@ -121,9 +121,7 @@ def test_full_agent_graph_offline_end_to_end_with_interrupt(conn, exec_ctx):
 
     # User decides to approve the first advice item
     first_advice_id = drafts[0]["id"]
-    resume_command = Command(
-        resume=[{"advice_id": first_advice_id, "decision": "approved"}]
-    )
+    resume_command = Command(resume=[{"advice_id": first_advice_id, "decision": "approved"}])
 
     final_result = graph.invoke(resume_command, config=config)
 

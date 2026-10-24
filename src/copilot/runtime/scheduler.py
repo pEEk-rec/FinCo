@@ -36,9 +36,7 @@ def compute_next_run_at(schedule: str, from_dt: datetime) -> datetime:
     m_daily = re.match(r"^daily@(\d{2}):(\d{2})$", schedule.strip())
     if m_daily:
         hour, minute = int(m_daily.group(1)), int(m_daily.group(2))
-        candidate = from_dt.replace(
-            hour=hour, minute=minute, second=0, microsecond=0
-        )
+        candidate = from_dt.replace(hour=hour, minute=minute, second=0, microsecond=0)
         if candidate <= from_dt:
             candidate += timedelta(days=1)
         return candidate
@@ -54,9 +52,7 @@ def compute_next_run_at(schedule: str, from_dt: datetime) -> datetime:
     if m_monthly:
         hour, minute = int(m_monthly.group(1)), int(m_monthly.group(2))
         # Candidate is 1st of current month at HH:MM
-        candidate = from_dt.replace(
-            day=1, hour=hour, minute=minute, second=0, microsecond=0
-        )
+        candidate = from_dt.replace(day=1, hour=hour, minute=minute, second=0, microsecond=0)
         if candidate <= from_dt:
             # Advance to 1st of next month
             year = from_dt.year + (1 if from_dt.month == 12 else 0)

@@ -100,7 +100,9 @@ def test_deleted_category_cascades_safely():
     conn.commit()
 
     # Cascade foreign key removes the bucket_category row
-    rows_after = conn.execute("SELECT * FROM bucket_categories WHERE category_id = 'cat_temp'").fetchall()
+    rows_after = conn.execute(
+        "SELECT * FROM bucket_categories WHERE category_id = 'cat_temp'"
+    ).fetchall()
     assert len(rows_after) == 0
     conn.close()
 
@@ -303,7 +305,9 @@ def test_log_sanitisation_check():
     now_str = to_utc_iso(now_utc())
     insert_user(conn, User(id=uid, created_at=now_str))
 
-    rows = conn.execute("SELECT actor, event_type, before_json, after_json, reason FROM audit_events").fetchall()
+    rows = conn.execute(
+        "SELECT actor, event_type, before_json, after_json, reason FROM audit_events"
+    ).fetchall()
     for row in rows:
         details = f"{row[2] or ''} {row[3] or ''} {row[4] or ''}"
         assert not any(c.isdigit() and len(c) == 16 for c in details.split())

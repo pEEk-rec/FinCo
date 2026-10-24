@@ -174,13 +174,9 @@ def plan_contributions(
     # Goals by priority
     all_goals = list_goals(conn, user_id)
     active_goals = [
-        g
-        for g in all_goals
-        if g.status != "done" and not bool(getattr(g, "essential", 0))
+        g for g in all_goals if g.status != "done" and not bool(getattr(g, "essential", 0))
     ]
-    active_goals.sort(
-        key=lambda g: (g.priority, getattr(g, "deadline", None) or "9999-12-31")
-    )
+    active_goals.sort(key=lambda g: (g.priority, getattr(g, "deadline", None) or "9999-12-31"))
 
     goals_monthly_paise = 0
     for g in active_goals:
@@ -189,9 +185,7 @@ def plan_contributions(
 
     # Planned investment contributions
     inv_comms = [
-        c
-        for c in active_comms
-        if c.direction == "outflow" and c.kind == "investment_contribution"
+        c for c in active_comms if c.direction == "outflow" and c.kind == "investment_contribution"
     ]
     inv_monthly_paise = sum(c.amount_paise for c in inv_comms if c.schedule_kind == "monthly")
     for c in inv_comms:
@@ -347,9 +341,7 @@ def plan_contributions(
             target_goal = lower_priority_goals[0]
             g_deadline = getattr(target_goal, "deadline", None)
             g_name = getattr(target_goal, "name", "Goal")
-            cur_target_d = (
-                date.fromisoformat(g_deadline) if g_deadline else today_d
-            )
+            cur_target_d = date.fromisoformat(g_deadline) if g_deadline else today_d
             new_target_d = date(
                 cur_target_d.year + (cur_target_d.month + 6) // 12,
                 ((cur_target_d.month + 6) % 12) or 12,

@@ -101,18 +101,27 @@ def ctx(conn):
     )
 
 
-
 # -------------------------------------------------------------------------------------------------
 # 1-4: Decomposition & Validation Tests
 # -------------------------------------------------------------------------------------------------
 def test_llm_decomposition_accepted_when_valid(conn):
     """LLM decomposition proposal is accepted when it complies with registered kinds and coverage."""
-    valid_reply = json.dumps({
-        "subquestions": [
-            {"domain": "cashflow", "question_kind": "calendar_coverage", "parameters": {"horizon_days": 60}},
-            {"domain": "goals", "question_kind": "goal_impact", "parameters": {"amount_paise": 50000}},
-        ]
-    })
+    valid_reply = json.dumps(
+        {
+            "subquestions": [
+                {
+                    "domain": "cashflow",
+                    "question_kind": "calendar_coverage",
+                    "parameters": {"horizon_days": 60},
+                },
+                {
+                    "domain": "goals",
+                    "question_kind": "goal_impact",
+                    "parameters": {"amount_paise": 50000},
+                },
+            ]
+        }
+    )
     client = FakeLLMClient([valid_reply])
     subqs = decompose_intent(
         intent="affordability",
@@ -129,12 +138,14 @@ def test_llm_decomposition_accepted_when_valid(conn):
 
 def test_llm_decomposition_rejected_unknown_question_kind(conn):
     """Proposal with an unknown question kind is rejected and replaced by template fallback."""
-    invalid_reply = json.dumps({
-        "subquestions": [
-            {"domain": "cashflow", "question_kind": "invented_unknown_tool", "parameters": {}},
-            {"domain": "goals", "question_kind": "goal_impact", "parameters": {}},
-        ]
-    })
+    invalid_reply = json.dumps(
+        {
+            "subquestions": [
+                {"domain": "cashflow", "question_kind": "invented_unknown_tool", "parameters": {}},
+                {"domain": "goals", "question_kind": "goal_impact", "parameters": {}},
+            ]
+        }
+    )
     client = FakeLLMClient([invalid_reply])
     subqs = decompose_intent(
         intent="affordability",
@@ -158,11 +169,13 @@ def test_llm_decomposition_rejected_unknown_question_kind(conn):
 def test_llm_decomposition_rejected_missing_required_coverage(conn):
     """Proposal that misses required coverage for the intent is rejected and replaced by template fallback."""
     # Affordability requires cashflow and goals; propose only cashflow
-    missing_coverage_reply = json.dumps({
-        "subquestions": [
-            {"domain": "cashflow", "question_kind": "calendar_coverage", "parameters": {}},
-        ]
-    })
+    missing_coverage_reply = json.dumps(
+        {
+            "subquestions": [
+                {"domain": "cashflow", "question_kind": "calendar_coverage", "parameters": {}},
+            ]
+        }
+    )
     client = FakeLLMClient([missing_coverage_reply])
     subqs = decompose_intent(
         intent="affordability",
@@ -184,12 +197,18 @@ def test_llm_decomposition_rejected_missing_required_coverage(conn):
 
 def test_llm_decomposition_rejected_other_user_ids(conn):
     """Proposal referencing another user's entity IDs is rejected and audited."""
-    cross_user_reply = json.dumps({
-        "subquestions": [
-            {"domain": "cashflow", "question_kind": "calendar_coverage", "parameters": {}},
-            {"domain": "goals", "question_kind": "goal_impact", "parameters": {"goal_id": "goal_bob_secret"}},
-        ]
-    })
+    cross_user_reply = json.dumps(
+        {
+            "subquestions": [
+                {"domain": "cashflow", "question_kind": "calendar_coverage", "parameters": {}},
+                {
+                    "domain": "goals",
+                    "question_kind": "goal_impact",
+                    "parameters": {"goal_id": "goal_bob_secret"},
+                },
+            ]
+        }
+    )
     client = FakeLLMClient([cross_user_reply])
     subqs = decompose_intent(
         intent="affordability",
@@ -279,8 +298,12 @@ def test_specialist_tool_subset_isolation_and_audit(ctx):
 def test_parallel_branches_run_concurrently(ctx):
     """Parallel branches run concurrently: wall time is below the sum of injected delays."""
     subqs = [
-        SubQuestion(domain="cashflow", question_kind="calendar_coverage", parameters={"horizon_days": 30}),
-        SubQuestion(domain="goals", question_kind="goal_impact", parameters={"amount_paise": 10000}),
+        SubQuestion(
+            domain="cashflow", question_kind="calendar_coverage", parameters={"horizon_days": 30}
+        ),
+        SubQuestion(
+            domain="goals", question_kind="goal_impact", parameters={"amount_paise": 10000}
+        ),
     ]
     delays = {
         "CashflowAgent": 0.20,
@@ -294,7 +317,9 @@ def test_parallel_branches_run_concurrently(ctx):
 
     assert len(reports) == 2
     # Wall time should be well below 0.40s (concurrent execution ~0.20-0.30s)
-    assert wall_time < sum_of_delays, f"Wall time {wall_time:.3f}s was not below sum {sum_of_delays:.3f}s"
+    assert wall_time < sum_of_delays, (
+        f"Wall time {wall_time:.3f}s was not below sum {sum_of_delays:.3f}s"
+    )
 
 
 # -------------------------------------------------------------------------------------------------
@@ -303,8 +328,12 @@ def test_parallel_branches_run_concurrently(ctx):
 def test_specialist_failure_or_timeout_yields_partial_answer(ctx):
     """One specialist failing or timing out yields a partial answer that names the missing part."""
     subqs = [
-        SubQuestion(domain="cashflow", question_kind="calendar_coverage", parameters={"horizon_days": 30}),
-        SubQuestion(domain="goals", question_kind="goal_impact", parameters={"amount_paise": 10000}),
+        SubQuestion(
+            domain="cashflow", question_kind="calendar_coverage", parameters={"horizon_days": 30}
+        ),
+        SubQuestion(
+            domain="goals", question_kind="goal_impact", parameters={"amount_paise": 10000}
+        ),
     ]
     # Injected delay of 0.40s for GoalsAgent while setting timeout to 0.20s
     delays = {"GoalsAgent": 0.40}
@@ -316,10 +345,8 @@ def test_specialist_failure_or_timeout_yields_partial_answer(ctx):
         delays=delays,
     )
 
-
     merge = merge_specialist_reports(reports, ctx.user_id, "task_partial_01", conn=ctx.conn)
     assert merge["status"] == "partial"
-
 
     assert len(merge["findings"]) >= 1  # Cashflow succeeded
     assert any("timed out checking 'goal_impact'" in g for g in merge["gaps"])
@@ -337,12 +364,14 @@ def test_contradiction_detected_audited_and_excluded(ctx):
         agent_role="CashflowAgent",
         sub_question_json={"question_kind": "forecast"},
         status="ok",
-        findings_json=[{
-            "metric": "surplus_paise",
-            "value": 500000,
-            "confidence": "high",
-            "evidence": "cashflow_engine",
-        }],
+        findings_json=[
+            {
+                "metric": "surplus_paise",
+                "value": 500000,
+                "confidence": "high",
+                "evidence": "cashflow_engine",
+            }
+        ],
         gaps_json=[],
         duration_ms=10,
         created_at="2026-09-15T12:00:00Z",
@@ -354,12 +383,14 @@ def test_contradiction_detected_audited_and_excluded(ctx):
         agent_role="GoalsAgent",
         sub_question_json={"question_kind": "goal_impact"},
         status="ok",
-        findings_json=[{
-            "metric": "surplus_paise",
-            "value": 200000,  # Contradicts rep1's 500000!
-            "confidence": "high",
-            "evidence": "goals_engine",
-        }],
+        findings_json=[
+            {
+                "metric": "surplus_paise",
+                "value": 200000,  # Contradicts rep1's 500000!
+                "confidence": "high",
+                "evidence": "goals_engine",
+            }
+        ],
         gaps_json=[],
         duration_ms=10,
         created_at="2026-09-15T12:00:00Z",
@@ -391,8 +422,12 @@ def test_contradiction_detected_audited_and_excluded(ctx):
 def test_reviewer_catches_missed_subquestion_and_revision_fixes_it(ctx):
     """Reviewer catches a missed sub-question and the revision fixes it."""
     subqs = [
-        SubQuestion(domain="cashflow", question_kind="calendar_coverage", parameters={"horizon_days": 30}),
-        SubQuestion(domain="goals", question_kind="goal_impact", parameters={"amount_paise": 10000}),
+        SubQuestion(
+            domain="cashflow", question_kind="calendar_coverage", parameters={"horizon_days": 30}
+        ),
+        SubQuestion(
+            domain="goals", question_kind="goal_impact", parameters={"amount_paise": 10000}
+        ),
     ]
 
     # Initial merge only answered cashflow
@@ -404,18 +439,22 @@ def test_reviewer_catches_missed_subquestion_and_revision_fixes_it(ctx):
             agent_role="CashflowAgent",
             sub_question_json={"question_kind": "calendar_coverage"},
             status="ok",
-            findings_json=[{
-                "metric": "calendar_coverage",
-                "value": {"status": "covered"},
-                "confidence": "high",
-                "evidence": "calendar",
-            }],
+            findings_json=[
+                {
+                    "metric": "calendar_coverage",
+                    "value": {"status": "covered"},
+                    "confidence": "high",
+                    "evidence": "calendar",
+                }
+            ],
             gaps_json=[],
             duration_ms=10,
             created_at="2026-09-15T12:00:00Z",
         )
     ]
-    initial_merge = merge_specialist_reports(initial_reports, "user_alice", "task_rev_01", conn=ctx.conn)
+    initial_merge = merge_specialist_reports(
+        initial_reports, "user_alice", "task_rev_01", conn=ctx.conn
+    )
 
     # Review should catch missed_subquestion for goals
     det_codes = deterministic_review(subqs, initial_reports, initial_merge)
@@ -440,16 +479,24 @@ def test_reviewer_catches_missed_subquestion_and_revision_fixes_it(ctx):
 def test_revision_bound_respected(ctx):
     """Revision round bound (default 1) is strictly respected without infinite loops."""
     subqs = [
-        SubQuestion(domain="cashflow", question_kind="calendar_coverage", parameters={"horizon_days": 30}),
+        SubQuestion(
+            domain="cashflow", question_kind="calendar_coverage", parameters={"horizon_days": 30}
+        ),
     ]
     reports = run_specialists_fanout(subqs, ctx, task_id="task_bound_01")
     merge = merge_specialist_reports(reports, ctx.user_id, "task_bound_01", conn=ctx.conn)
 
     # Scripted LLM critic that consistently critiques (without numbers)
-    critic = FakeLLMClient([
-        json.dumps({"critique_code": "unclear_answer", "explanation": "findings need more clarity"}),
-        json.dumps({"critique_code": "unclear_answer", "explanation": "still needs more clarity"}),
-    ])
+    critic = FakeLLMClient(
+        [
+            json.dumps(
+                {"critique_code": "unclear_answer", "explanation": "findings need more clarity"}
+            ),
+            json.dumps(
+                {"critique_code": "unclear_answer", "explanation": "still needs more clarity"}
+            ),
+        ]
+    )
 
     _, _, reflections = run_review_and_revision(
         subquestions=subqs,
@@ -469,7 +516,6 @@ def test_revision_bound_respected(ctx):
     assert reflections[-1].outcome == "gave_up"
 
 
-
 # -------------------------------------------------------------------------------------------------
 # 12: LLM Critic Cannot Change Numbers (Safety Rule 14)
 # -------------------------------------------------------------------------------------------------
@@ -479,10 +525,12 @@ def test_llm_critic_cannot_change_numbers(ctx):
     merge = {"findings": [{"metric": "val", "confidence": "high", "evidence": "calc"}], "gaps": []}
 
     # Critic proposing numbers (forbidden by Safety Rule 14)
-    number_reply = json.dumps({
-        "critique_code": "unclear_answer",
-        "explanation": "You should change the projected surplus to 75000 paise",
-    })
+    number_reply = json.dumps(
+        {
+            "critique_code": "unclear_answer",
+            "explanation": "You should change the projected surplus to 75000 paise",
+        }
+    )
     client = FakeLLMClient([number_reply])
 
     with pytest.raises(ValueError, match="Safety Rule 14"):
@@ -521,7 +569,17 @@ def test_failure_export_writes_candidate_files(conn, tmp_path):
     )
     conn.execute(
         "INSERT INTO reflections VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (refl.id, refl.user_id, refl.task_id, refl.round, json.dumps(refl.critique_codes), refl.source, 1, refl.outcome, refl.created_at),
+        (
+            refl.id,
+            refl.user_id,
+            refl.task_id,
+            refl.round,
+            json.dumps(refl.critique_codes),
+            refl.source,
+            1,
+            refl.outcome,
+            refl.created_at,
+        ),
     )
 
     # Record merge conflict audit event
@@ -565,7 +623,9 @@ def test_same_facts_with_critic_on_and_off(ctx):
     )
 
     # 2. Critic ON (returning clean 'ok')
-    client = FakeLLMClient([json.dumps({"critique_code": "ok", "explanation": "findings are solid"})])
+    client = FakeLLMClient(
+        [json.dumps({"critique_code": "ok", "explanation": "findings are solid"})]
+    )
     res_on = run_multi_agent_workflow(
         intent=intent,
         user_id="user_alice",
@@ -603,4 +663,6 @@ def test_agent_graph_routes_multi_domain_to_multi_agent(conn):
     nodes_visited = [entry["node"] for entry in result.get("trace", [])]
     assert "understand" in nodes_visited
     assert "multi_agent" in nodes_visited
-    assert "plan" not in nodes_visited  # Multi-domain routes to multi_agent, skipping single plan loop
+    assert (
+        "plan" not in nodes_visited
+    )  # Multi-domain routes to multi_agent, skipping single plan loop

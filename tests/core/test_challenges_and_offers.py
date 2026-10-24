@@ -49,15 +49,27 @@ def conn():
         Account(id="acc_b", user_id="user_bob", name="Bob Checking", created_at=T0),
     )
     # Alice categories
-    insert_category(c, Category(id="dining_out", user_id="user_alice", name="Dining Out", created_at=T0))
-    insert_category(c, Category(id="food_delivery", user_id="user_alice", name="Food Delivery", created_at=T0))
-    insert_category(c, Category(id="shopping", user_id="user_alice", name="Shopping", created_at=T0))
-    insert_category(c, Category(id="entertainment", user_id="user_alice", name="Entertainment", created_at=T0))
+    insert_category(
+        c, Category(id="dining_out", user_id="user_alice", name="Dining Out", created_at=T0)
+    )
+    insert_category(
+        c, Category(id="food_delivery", user_id="user_alice", name="Food Delivery", created_at=T0)
+    )
+    insert_category(
+        c, Category(id="shopping", user_id="user_alice", name="Shopping", created_at=T0)
+    )
+    insert_category(
+        c, Category(id="entertainment", user_id="user_alice", name="Entertainment", created_at=T0)
+    )
     insert_category(c, Category(id="rent", user_id="user_alice", name="Rent", created_at=T0))
-    insert_category(c, Category(id="groceries", user_id="user_alice", name="Groceries", created_at=T0))
+    insert_category(
+        c, Category(id="groceries", user_id="user_alice", name="Groceries", created_at=T0)
+    )
 
     # Bob category
-    insert_category(c, Category(id="secret_category", user_id="user_bob", name="Bob Secret", created_at=T0))
+    insert_category(
+        c, Category(id="secret_category", user_id="user_bob", name="Bob Secret", created_at=T0)
+    )
 
     yield c
     c.close()
@@ -82,7 +94,17 @@ def _insert_txn(
             needs_review, excluded_from_spend, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Merchant', 'desc', 'user', ?, 0, ?)
         """,
-        (tx_id, user_id, acc_id, occurred_at, amount_paise, direction, cat, 1 if needs_review else 0, T0),
+        (
+            tx_id,
+            user_id,
+            acc_id,
+            occurred_at,
+            amount_paise,
+            direction,
+            cat,
+            1 if needs_review else 0,
+            T0,
+        ),
     )
 
 
@@ -241,7 +263,6 @@ def test_templates_produce_valid_offers_with_llm_unavailable(conn):
     assert any(o.template_code == "weekday_home_cooking" for o in offers)
 
 
-
 def test_triggers_fire_on_injected_patterns_and_stay_silent_otherwise(conn):
     """Each trigger fires strictly when its condition is met and remains silent otherwise."""
     # 1. Clean state -> silent
@@ -250,7 +271,9 @@ def test_triggers_fire_on_injected_patterns_and_stay_silent_otherwise(conn):
 
     # 2. Inject unreviewed transactions >= 5 -> many_open_reviews
     for i in range(5):
-        _insert_txn(conn, "user_alice", f"unrev_{i}", "2026-08-15T10:00:00Z", 1000, needs_review=True)
+        _insert_txn(
+            conn, "user_alice", f"unrev_{i}", "2026-08-15T10:00:00Z", 1000, needs_review=True
+        )
     t_rev = evaluate_triggers(conn, "user_alice", clock=DT0)
     assert "many_open_reviews" in t_rev
     assert "weekend_heavy" not in t_rev
@@ -299,7 +322,9 @@ def test_targets_rounded_to_50_and_floored_at_50_percent_of_median(conn):
         title="Rounding Test",
         rationale="Check ₹50 rounding",
     )
-    cand = fit_candidate_challenge(conn, "user_alice", spec=spec, week_start="2026-09-01", clock=DT0)
+    cand = fit_candidate_challenge(
+        conn, "user_alice", spec=spec, week_start="2026-09-01", clock=DT0
+    )
     assert cand is not None
 
     # raw_target = 123456 - (123456 * 0.20) = 123456 - 24691 = 98765 paise
@@ -311,7 +336,9 @@ def test_targets_rounded_to_50_and_floored_at_50_percent_of_median(conn):
     conn.execute("DELETE FROM transactions")
     for idx, (ws, _we) in enumerate(windows, 1):
         _insert_txn(conn, "user_alice", f"tb_{idx}", f"{ws}T10:00:00Z", 10000, cat="dining_out")
-    cand_floor = fit_candidate_challenge(conn, "user_alice", spec=spec, week_start="2026-09-01", clock=DT0)
+    cand_floor = fit_candidate_challenge(
+        conn, "user_alice", spec=spec, week_start="2026-09-01", clock=DT0
+    )
     assert cand_floor is not None
     # 50% floor of 10000 is 5000
     assert cand_floor.target_value >= 5000
@@ -320,13 +347,24 @@ def test_targets_rounded_to_50_and_floored_at_50_percent_of_median(conn):
 def test_essential_categories_never_targeted_property_test(conn):
     """Property test: over 50 random category samples, essential categories are never targeted."""
     all_cats = [
-        "dining_out", "food_delivery", "shopping", "entertainment",
-        "rent", "groceries", "food_and_groceries", "healthcare", "utilities", "education", "emis_and_loans"
+        "dining_out",
+        "food_delivery",
+        "shopping",
+        "entertainment",
+        "rent",
+        "groceries",
+        "food_and_groceries",
+        "healthcare",
+        "utilities",
+        "education",
+        "emis_and_loans",
     ]
     for cat in all_cats:
         c_name = cat.replace("_", " ").title()
         if not conn.execute("SELECT id FROM categories WHERE id = ?", (cat,)).fetchone():
-            insert_category(conn, Category(id=cat, user_id="user_alice", name=c_name, created_at=T0))
+            insert_category(
+                conn, Category(id=cat, user_id="user_alice", name=c_name, created_at=T0)
+            )
 
     rng = random.Random(42)
     for _ in range(50):
@@ -344,15 +382,28 @@ def test_essential_categories_never_targeted_property_test(conn):
             baseline_median=100000,
             expected_effect_paise=50000,
         )
-        safe = filter_safe_candidates(conn, "user_alice", [cand], week_start="2026-09-01", clock=DT0)
+        safe = filter_safe_candidates(
+            conn, "user_alice", [cand], week_start="2026-09-01", clock=DT0
+        )
         has_essential = any(
-            c in {"rent", "food_and_groceries", "healthcare", "utilities", "education", "emis_and_loans", "groceries"}
+            c
+            in {
+                "rent",
+                "food_and_groceries",
+                "healthcare",
+                "utilities",
+                "education",
+                "emis_and_loans",
+                "groceries",
+            }
             for c in sample
         )
         if has_essential:
             assert len(safe) == 0, f"Candidate with essential categories {sample} was not filtered!"
         else:
-            assert len(safe) == 1, f"Candidate with non-essential categories {sample} was falsely filtered!"
+            assert len(safe) == 1, (
+                f"Candidate with non-essential categories {sample} was falsely filtered!"
+            )
 
 
 def test_same_category_conflict_filtered(conn):
@@ -405,7 +456,9 @@ def test_same_category_conflict_filtered(conn):
         expected_effect_paise=100000,
     )
 
-    safe = filter_safe_candidates(conn, "user_alice", [cand1, cand2], week_start="2026-09-01", clock=DT0)
+    safe = filter_safe_candidates(
+        conn, "user_alice", [cand1, cand2], week_start="2026-09-01", clock=DT0
+    )
     assert len(safe) == 1
     assert safe[0].categories == ["shopping"]
 
@@ -461,13 +514,17 @@ def test_cooldown_boundary_day29_day30_day31(conn):
 
     # 2. Update to Day 30
     d30 = (today - timedelta(days=30)).strftime("%Y-%m-%dT10:00:00Z")
-    conn.execute("UPDATE experiments SET ended_at = ?, created_at = ? WHERE id = 'exp_d29'", (d30, d30))
+    conn.execute(
+        "UPDATE experiments SET ended_at = ?, created_at = ? WHERE id = 'exp_d29'", (d30, d30)
+    )
     # Day 30 should be allowed
     assert len(filter_safe_candidates(conn, "user_alice", [cand], clock=today)) == 1
 
     # 3. Update to Day 31
     d31 = (today - timedelta(days=31)).strftime("%Y-%m-%dT10:00:00Z")
-    conn.execute("UPDATE experiments SET ended_at = ?, created_at = ? WHERE id = 'exp_d29'", (d31, d31))
+    conn.execute(
+        "UPDATE experiments SET ended_at = ?, created_at = ? WHERE id = 'exp_d29'", (d31, d31)
+    )
     # Day 31 should be allowed
     assert len(filter_safe_candidates(conn, "user_alice", [cand], clock=today)) == 1
 
@@ -508,7 +565,9 @@ def test_goal_decomposition_never_claims_completion(conn):
     for exp in decomp.candidate_experiments:
         stmt_lower = exp.statement.lower()
         for phrase in forbidden_phrases:
-            assert phrase not in stmt_lower, f"Forbidden phrase '{phrase}' found in statement: {exp.statement}"
+            assert phrase not in stmt_lower, (
+                f"Forbidden phrase '{phrase}' found in statement: {exp.statement}"
+            )
         assert exp.gap_share_pct > 0
         assert "would cover" in stmt_lower
 

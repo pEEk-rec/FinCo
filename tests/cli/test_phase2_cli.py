@@ -675,13 +675,10 @@ def test_demo_script_phase2_offline(tmp_path: Path):
     tl_res = runner.invoke(app, ["timeline", "--db", db, "--json"])
     assert tl_res.exit_code == 0
     tl_data = json.loads(tl_res.output)
-    
+
     # If a recommendation was drafted, explain and decide it;
     # otherwise draft one to verify explain & decide
-    recs_in_db = [
-        e for e in tl_data["entries"]
-        if e.get("ref", {}).get("recommendation_id")
-    ]
+    recs_in_db = [e for e in tl_data["entries"] if e.get("ref", {}).get("recommendation_id")]
     if recs_in_db:
         rec_id = recs_in_db[0]["ref"]["recommendation_id"]
     else:

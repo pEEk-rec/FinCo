@@ -172,7 +172,7 @@ export function ReviewScreen() {
               >
                 {current.transaction.merchant}
               </h2>
-              <p className="tabular mt-2 text-[28px] font-light">
+              <p className="tabular mt-2 text-[28px] font-extrabold">
                 {formatINR(Math.abs(current.transaction.amount_paise))}
               </p>
               <p className="mt-1 break-words text-small text-ink-3">

@@ -313,9 +313,7 @@ def evaluate_seed(seed: int, user_id: str = "u1") -> SeedEvaluationResult:
     rec_prec = round(tp_rec / (tp_rec + fp_rec), 2) if (tp_rec + fp_rec) > 0 else 1.0
     rec_rec = round(tp_rec / (tp_rec + fn_rec), 2) if (tp_rec + fn_rec) > 0 else 1.0
     rec_f1 = (
-        round(2 * rec_prec * rec_rec / (rec_prec + rec_rec), 2)
-        if (rec_prec + rec_rec) > 0
-        else 1.0
+        round(2 * rec_prec * rec_rec / (rec_prec + rec_rec), 2) if (rec_prec + rec_rec) > 0 else 1.0
     )
 
     # 7. Anomaly Detection Evaluation

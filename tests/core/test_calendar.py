@@ -187,7 +187,9 @@ def test_ordering_property_low_le_expected_le_high(conn):
             d.running_balance_low_paise
             <= d.running_balance_expected_paise
             <= d.running_balance_high_paise
-        ), f"Ordering failed on {d.date}: low={d.running_balance_low_paise}, exp={d.running_balance_expected_paise}, high={d.running_balance_high_paise}"
+        ), (
+            f"Ordering failed on {d.date}: low={d.running_balance_low_paise}, exp={d.running_balance_expected_paise}, high={d.running_balance_high_paise}"
+        )
 
 
 def test_commitment_categories_excluded_from_variable_spend(conn):
@@ -248,7 +250,9 @@ def test_commitment_categories_excluded_from_variable_spend(conn):
     # If rent was included, variable spend would be ~5,010,000 / 10 = ~500,000/day.
     # Because rent is excluded, variable spend is only based on 10,000 / 10 = 1,000/day!
     for d in cal.days:
-        assert d.variable_spend_paise < 50000, f"Variable spend unexpectedly high: {d.variable_spend_paise}"
+        assert d.variable_spend_paise < 50000, (
+            f"Variable spend unexpectedly high: {d.variable_spend_paise}"
+        )
 
 
 def test_coverage_boundaries_at_buffer_above_below(conn):
@@ -275,7 +279,9 @@ def test_coverage_boundaries_at_buffer_above_below(conn):
     )
     insert_commitment(conn, c1)
 
-    cal = build_calendar(conn, "u1", today="2026-10-01", horizon_days=2, min_buffer_paise=buffer_paise)
+    cal = build_calendar(
+        conn, "u1", today="2026-10-01", horizon_days=2, min_buffer_paise=buffer_paise
+    )
     assert len(cal.coverage) == 1
     assert cal.coverage[0].coverage_status == "covered"
     assert cal.coverage[0].balance_after_low_paise == buffer_paise
@@ -306,7 +312,9 @@ def test_coverage_at_risk_one_paisa_below(conn):
     )
     insert_commitment(conn, c_risk)
 
-    cal = build_calendar(conn, "u1", today="2026-10-01", horizon_days=2, min_buffer_paise=buffer_paise)
+    cal = build_calendar(
+        conn, "u1", today="2026-10-01", horizon_days=2, min_buffer_paise=buffer_paise
+    )
     assert len(cal.coverage) == 1
     assert cal.coverage[0].coverage_status == "at_risk"
     assert cal.coverage[0].balance_after_low_paise == 99999
@@ -334,7 +342,9 @@ def test_coverage_not_covered_when_expected_below_buffer(conn):
     )
     insert_commitment(conn, c_not)
 
-    cal = build_calendar(conn, "u1", today="2026-10-01", horizon_days=2, min_buffer_paise=buffer_paise)
+    cal = build_calendar(
+        conn, "u1", today="2026-10-01", horizon_days=2, min_buffer_paise=buffer_paise
+    )
     assert len(cal.coverage) == 1
     # On day 1 (< 3 days elapsed), expected is below buffer -> 'unknown'
     assert cal.coverage[0].coverage_status in ("not_covered", "unknown")
@@ -379,7 +389,9 @@ def test_reconciliation_invariant_with_forecast_v2(conn):
     cal_sum = sum(d.variable_spend_paise for d in cal.days if d.date.startswith("2026-10"))
 
     diff_paise = abs(cal_sum - expected_var_rem)
-    assert diff_paise <= 100, f"Reconciliation invariant failed: diff {diff_paise} paise > 100 paise (1 rupee)"
+    assert diff_paise <= 100, (
+        f"Reconciliation invariant failed: diff {diff_paise} paise > 100 paise (1 rupee)"
+    )
 
 
 def test_horizon_limits(conn):

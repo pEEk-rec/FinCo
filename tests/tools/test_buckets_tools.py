@@ -295,8 +295,7 @@ def test_reallocation_draft_decide_and_apply_lifecycle(test_ctx):
 
     # Verify allocation rows written as matched pair
     alloc_rows = ctx_user.conn.execute(
-        "SELECT bucket_id, amount_paise, kind, source "
-        "FROM bucket_allocations WHERE pair_id = ?",
+        "SELECT bucket_id, amount_paise, kind, source FROM bucket_allocations WHERE pair_id = ?",
         (pair_id,),
     ).fetchall()
     assert len(alloc_rows) == 2

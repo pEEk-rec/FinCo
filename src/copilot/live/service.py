@@ -135,6 +135,7 @@ def import_rows(
     source: str,
     clock: datetime | None = None,
     parsed: ParsedStatement | None = None,
+    account: str | None = None,
 ) -> ImportSummary:
     """
     Insert statement rows once each. Re-importing an overlapping statement adds nothing.
@@ -145,7 +146,7 @@ def import_rows(
     ensure_schema(conn)
     now = now_utc(clock)
     aliases = load_aliases(load_settings().merchant_aliases_path)
-    acct = account_id()
+    acct = account or account_id()
     overrides = get_overrides(conn, user_id)  # what the user already taught us
     known = get_categories(conn, user_id)
     seen: dict[str, int] = {}

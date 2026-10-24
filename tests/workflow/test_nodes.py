@@ -265,6 +265,8 @@ def test_error_node(conn, exec_ctx):
     assert out["trace"][0]["status"] == "error"
 
     # Verify audit event
-    row = conn.execute("SELECT event_type, reason FROM audit_events WHERE event_type = 'run_failed'").fetchone()
+    row = conn.execute(
+        "SELECT event_type, reason FROM audit_events WHERE event_type = 'run_failed'"
+    ).fetchone()
     assert row is not None
     assert "something broke" in row[1]

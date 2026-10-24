@@ -100,6 +100,7 @@ def _setup_user(conn, user_id: str = "u_tool"):
 # 1. Read Tools: list_memories and explain_memory
 # -------------------------------------------------------------------------------------------------
 
+
 def test_list_and_explain_memories_through_executor(conn, policy):
     """Read tools list_memories and explain_memory execute through executor and return structured data."""
     user_id = "u_read"
@@ -170,6 +171,7 @@ def test_list_and_explain_memories_through_executor(conn, policy):
 # 2. Policy Governance: User Actor Only for Confirm/Reject/Edit/Forget
 # -------------------------------------------------------------------------------------------------
 
+
 def test_governance_user_tools_denied_for_agent(conn, policy):
     """Write operations (confirm, reject, edit, forget) are strictly DENIED for agent actor."""
     user_id = "u_gov"
@@ -211,7 +213,11 @@ def test_governance_user_tools_denied_for_agent(conn, policy):
     assert res_r.error.code == ErrorCode.DENIED_BY_POLICY
 
     # Agent attempts to edit -> DENIED
-    res_e = execute_tool(agent_ctx, "edit_memory_statement", {"memory_id": "mem_gov_1", "updates": {"pattern": "payday_spike"}})
+    res_e = execute_tool(
+        agent_ctx,
+        "edit_memory_statement",
+        {"memory_id": "mem_gov_1", "updates": {"pattern": "payday_spike"}},
+    )
     assert res_e.ok is False
     assert res_e.error.code == ErrorCode.DENIED_BY_POLICY
 
@@ -276,6 +282,7 @@ def test_user_actor_can_confirm_reject_and_edit_memory(conn, policy):
 # 3. Bounded Field Editing Enforcement
 # -------------------------------------------------------------------------------------------------
 
+
 def test_edit_memory_statement_rejects_unbounded_fields(conn, policy):
     """edit_memory_statement rejects attempts to add arbitrary keys or unallowed fields."""
     user_id = "u_edit_bounds"
@@ -319,6 +326,7 @@ def test_edit_memory_statement_rejects_unbounded_fields(conn, policy):
 # -------------------------------------------------------------------------------------------------
 # 4. Forget Memory Through Executor (Content-Free Audit)
 # -------------------------------------------------------------------------------------------------
+
 
 def test_forget_memory_through_executor_clears_content(conn, policy):
     """forget_memory through executor clears content, deletes evidence, and records clean audit."""
@@ -395,6 +403,7 @@ def test_forget_memory_through_executor_clears_content(conn, policy):
 # 5. Refresh Memories and Record Contextual Exception Through Executor
 # -------------------------------------------------------------------------------------------------
 
+
 def test_refresh_memories_through_executor(conn, policy):
     """refresh_memories executes through executor and returns summary counts."""
     user_id = "u_exec_refresh"
@@ -462,6 +471,7 @@ def test_record_contextual_exception_through_executor(conn, policy):
 # -------------------------------------------------------------------------------------------------
 # 6. Multi-Tenant Isolation Through Executor
 # -------------------------------------------------------------------------------------------------
+
 
 def test_executor_multi_tenant_isolation(conn, policy):
     """User A cannot explain, confirm, or forget User B's memory items."""

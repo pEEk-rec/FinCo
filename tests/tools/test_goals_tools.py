@@ -418,4 +418,3 @@ def test_get_goal_progress_tool(test_ctx):
     assert prog.remaining_paise == 30_000_00
     assert prog.percent_bp == 5000
     assert prog.required_monthly_paise == 10_000_00  # 30,000 / 3 months = 10,000
-

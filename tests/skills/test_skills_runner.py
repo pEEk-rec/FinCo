@@ -35,7 +35,9 @@ def setup_tools():
     ensure_tools_registered()
 
 
-def _setup_user_with_data(conn: sqlite3.Connection, user_id: str = "u_runner", has_txns: bool = True):
+def _setup_user_with_data(
+    conn: sqlite3.Connection, user_id: str = "u_runner", has_txns: bool = True
+):
     insert_user(conn, User(id=user_id, created_at="2026-01-01T00:00:00Z"))
     insert_account(
         conn,
@@ -47,7 +49,10 @@ def _setup_user_with_data(conn: sqlite3.Connection, user_id: str = "u_runner", h
             created_at="2026-01-01T00:00:00Z",
         ),
     )
-    insert_category(conn, Category(id="c_food", user_id=user_id, name="dining", created_at="2026-01-01T00:00:00Z"))
+    insert_category(
+        conn,
+        Category(id="c_food", user_id=user_id, name="dining", created_at="2026-01-01T00:00:00Z"),
+    )
     if has_txns:
         insert_transaction(
             conn,
@@ -66,7 +71,9 @@ def _setup_user_with_data(conn: sqlite3.Connection, user_id: str = "u_runner", h
         )
 
 
-def _get_ctx(conn: sqlite3.Connection, user_id: str = "u_runner", actor: str = "agent") -> ExecutionContext:
+def _get_ctx(
+    conn: sqlite3.Connection, user_id: str = "u_runner", actor: str = "agent"
+) -> ExecutionContext:
     from copilot.core.config import PROJECT_ROOT
 
     policy = load_policy(PROJECT_ROOT / "config" / "policy.yaml")

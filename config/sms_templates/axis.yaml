@@ -1,0 +1,33 @@
+# SMS templates for Axis Bank (PLAN_CAPTURE Stage C2). See hdfc.yaml for the format and the
+# note on checking against the owner's own corpus before enabling.
+bank: axis
+status: ready
+templates:
+  - name: otp_guard
+    kind: otp
+    drop: true
+    pattern: '(?i)\b(otp|one[- ]time password|verification code)\b'
+
+  - name: upi_debit
+    kind: debit
+    pattern: '(?i)^debit inr (?P<amount>[\d,]+(?:\.\d{1,2})?)\s+a/c no\. x*(?P<account>\d{4}) (?P<date>\d{1,2}-\d{1,2}-\d{2,4}) (?P<time>\d{2}:\d{2}:\d{2}) upi/p2[pam]/(?P<utr>\d{9,12})/(?P<counterparty>.+?)(?: sms| axis|$)'
+
+  - name: card_spend
+    kind: debit
+    pattern: '(?i)^inr (?P<amount>[\d,]+(?:\.\d{1,2})?)\s+spent on axis bank card no\. x*(?P<account>\d{4}) (?P<date>\d{1,2}-\d{1,2}-\d{2,4}) (?P<time>\d{2}:\d{2}:\d{2}) at (?P<counterparty>.+?)\. avl lmt'
+
+  - name: atm_withdrawal
+    kind: debit
+    pattern: '(?i)^inr (?P<amount>[\d,]+(?:\.\d{1,2})?)\s+withdrawn from a/c no\. x*(?P<account>\d{4}) (?P<date>\d{1,2}-\d{1,2}-\d{2,4}) (?P<time>\d{2}:\d{2}:\d{2}) at (?P<channel>atm)'
+
+  - name: autopay_debit
+    kind: autopay
+    pattern: '(?i)^debit inr (?P<amount>[\d,]+(?:\.\d{1,2})?)\s+a/c no\. x*(?P<account>\d{4}) (?P<date>\d{1,2}-\d{1,2}-\d{2,4}) (?P<time>\d{2}:\d{2}:\d{2}) upi autopay/(?P<utr>\d{9,12})/(?P<counterparty>.+?)(?: sms| axis|$)'
+
+  - name: upi_credit
+    kind: credit
+    pattern: '(?i)^credit inr (?P<amount>[\d,]+(?:\.\d{1,2})?)\s+a/c no\. x*(?P<account>\d{4}) (?P<date>\d{1,2}-\d{1,2}-\d{2,4}) upi/p2[pam]/(?P<utr>\d{9,12})/(?P<counterparty>.+?)(?: axis|$)'
+
+  - name: upi_reversal
+    kind: reversal
+    pattern: '(?i)^credit inr (?P<amount>[\d,]+(?:\.\d{1,2})?)\s+a/c no\. x*(?P<account>\d{4}) (?P<date>\d{1,2}-\d{1,2}-\d{2,4}) upi/rev/(?P<utr>\d{9,12})'

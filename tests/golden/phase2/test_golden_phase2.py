@@ -277,7 +277,9 @@ def test_whatif_purchase_flips_goal_to_at_risk():
     )
 
     # 1. Baseline status: surplus is 100k - (70k+15k) = 15k/mo, required is 15k/mo -> on_track
-    p_base = simulate(snapshot, Scenario(kind="add_spend", amount_paise=0, start_month="2026-10", months=3))
+    p_base = simulate(
+        snapshot, Scenario(kind="add_spend", amount_paise=0, start_month="2026-10", months=3)
+    )
     assert p_base.goal_impacts.get("g_vacation:2026-10") in ("on_track", "at_risk")
 
     # 2. Large purchase of ₹30,000 adds spend and reduces surplus -> flips goal to off_track or at_risk
@@ -448,6 +450,7 @@ def test_causal_claim_blocked_when_confidence_low():
 
     # Inconclusive / low confidence investigation
     from copilot.models.agentic import Investigation
+
     inv_low = Investigation(
         id="inv_low_1",
         user_id="u1",
@@ -620,7 +623,9 @@ def test_user_set_category_untouched_by_phase2_tools(memory_db):
     memory_db.commit()
 
     # Execute read/compute tools
-    ctx = ExecutionContext(conn=memory_db, user_id="u1", actor="agent", run_id="r_p2", policy=policy)
+    ctx = ExecutionContext(
+        conn=memory_db, user_id="u1", actor="agent", run_id="r_p2", policy=policy
+    )
     execute_tool(ctx, "explain_change", {"category_id": "shopping", "period": "2026-09"})
     execute_tool(ctx, "evaluate_alerts", {"period": "2026-09"})
 

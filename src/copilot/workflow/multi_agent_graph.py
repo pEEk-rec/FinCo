@@ -25,7 +25,6 @@ from copilot.workflow.reviewer import run_review_and_revision
 logger = logging.getLogger(__name__)
 
 
-
 class MultiAgentState(TypedDict, total=False):
     """State slice for the multi-agent planning subgraph."""
 

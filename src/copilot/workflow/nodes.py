@@ -111,6 +111,16 @@ def _register_missing_tools() -> None:
 
         register_experiment_tools()
 
+    if get_tool("record_payment_event") is None:
+        from copilot.tools.capture import register_capture_tools
+
+        register_capture_tools()
+
+    if get_tool("aa_status") is None:
+        from copilot.tools.aa import register_aa_tools
+
+        register_aa_tools()
+
     if get_tool("list_adjustments") is None:
         from copilot.tools.adjustments import register_adjustment_tools
 
@@ -125,10 +135,6 @@ def _register_missing_tools() -> None:
         from copilot.tools.rewards import register_rewards_tools
 
         register_rewards_tools()
-
-
-
-
 
 
 def _get_exec_ctx(
@@ -416,9 +422,7 @@ def analyze_node(state: AgentState, config: RunnableConfig | None = None) -> dic
         # 1. detect_transfers
         tools_called.append("detect_transfers")
         res_transfers = execute_tool(ctx, "detect_transfers", {})
-        transfers_count = (
-            getattr(res_transfers.data, "links_created", 0) if res_transfers.ok else 0
-        )
+        transfers_count = getattr(res_transfers.data, "links_created", 0) if res_transfers.ok else 0
 
         # 2. detect_recurring
         tools_called.append("detect_recurring")
@@ -435,10 +439,7 @@ def analyze_node(state: AgentState, config: RunnableConfig | None = None) -> dic
             statuses = getattr(res_budgets.data, "statuses", []) or getattr(
                 res_budgets.data, "budgets", []
             )
-            budgets_list = [
-                b.model_dump(mode="json")
-                for b in statuses
-            ]
+            budgets_list = [b.model_dump(mode="json") for b in statuses]
 
         # 4. forecast_month
         tools_called.append("forecast_month")
@@ -543,9 +544,7 @@ def advise_node(state: AgentState, config: RunnableConfig | None = None) -> dict
                 "trace": [entry],
             }
 
-        result = execute_tool(
-            ctx, "draft_advice", {"findings": [f.model_dump() for f in findings]}
-        )
+        result = execute_tool(ctx, "draft_advice", {"findings": [f.model_dump() for f in findings]})
         if not result.ok:
             err_msg = result.error.message if result.error else "Failed to draft advice"
             entry_err: TraceEntry = {

@@ -325,7 +325,9 @@ def test_alerts_and_preferences_repo(conn):
     assert len(list_alerts(conn, "u1")) == 1
 
     # Update alert lifecycle
-    assert update_alert_status(conn, "u1", "alt_1", "dismissed", decided_at=T1, dismiss_reason="expected_trip")
+    assert update_alert_status(
+        conn, "u1", "alt_1", "dismissed", decided_at=T1, dismiss_reason="expected_trip"
+    )
     updated = get_alert(conn, "u1", "alt_1")
     assert updated.status == "dismissed"
     assert updated.dismiss_reason == "expected_trip"

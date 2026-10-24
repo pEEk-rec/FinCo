@@ -3,6 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   api,
   ApiError,
+  type CaptureLabelIn,
+  type CapturePolicyIn,
+  type BankLinkAction,
+  type CaptureSimulateIn,
   type CheckinResponse,
   type GoalIn,
   type GoalsOut,
@@ -26,6 +30,7 @@ export const keys = {
   alerts: ['alerts'] as const,
   goals: ['goals'] as const,
   coach: ['coach'] as const,
+  capture: ['capture'] as const,
 };
 
 const retry = (count: number, error: Error) =>
@@ -67,6 +72,86 @@ export const useAlerts = () => useQuery({ queryKey: keys.alerts, queryFn: api.al
 export const useGoals = () => useQuery({ queryKey: keys.goals, queryFn: api.goals, retry });
 
 export const useCoach = () => useQuery({ queryKey: keys.coach, queryFn: api.coach, retry });
+
+/** Payments waiting to be tagged. Refreshes on its own so a new payment shows up. */
+export const useCaptureInbox = () =>
+  useQuery({
+    queryKey: keys.capture,
+    queryFn: api.captureInbox,
+    refetchInterval: 4000,
+    retry,
+  });
+
+/** Is the phone bridge alive: last alert per bank, and whether the wording has drifted. */
+export const useBridgeHealth = () =>
+  useQuery({
+    queryKey: ['capture-bridge'],
+    queryFn: api.captureBridge,
+    refetchInterval: 15000,
+    retry,
+  });
+
+/** One day of payments, in and out, grouped by what is left to do. */
+export const useToday = (day?: string) =>
+  useQuery({
+    queryKey: ['capture-today', day ?? 'today'],
+    queryFn: () => api.today(day),
+    refetchInterval: 8000,
+    retry,
+  });
+
+/** The bank link: its consent as the user would read it, and its state. */
+export const useBankLink = () =>
+  useQuery({ queryKey: ['bank-link'], queryFn: api.bankLink, retry });
+
+/** Bank link writes. A fetch can change the ledger, so it refreshes the figures too. */
+export function useBankLinkWrites() {
+  const client = useQueryClient();
+  const refresh = () =>
+    Promise.all(
+      ['bank-link', 'dashboard', 'review-queue', 'capture-today', keys.capture[0]].map((k) =>
+        client.invalidateQueries({ queryKey: [k] }),
+      ),
+    );
+  return {
+    create: useMutation({ mutationFn: api.createBankLink, onSuccess: refresh }),
+    act: useMutation({
+      mutationFn: (v: { id: string; action: BankLinkAction }) => api.bankLinkAction(v.id, v.action),
+      onSuccess: refresh,
+    }),
+    fetchNow: useMutation({ mutationFn: api.fetchBankLink, onSuccess: refresh }),
+  };
+}
+
+/** Which devices get notifications, and whether the key is ready. */
+export const usePushStatus = () =>
+  useQuery({ queryKey: ['capture-push'], queryFn: api.pushStatus, retry });
+
+/** Capture writes. Each one re-reads the inbox (and the dashboard figures a label can move). */
+export function useCaptureWrites() {
+  const client = useQueryClient();
+  const refresh = () =>
+    Promise.all([
+      client.invalidateQueries({ queryKey: keys.capture }),
+      client.invalidateQueries({ queryKey: ['dashboard'] }),
+      client.invalidateQueries({ queryKey: ['review-queue'] }),
+      client.invalidateQueries({ queryKey: ['capture-today'] }),
+    ]);
+  return {
+    simulate: useMutation({
+      mutationFn: (b: CaptureSimulateIn) => api.captureSimulate(b),
+      onSuccess: refresh,
+    }),
+    label: useMutation({
+      mutationFn: (b: CaptureLabelIn) => api.captureLabel(b),
+      onSuccess: refresh,
+    }),
+    policy: useMutation({
+      mutationFn: (b: CapturePolicyIn) => api.capturePolicy(b),
+      onSuccess: refresh,
+    }),
+  };
+}
 
 /** Every change to a challenge goes through the API; the whole coach view is then re-read. */
 export function useCoachWrites() {

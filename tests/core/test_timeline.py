@@ -43,7 +43,7 @@ def conn():
 def test_timeline_ordering_and_sources(conn):
     """Timeline merges heterogeneous sources into stable chronological order."""
     user = "u_alice"
-    
+
     # 1. Task created at 10:00
     task = AgentTask(
         id="t1",
@@ -103,7 +103,7 @@ def test_timeline_ordering_and_sources(conn):
 
     assert tl.user_id == user
     assert len(tl.entries) >= 4
-    
+
     # Verify strict ascending order
     timestamps = [e.ts for e in tl.entries]
     assert timestamps == sorted(timestamps)

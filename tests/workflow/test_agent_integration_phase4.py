@@ -130,7 +130,9 @@ def test_phase4_intent_classification_labelled_accuracy(conn):
 
     for itype in phase4_intents:
         examples = cfg.labelled_examples.get(itype, [])
-        assert len(examples) >= 8, f"Intent '{itype}' must have at least 8 labelled examples; found {len(examples)}"
+        assert len(examples) >= 8, (
+            f"Intent '{itype}' must have at least 8 labelled examples; found {len(examples)}"
+        )
 
         for query in examples:
             entities = resolve_entities(query, conn, "u_coach")
@@ -183,7 +185,9 @@ def test_plan_templates_tool_minimality():
         assert len(tpl.required_tools) >= 1
         # Each step's tool must be in allowed_tools
         for s in tpl.default_steps:
-            assert s.tool_name in tpl.allowed_tools, f"Tool '{s.tool_name}' not in allowed_tools for '{itype}'"
+            assert s.tool_name in tpl.allowed_tools, (
+                f"Tool '{s.tool_name}' not in allowed_tools for '{itype}'"
+            )
 
 
 # -------------------------------------------------------------------------------------------------
@@ -247,7 +251,9 @@ def test_coach_agent_graceful_degradation(ctx):
     assert report.agent_role == "CoachAgent"
 
     # Injected unhandled question kind gracefully returns partial/failed without throwing exception
-    subq_unknown = SubQuestion(domain="coaching", question_kind="non_existent_kind_xyz", parameters={})
+    subq_unknown = SubQuestion(
+        domain="coaching", question_kind="non_existent_kind_xyz", parameters={}
+    )
     report_unknown = run_specialist("CoachAgent", subq_unknown, ctx, task_id="task_coach_02")
     assert report_unknown.status in ("failed", "partial")
     assert len(report_unknown.gaps_json) >= 1
@@ -272,11 +278,15 @@ def test_runtime_jobs_idempotency_phase4(conn):
     for j in jobs:
         # Run 1: Should execute
         run1 = run_job(conn, user_id=user_id, job_kind=j, as_of=ref_dt)
-        assert run1.status in ("completed", "ok"), f"Job '{j}' failed on initial run: {run1.summary_json}"
+        assert run1.status in ("completed", "ok"), (
+            f"Job '{j}' failed on initial run: {run1.summary_json}"
+        )
 
         # Run 2: Same period key should be skipped due to idempotency
         run2 = run_job(conn, user_id=user_id, job_kind=j, as_of=ref_dt)
-        assert run2.status == "skipped", f"Job '{j}' was not idempotent for same period: {run2.status}"
+        assert run2.status == "skipped", (
+            f"Job '{j}' was not idempotent for same period: {run2.status}"
+        )
         assert run2.summary_json.get("reason") == "idempotent_already_run_for_period"
 
 

@@ -90,9 +90,7 @@ def create_bucket_handler(ctx: "ExecutionContext", **kwargs) -> CreateBucketOutp
             retryable=False,
         )
 
-    policy = params.period_policy or config.default_period_policy.get(
-        params.kind, "reset_monthly"
-    )
+    policy = params.period_policy or config.default_period_policy.get(params.kind, "reset_monthly")
     if policy not in config.allowed_period_policies:
         raise ToolFailure(
             ErrorCode.INVALID_INPUT,
@@ -253,9 +251,7 @@ class MapCategoryToBucketOutput(ToolOutput):
     mapped: bool
 
 
-def map_category_to_bucket_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> MapCategoryToBucketOutput:
+def map_category_to_bucket_handler(ctx: "ExecutionContext", **kwargs) -> MapCategoryToBucketOutput:
     params = MapCategoryToBucketInput.model_validate(kwargs)
     bucket = get_bucket(ctx.conn, ctx.user_id, params.bucket_id)
     if bucket is None:
@@ -281,9 +277,7 @@ def map_category_to_bucket_handler(
         user_id=ctx.user_id,
         actor=ctx.actor,
         event_type="bucket_category_mapped",
-        reason=(
-            f"Category '{category.name}' mapped to bucket '{bucket.name}' by {ctx.actor}"
-        ),
+        reason=(f"Category '{category.name}' mapped to bucket '{bucket.name}' by {ctx.actor}"),
         run_id=ctx.run_id,
         entity_type="bucket_category",
         entity_id=f"{params.bucket_id}:{params.category_id}",
@@ -313,9 +307,7 @@ class AllocateToBucketOutput(ToolOutput):
     bucket_balance: BucketBalance
 
 
-def allocate_to_bucket_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> AllocateToBucketOutput:
+def allocate_to_bucket_handler(ctx: "ExecutionContext", **kwargs) -> AllocateToBucketOutput:
     params = AllocateToBucketInput.model_validate(kwargs)
     bucket = get_bucket(ctx.conn, ctx.user_id, params.bucket_id)
     if bucket is None:
@@ -386,9 +378,7 @@ class ReleaseFromBucketOutput(ToolOutput):
     bucket_balance: BucketBalance
 
 
-def release_from_bucket_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> ReleaseFromBucketOutput:
+def release_from_bucket_handler(ctx: "ExecutionContext", **kwargs) -> ReleaseFromBucketOutput:
     params = ReleaseFromBucketInput.model_validate(kwargs)
     bucket = get_bucket(ctx.conn, ctx.user_id, params.bucket_id)
     if bucket is None:
@@ -571,9 +561,7 @@ class DraftReallocationOutput(ToolOutput):
     draft: ReallocationDraft
 
 
-def draft_reallocation_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> DraftReallocationOutput:
+def draft_reallocation_handler(ctx: "ExecutionContext", **kwargs) -> DraftReallocationOutput:
     params = DraftReallocationInput.model_validate(kwargs)
     if params.from_bucket_id == params.to_bucket_id:
         raise ToolFailure(
@@ -647,9 +635,7 @@ class DecideReallocationOutput(ToolOutput):
     draft: ReallocationDraft
 
 
-def decide_reallocation_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> DecideReallocationOutput:
+def decide_reallocation_handler(ctx: "ExecutionContext", **kwargs) -> DecideReallocationOutput:
     params = DecideReallocationInput.model_validate(kwargs)
     draft = get_reallocation_draft(ctx.conn, ctx.user_id, params.draft_id)
     if draft is None:
@@ -680,9 +666,7 @@ def decide_reallocation_handler(
         )
 
     new_status = "approved" if params.decision == "approve" else "rejected"
-    update_reallocation_draft_status(
-        ctx.conn, ctx.user_id, draft.id, new_status, decided_at=ts
-    )
+    update_reallocation_draft_status(ctx.conn, ctx.user_id, draft.id, new_status, decided_at=ts)
     updated = draft.model_copy(update={"status": new_status, "decided_at": ts})
 
     record_event(
@@ -718,9 +702,7 @@ class ApplyReallocationOutput(ToolOutput):
     pair_id: str
 
 
-def apply_reallocation_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> ApplyReallocationOutput:
+def apply_reallocation_handler(ctx: "ExecutionContext", **kwargs) -> ApplyReallocationOutput:
     params = ApplyReallocationInput.model_validate(kwargs)
     draft = get_reallocation_draft(ctx.conn, ctx.user_id, params.draft_id)
     if draft is None:
@@ -779,9 +761,7 @@ def apply_reallocation_handler(
     insert_bucket_allocation(ctx.conn, out_row)
     insert_bucket_allocation(ctx.conn, in_row)
 
-    update_reallocation_draft_status(
-        ctx.conn, ctx.user_id, draft.id, "applied", applied_at=ts
-    )
+    update_reallocation_draft_status(ctx.conn, ctx.user_id, draft.id, "applied", applied_at=ts)
     updated = draft.model_copy(update={"status": "applied", "applied_at": ts})
 
     record_event(
@@ -859,9 +839,7 @@ class GetBucketStatusOutput(ToolOutput):
     balance: BucketBalance
 
 
-def get_bucket_status_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> GetBucketStatusOutput:
+def get_bucket_status_handler(ctx: "ExecutionContext", **kwargs) -> GetBucketStatusOutput:
     params = GetBucketStatusInput.model_validate(kwargs)
     bucket = get_bucket(ctx.conn, ctx.user_id, params.bucket_id)
     if bucket is None:
@@ -891,9 +869,7 @@ class GetAllocationSummaryOutput(ToolOutput):
     summary: AllocationSummary
 
 
-def get_allocation_summary_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> GetAllocationSummaryOutput:
+def get_allocation_summary_handler(ctx: "ExecutionContext", **kwargs) -> GetAllocationSummaryOutput:
     params = GetAllocationSummaryInput.model_validate(kwargs)
     period_str = params.period or current_period_str()
     summary = core_get_allocation_summary(ctx.conn, ctx.user_id, period_str)

@@ -39,9 +39,7 @@ def run_agentd(
     config = load_runtime_config(config_path)
 
     interval = (
-        loop_interval_seconds
-        if loop_interval_seconds is not None
-        else config.loop_interval_seconds
+        loop_interval_seconds if loop_interval_seconds is not None else config.loop_interval_seconds
     )
     cycle = 0
 

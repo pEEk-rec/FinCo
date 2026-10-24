@@ -72,13 +72,24 @@ def make_experiment(id: str, status: str = "completed") -> Experiment:
         id=id,
         user_id="u_alice",
         title="Dining Reduction",
-        hypothesis_json={"intervention": "cook", "metric": "dining_spend", "direction": "lower", "target": 50000},
+        hypothesis_json={
+            "intervention": "cook",
+            "metric": "dining_spend",
+            "direction": "lower",
+            "target": 50000,
+        },
         metric_def_json={"metric": "dining_spend", "categories": ["dining"]},
         params_json={},
         difficulty="moderate",
         window_start="2026-08-01",
         window_end="2026-08-15",
-        baseline_json={"k": 4, "window_values": [60000], "median": 60000, "low": 50000, "high": 70000},
+        baseline_json={
+            "k": 4,
+            "window_values": [60000],
+            "median": 60000,
+            "low": 50000,
+            "high": 70000,
+        },
         target_value=50000,
         status=status,
         origin="user",
@@ -132,7 +143,9 @@ def test_static_validation_rejects_essential_category_rule():
     with pytest.raises(ValueError, match="forbidden term 'rent'"):
         RewardsConfig(
             rules={
-                "cut_rent": XpRuleConfig(points=50, max_daily_share=50, description="Reward for reducing rent payments"),
+                "cut_rent": XpRuleConfig(
+                    points=50, max_daily_share=50, description="Reward for reducing rent payments"
+                ),
             },
             levels=LevelsConfig(thresholds=[0, 100], names=["Beginner", "Pro"]),
             xp=RewardsXpConfig(daily_cap=100),
@@ -149,7 +162,9 @@ def test_static_validation_rejects_borrowing_or_trading_rules():
         validate_reward_rules(
             RewardsConfig.model_construct(
                 rules={
-                    "take_credit": XpRuleConfig.model_construct(points=50, max_daily_share=50, description="Bonus for borrowing short term"),
+                    "take_credit": XpRuleConfig.model_construct(
+                        points=50, max_daily_share=50, description="Bonus for borrowing short term"
+                    ),
                 },
                 levels=LevelsConfig.model_construct(thresholds=[0, 100], names=["Beginner", "Pro"]),
                 xp=RewardsXpConfig.model_construct(daily_cap=100),
@@ -197,38 +212,28 @@ def test_award_xp_idempotent(conn):
 def test_award_xp_daily_cap(conn):
     """Daily cap (100) strictly bounds awarded points and floors remaining points."""
     # 1. Award 40 pts (experiment_completed)
-    ev1 = award_xp(
-        conn, "u_alice", "experiment_completed", "experiment", "exp_1", "2026-09-01"
-    )
+    ev1 = award_xp(conn, "u_alice", "experiment_completed", "experiment", "exp_1", "2026-09-01")
     assert ev1 is not None and ev1.points == 40
 
     # 2. Award 40 pts (experiment_completed on another experiment)
-    ev2 = award_xp(
-        conn, "u_alice", "experiment_completed", "experiment", "exp_2", "2026-09-01"
-    )
+    ev2 = award_xp(conn, "u_alice", "experiment_completed", "experiment", "exp_2", "2026-09-01")
     assert ev2 is not None and ev2.points == 40
     assert get_user_xp_for_day(conn, "u_alice", "2026-09-01") == 80
 
     # 3. Award 30 pts (target_met) -> Only 20 pts remaining in daily cap
-    ev3 = award_xp(
-        conn, "u_alice", "target_met", "experiment", "exp_1", "2026-09-01"
-    )
+    ev3 = award_xp(conn, "u_alice", "target_met", "experiment", "exp_1", "2026-09-01")
     assert ev3 is not None
     assert ev3.points == 20  # Clamped to 20
     assert get_user_xp_for_day(conn, "u_alice", "2026-09-01") == 100
 
     # 4. Subsequent awards on the same day yield None (cap hit)
-    ev4 = award_xp(
-        conn, "u_alice", "checkin_answered", "checkin", "chk_2", "2026-09-01"
-    )
+    ev4 = award_xp(conn, "u_alice", "checkin_answered", "checkin", "chk_2", "2026-09-01")
     assert ev4 is None
     assert get_user_xp_for_day(conn, "u_alice", "2026-09-01") == 100
     assert get_user_xp_total(conn, "u_alice") == 100
 
     # 5. Next day awards succeed normally
-    ev_next = award_xp(
-        conn, "u_alice", "checkin_answered", "checkin", "chk_3", "2026-09-02"
-    )
+    ev_next = award_xp(conn, "u_alice", "checkin_answered", "checkin", "chk_3", "2026-09-02")
     assert ev_next is not None and ev_next.points == 15
     assert get_user_xp_for_day(conn, "u_alice", "2026-09-02") == 15
     assert get_user_xp_total(conn, "u_alice") == 115
@@ -263,7 +268,9 @@ def test_integrity_gate_blocks_target_met_xp_until_confirmed(conn):
     insert_experiment(conn, exp)
 
     # Review with target_met=True but confirmation_required=True and user_confirmed missing
-    rev_unconfirmed = make_review("rev_integ", "exp_integ", target_met=True, confirmation_required=True)
+    rev_unconfirmed = make_review(
+        "rev_integ", "exp_integ", target_met=True, confirmation_required=True
+    )
     insert_experiment_review(conn, rev_unconfirmed)
 
     # Check can_award_target_met_xp

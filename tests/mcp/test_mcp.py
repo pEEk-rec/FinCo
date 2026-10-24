@@ -204,6 +204,7 @@ async def test_adding_write_tool_to_registry_does_not_expose_it(
     Safety Rule 17: Assert that adding a new write-class tool to the registry
     does NOT expose it over MCP, because it is not in the planner-selectable matrix.
     """
+
     class DangerWriteInput(ToolInput):
         amount: int
 
@@ -245,7 +246,9 @@ async def test_call_non_exposed_tool_fails(
     """Calling a tool that is not exposed over MCP fails."""
     server = create_mcp_server(conn=test_db, user_id="u1", config=default_mcp_config)
     with pytest.raises(ToolError):
-        await server.call_tool("recategorize", {"transaction_id": "tx_1", "new_category_id": "cat_dining"})
+        await server.call_tool(
+            "recategorize", {"transaction_id": "tx_1", "new_category_id": "cat_dining"}
+        )
 
 
 # -------------------------------------------------------------------------------------------------
@@ -433,7 +436,9 @@ async def test_injection_corpus_against_mcp_arguments(
         assert data["ok"] is True
 
         # Assert no write occurred
-        tx_count = test_db.execute("SELECT COUNT(*) FROM transactions WHERE user_id = 'u1'").fetchone()[0]
+        tx_count = test_db.execute(
+            "SELECT COUNT(*) FROM transactions WHERE user_id = 'u1'"
+        ).fetchone()[0]
         assert tx_count == 3  # Untouched
 
 

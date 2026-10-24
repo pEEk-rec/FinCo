@@ -211,10 +211,14 @@ def create_mcp_server(
     )
 
     # Establish database connection provider
-    active_conn = conn if conn is not None else (
-        get_connection(str(db_path), check_same_thread=False)
-        if db_path is not None
-        else get_connection(":memory:", check_same_thread=False)
+    active_conn = (
+        conn
+        if conn is not None
+        else (
+            get_connection(str(db_path), check_same_thread=False)
+            if db_path is not None
+            else get_connection(":memory:", check_same_thread=False)
+        )
     )
 
     def get_context() -> ExecutionContext:
@@ -351,11 +355,14 @@ def create_mcp_server(
             row = active_conn.execute(sql, (user_id,)).fetchone()
             if row and row[0]:
                 return str(row[0])
-            return json.dumps({
-                "user_id": user_id,
-                "status": "no_reviews_recorded",
-                "message": "No monthly reviews available yet.",
-            }, indent=2)
+            return json.dumps(
+                {
+                    "user_id": user_id,
+                    "status": "no_reviews_recorded",
+                    "message": "No monthly reviews available yet.",
+                },
+                indent=2,
+            )
         except Exception as exc:
             return json.dumps({"error": str(exc)})
 

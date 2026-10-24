@@ -36,3 +36,34 @@
 
 ## P4-7. Dated exceptions
 - **Decided:** A user declares a trip with a first and last day, per category. **Alternative:** month-level only. **Why:** a month-level exception would discount weeks the user was at home and hide real results.
+
+# Capture track decisions and owner prerequisites
+
+## C-1. What becomes of the `rails` prototype?
+- **Decided:** it stays in place, untouched, as a prototype; the capture track builds new migrated tables and a new pipeline, and swaps the webhook route in C5. **Alternative:** grow `rail_events` into `payment_events`. **Why:** the prototype has no sender allowlist, writes outside `execute_tool`, and creates its tables at runtime instead of by migration; fixing all three means rewriting most of it, and a clean domain is easier to test against the plan's safety rules.
+
+## C-2. Bank sender IDs
+- **Decided:** ship plausible DLT headers for five banks, all `enabled: false`. **Alternative:** ship an empty list. **Why:** the shape is useful for tests and for `bridge-setup`; the safety property (nothing read until enabled) holds either way.
+- **Owner to do:** open one real alert per bank you use, copy the exact sender shown, correct `config/sms_senders.yaml`, and tell me which banks to enable once their templates are ready (Stage C2).
+
+## C-3. Owner prerequisites (PLAN_CAPTURE section 1), status
+| Item | Status |
+|---|---|
+| Phone bridge app configured (MacroDroid, Tasker or Shortcuts) | pending, needs the webhook secret from Stage C5 |
+| Redacted SMS corpus (run `scripts/redact_sms.py`, built in C2, before anything enters the repo) | pending |
+| AA sandbox access (Sahamati simulators first, then Finvu or OneMoney, then Setu) | pending, note which one works here |
+
+## C-4. Credit kinds
+- **Decided:** `salary`, `allowance`, `refund`, `split_repayment`, `gift`, `cashback`, `self_transfer_in`, `other_income` are capture labels, mapped to the user's own categories in C1. **Alternative:** use the existing categories directly. **Why:** a refund or a friend's split repayment must be linked to an earlier debit, which a plain category cannot express.
+
+## C-5. The first answer about a shop
+- **Decided:** a shop is auto-tagged after one answer, but is only trusted again once its last two answers agree after any disagreement (`ask.unsteady_merchant_bp`). **Alternative:** always ask twice before trusting any new shop. **Why:** that costs one extra question per new shop for ever; the chosen rule asks more only after a disagreement. The "Tagged for you. Change" chip and Today are the safety net. Revisit with real answer data.
+
+## C-6. People paid for different reasons
+- **Open.** A person whose payments fall into several categories gets auto-tagged by the three-in-a-row rule by chance, and the simulation shows automatic tags are right about 86% of the time overall (less for such people). **Options:** require four in a row, or re-ask every Nth automatic tag for a person. Not changed because the ADR sets the rule and there is no real data yet.
+
+## C-7. Simulated shops and the ledger
+- **Decided:** a simulated payment can still make a shop rule (so the no-phone demo shows "known shop, tagged for you") but never teaches the learner or memory. **Alternative:** a separate rule store for simulated events. **Why:** the shop-override table only accepts user rows; a second store is a bigger change than the benefit. A simulated shop's name will not collide with a real ledger row in practice.
+
+## C-8. Mock bank
+- **Decided:** the mock bank posts the app's own simulated alerts back as ledger rows, with the UTR in the narration. **Alternative:** a canned file. **Why:** it exercises reconciliation and the label hand-over for real, and says so on screen ("Practice link: a simulated bank").

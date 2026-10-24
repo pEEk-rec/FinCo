@@ -82,9 +82,7 @@ def build_findings_from_analysis(
                 kind="forecast",
                 period=period,
                 subject="Total Monthly Expenditure",
-                numbers=[
-                    FindingNumber(label="projected_spend", value=int(proj), unit="paise")
-                ],
+                numbers=[FindingNumber(label="projected_spend", value=int(proj), unit="paise")],
                 description="Projected total expenditure for current month",
             )
         )

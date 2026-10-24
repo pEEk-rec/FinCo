@@ -58,8 +58,15 @@ def test_the_model_can_name_every_intent_not_just_the_first_eleven(conn):
     client = FakeLLMClient([_reply("progress_summary")])
     _ask(conn, "how am I doing overall with my habits and rewards", client)
     prompt = client.prompts[0]
-    for name in ("start_experiment", "experiment_status", "what_worked", "challenge_suggestions",
-                 "progress_summary", "affordability", "trip_planning"):
+    for name in (
+        "start_experiment",
+        "experiment_status",
+        "what_worked",
+        "challenge_suggestions",
+        "progress_summary",
+        "affordability",
+        "trip_planning",
+    ):
         assert name in prompt
 
 

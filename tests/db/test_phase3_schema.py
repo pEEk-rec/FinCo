@@ -58,13 +58,25 @@ def conn():
     c.execute("INSERT INTO users (id, created_at) VALUES ('u1', '2024-01-01T00:00:00Z')")
     c.execute("INSERT INTO users (id, created_at) VALUES ('u2', '2024-01-01T00:00:00Z')")
     # Seed accounts
-    c.execute("INSERT INTO accounts (id, user_id, name, opening_balance_paise, created_at) VALUES ('acc1', 'u1', 'Checking', 10000000, '2024-01-01T00:00:00Z')")
-    c.execute("INSERT INTO accounts (id, user_id, name, opening_balance_paise, created_at) VALUES ('acc2', 'u2', 'Checking', 5000000, '2024-01-01T00:00:00Z')")
+    c.execute(
+        "INSERT INTO accounts (id, user_id, name, opening_balance_paise, created_at) VALUES ('acc1', 'u1', 'Checking', 10000000, '2024-01-01T00:00:00Z')"
+    )
+    c.execute(
+        "INSERT INTO accounts (id, user_id, name, opening_balance_paise, created_at) VALUES ('acc2', 'u2', 'Checking', 5000000, '2024-01-01T00:00:00Z')"
+    )
     # Seed categories
-    c.execute("INSERT INTO categories (id, user_id, name, created_at) VALUES ('dining', 'u1', 'Dining', '2024-01-01T00:00:00Z')")
-    c.execute("INSERT INTO categories (id, user_id, name, created_at) VALUES ('groceries', 'u1', 'Groceries', '2024-01-01T00:00:00Z')")
-    c.execute("INSERT INTO categories (id, user_id, name, created_at) VALUES ('rent', 'u1', 'Rent', '2024-01-01T00:00:00Z')")
-    c.execute("INSERT INTO categories (id, user_id, name, created_at) VALUES ('dining_u2', 'u2', 'Dining', '2024-01-01T00:00:00Z')")
+    c.execute(
+        "INSERT INTO categories (id, user_id, name, created_at) VALUES ('dining', 'u1', 'Dining', '2024-01-01T00:00:00Z')"
+    )
+    c.execute(
+        "INSERT INTO categories (id, user_id, name, created_at) VALUES ('groceries', 'u1', 'Groceries', '2024-01-01T00:00:00Z')"
+    )
+    c.execute(
+        "INSERT INTO categories (id, user_id, name, created_at) VALUES ('rent', 'u1', 'Rent', '2024-01-01T00:00:00Z')"
+    )
+    c.execute(
+        "INSERT INTO categories (id, user_id, name, created_at) VALUES ('dining_u2', 'u2', 'Dining', '2024-01-01T00:00:00Z')"
+    )
     yield c
     c.close()
 
@@ -84,7 +96,9 @@ def test_migration_004_preserves_phase2_data():
         VALUES ('g1', 'u1', 'Emergency Fund', 'emergency_fund', 50000000, 10000000, '2024-12-31', 1, 'active', '2024-01-01T00:00:00Z', '2024-01-01T00:00:00Z')
         """
     )
-    c.execute("INSERT INTO buckets (id, user_id, name, created_at) VALUES ('b1', 'u1', 'Old Bucket', '2024-01-01T00:00:00Z')")
+    c.execute(
+        "INSERT INTO buckets (id, user_id, name, created_at) VALUES ('b1', 'u1', 'Old Bucket', '2024-01-01T00:00:00Z')"
+    )
 
     # Now apply migration 004
     script_004 = (MIGRATIONS_DIR / "004_phase3_schema.sql").read_text(encoding="utf-8")

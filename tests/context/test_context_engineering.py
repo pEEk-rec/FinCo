@@ -72,7 +72,8 @@ def test_token_budget_respected_and_exclusions_recorded(conn):
     large_catalogue = [
         {
             "tool_name": f"tool_test_long_name_{i}",
-            "short_description": "A very detailed description of this tool with extensive text explaining capabilities " * 3,
+            "short_description": "A very detailed description of this tool with extensive text explaining capabilities "
+            * 3,
             "parameters": {"param1": "string", "param2": "integer", "param3": "boolean"},
         }
         for i in range(10)

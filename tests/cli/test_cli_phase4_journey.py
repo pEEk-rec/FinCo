@@ -48,7 +48,9 @@ def journey_db(tmp_path: Path) -> str:
 
 def test_run_keeps_what_the_graph_wrote(journey_db: str):
     """Categories chosen during `copilot run` are still there afterwards."""
-    assert _scalar(journey_db, "SELECT COUNT(*) FROM transactions WHERE category_id IS NOT NULL") > 100
+    assert (
+        _scalar(journey_db, "SELECT COUNT(*) FROM transactions WHERE category_id IS NOT NULL") > 100
+    )
 
 
 def test_offers_are_generated_from_the_cli_and_carry_a_reason(journey_db: str):
@@ -60,7 +62,9 @@ def test_offers_are_generated_from_the_cli_and_carry_a_reason(journey_db: str):
 
 
 def test_a_dated_exception_pauses_the_experiment_and_feedback_teaches_the_loop(journey_db: str):
-    offer = json.loads(_run("challenges", "offers", "--clock", NOW, "--db", journey_db, "--json"))[0]
+    offer = json.loads(_run("challenges", "offers", "--clock", NOW, "--db", journey_db, "--json"))[
+        0
+    ]
     _run("challenges", "accept", offer["id"], "--clock", NOW, "--db", journey_db)
     exp = _scalar(journey_db, "SELECT id FROM experiments LIMIT 1")
 
@@ -70,10 +74,13 @@ def test_a_dated_exception_pauses_the_experiment_and_feedback_teaches_the_loop(j
     )  # fmt: skip
     _run("experiments", "tick", "--clock", "2024-05-04T12:00:00+05:30", "--db", journey_db)
     for code in ("exception_overlap_auto_pause", "exception_overlap_extend"):
-        assert _scalar(
-            journey_db,
-            f"SELECT COUNT(*) FROM adjustment_proposals WHERE reason_code = '{code}'",
-        ) == 1
+        assert (
+            _scalar(
+                journey_db,
+                f"SELECT COUNT(*) FROM adjustment_proposals WHERE reason_code = '{code}'",
+            )
+            == 1
+        )
 
     _run("experiments", "tick", "--clock", "2024-05-12T12:00:00+05:30", "--db", journey_db)
     _run("experiments", "review", exp, "--db", journey_db)
@@ -84,12 +91,16 @@ def test_a_dated_exception_pauses_the_experiment_and_feedback_teaches_the_loop(j
             "experiments", "feedback", exp, "--difficulty", "2", "--helpful", "--repeat",
             "--clock", "2024-05-12T13:00:00+05:30", "--db", journey_db,
         )  # fmt: skip
-    assert _scalar(
-        journey_db, "SELECT alpha_milli FROM feedback_stats WHERE subject_key = 'delivery_cap'"
-    ) == 3000
-    assert _scalar(
-        journey_db, "SELECT COUNT(*) FROM memory_items WHERE kind = 'experiment_outcome'"
-    ) == 1
+    assert (
+        _scalar(
+            journey_db, "SELECT alpha_milli FROM feedback_stats WHERE subject_key = 'delivery_cap'"
+        )
+        == 3000
+    )
+    assert (
+        _scalar(journey_db, "SELECT COUNT(*) FROM memory_items WHERE kind = 'experiment_outcome'")
+        == 1
+    )
 
 
 def test_a_bad_exception_range_is_refused(journey_db: str):

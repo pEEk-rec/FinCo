@@ -97,9 +97,7 @@ def draft_advice_handler(ctx: "ExecutionContext", findings: list[Finding]) -> Dr
     # Validate and fallback
     items = []
     run_id = ctx.run_id or "run_0"
-    clock_iso = (
-        to_utc_iso(ctx.clock) if ctx.clock else "1970-01-01T00:00:00Z"
-    )
+    clock_iso = to_utc_iso(ctx.clock) if ctx.clock else "1970-01-01T00:00:00Z"
 
     for finding in findings:
         finding_drafts = drafts_by_finding[finding.id]
@@ -195,13 +193,9 @@ def decide_advice_handler(
 
     old_status = row[0]
     if old_status != "draft":
-        raise ToolFailure(
-            ErrorCode.INVALID_INPUT, f"Advice '{advice_id}' is already {old_status}."
-        )
+        raise ToolFailure(ErrorCode.INVALID_INPUT, f"Advice '{advice_id}' is already {old_status}.")
 
-    clock_iso = (
-        to_utc_iso(ctx.clock) if ctx.clock else "1970-01-01T00:00:00Z"
-    )
+    clock_iso = to_utc_iso(ctx.clock) if ctx.clock else "1970-01-01T00:00:00Z"
 
     ctx.conn.execute(
         """

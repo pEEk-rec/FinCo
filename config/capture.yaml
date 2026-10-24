@@ -1,0 +1,65 @@
+# Capture track settings (PLAN_CAPTURE Stage C0, ADR-0001). Data, not code.
+# Validated by copilot.config.capture.CaptureConfig. Amounts are integer paise, weights are
+# basis points. Nothing here moves money; it only decides when to ask and how to guess.
+
+push:                                 # notifications on your laptop and phone (Stage C6b)
+  enabled: true
+  max_actions: 2                      # Chrome on Android usually shows two; the rest is on the sheet
+  lock_screen_safe: true              # "1 payment to tag": amount and payee stay in the app
+  ttl_seconds: 3600                   # a notification that is not delivered within an hour is dropped
+  subject: "mailto:owner@finco.local" # who the push service may contact; never published
+  max_failures: 3
+
+sms:                                  # the parser (Stage C2)
+  max_text_chars: 600                 # longer messages are not bank alerts: dropped unread
+  drift_window_days: 14               # parse-failure rate is watched over this window, per sender
+  drift_min_messages: 10              # no alarm until a sender has this many messages
+  drift_alert_bp: 200                 # more than 2% unparsed means the bank changed its wording
+
+classify:                             # business or person? (the bank rarely says)
+  business_words: [store, stores, mart, shop, traders, trading, cafe, restaurant, hotel, bakery, pharmacy, medical, medicals, clinic, hospital, enterprises, general, foods, services, ltd, pvt, llp, corp, mess, canteen, juice, tea, stationers, stationery, supermarket, kirana, dairy, salon, laundry, petrol, fuel, travels, cabs, bookstore, electronics, mobiles, fashion, garments, studio, gym, academy, school, college]
+  merchant_vpa_markers: [qr, paytmqr, merchant, store, shop, pay, bill, bharatpe, razorpay, payu, billdesk, upi.]
+  own_account_phrases: [self transfer, own account, to self, own a/c, self-transfer, my account]
+  person_max_name_tokens: 3
+
+ask:
+  min_ask_amount_paise: 5000          # below Rs 50: apply a guess, never interrupt
+  auto_accept_min_confidence_bp: 8500 # a known merchant at or above this is labelled silently
+  unsteady_merchant_bp: 6000          # last two answers for a shop disagree: ask again (one odd tap must not flip it)
+  ask_about_cash: true                # "what will this cash be for?" (low priority)
+  person_policy:                      # a person is auto-labelled only after k of the last n
+    k: 3                              # payments went to the same category
+    n: 3
+
+prompts:
+  max_per_day: 8
+  ttl_hours: 36                       # then the best guess is applied as a guess, needs_review
+  per_counterparty_cooldown_hours: 4
+  quiet_hours: {start: "23:00", end: "07:30"}
+  show_silent_tag_chips: true         # "Tagged Food. Change" for auto-labelled payments
+
+ranking:                              # ADR-0001 D4; weights must sum to 10000
+  guess_count: 3
+  history_half_life_days: 45
+  weights:
+    counterparty_history: 4000
+    time_pattern: 1500
+    amount_band: 1500
+    day_of_month: 800
+    merchant_hint: 1400
+    recency: 800
+
+credits:                              # incoming money is asked about too
+  categories: [salary, allowance, refund, split_repayment, gift, cashback, self_transfer_in, other_income]
+  auto_label_known_inflows: true      # refunds, own-account transfers, a known recurring inflow
+
+llm_suggest:                          # normalised merchant-like names only; never persons or SMS text
+  enabled: true
+  max_calls_per_day: 25
+
+webhook:
+  secret_header: X-Capture-Secret
+  max_body_bytes: 4096
+  rate_limit_per_minute: 30
+
+learn_from_simulated: false           # simulated events never teach the learner unless a demo flips this

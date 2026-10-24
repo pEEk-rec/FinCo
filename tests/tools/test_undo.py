@@ -329,4 +329,3 @@ def test_undo_called_as_in_ui(conn, exec_ctx):
     tx_after = get_transaction(conn, "u1", "tx_ui_1")
     assert tx_after.category_id == "food"
     assert tx_after.category_source == "rule"
-

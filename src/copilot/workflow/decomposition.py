@@ -3,7 +3,6 @@ Multi-agent intent decomposition, validation, template fallback, and routing
 (PLAN_PHASE3 Section 5.13).
 """
 
-
 import json
 import logging
 import sqlite3
@@ -128,7 +127,6 @@ class DecompositionValidator:
                                 f"{param_val}",
                             )
 
-
         # 3. Validate coverage: must cover required domains for the intent template
         template = self.templates.get(intent_type)
         if template:
@@ -143,7 +141,6 @@ class DecompositionValidator:
                 )
 
         return True, None
-
 
 
 def get_deterministic_subquestions(

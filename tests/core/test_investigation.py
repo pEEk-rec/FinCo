@@ -115,11 +115,13 @@ def test_catalogue_recall_on_injected_causes():
         if cause_kind == "miscategorization":
             cat = "travel"
             target_txs = [
-                t for t in synth.transactions
+                t
+                for t in synth.transactions
                 if t.occurred_at.startswith(target_month) and t.category_id == cat
             ]
             base_txs = [
-                t for t in synth.transactions
+                t
+                for t in synth.transactions
                 if t.occurred_at.startswith(prior_month) and t.category_id == cat
             ]
             all_base = [t for t in synth.transactions if t.occurred_at.startswith(prior_month)]

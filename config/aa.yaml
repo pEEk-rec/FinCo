@@ -1,0 +1,13 @@
+# Account Aggregator consent defaults (ADR-0002). FinCo is not an FIU: this shapes the consent
+# artefact for a sandbox or simulator, and for a regulated partner later.
+purpose_code: "102"                  # Customer spending patterns, budget or other reportings
+fi_types: [DEPOSIT]
+consent_types: [TRANSACTIONS]
+fetch_type: PERIODIC
+frequency: {unit: DAY, value: 1}     # real time comes from the SMS lane, not from here
+consent_mode: STORE
+consent_duration_months: 6
+data_range_months: 6
+data_life: {unit: MONTH, value: 6}   # raw fetched data is deleted after this
+connector: mock                      # mock | sandbox | statement
+fetch_on_monthly_review: true

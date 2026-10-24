@@ -1,0 +1,33 @@
+# SMS templates for Kotak Mahindra Bank (PLAN_CAPTURE Stage C2). See hdfc.yaml for the format
+# and the note on checking against the owner's own corpus before enabling.
+bank: kotak
+status: ready
+templates:
+  - name: otp_guard
+    kind: otp
+    drop: true
+    pattern: '(?i)\b(otp|one[- ]time password|verification code)\b'
+
+  - name: upi_sent
+    kind: debit
+    pattern: '(?i)^sent rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+from kotak bank ac x*(?P<account>\d{4}) to (?P<counterparty>\S+) on (?P<date>\d{1,2}-\d{1,2}-\d{2,4})\.upi ref (?P<utr>\d{9,12})'
+
+  - name: card_spend
+    kind: debit
+    pattern: '(?i)^rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+spent on your kotak credit card ending (?P<account>\d{4}) at (?P<counterparty>.+?) on (?P<date>\d{1,2}-\d{1,2}-\d{2,4})'
+
+  - name: atm_withdrawal
+    kind: debit
+    pattern: '(?i)^rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+withdrawn from kotak bank ac x*(?P<account>\d{4}) at (?P<channel>atm) on (?P<date>\d{1,2}-\d{1,2}-\d{2,4})'
+
+  - name: autopay_debit
+    kind: autopay
+    pattern: '(?i)^rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+debited from kotak bank ac x*(?P<account>\d{4}) on (?P<date>\d{1,2}-\d{1,2}-\d{2,4}) for upi autopay (?P<counterparty>.+?)\.upi ref (?P<utr>\d{9,12})'
+
+  - name: upi_received
+    kind: credit
+    pattern: '(?i)^received rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+in your kotak bank ac x*(?P<account>\d{4}) from (?P<counterparty>\S+) on (?P<date>\d{1,2}-\d{1,2}-\d{2,4})\.upi ref (?P<utr>\d{9,12})'
+
+  - name: upi_reversal
+    kind: reversal
+    pattern: '(?i)^rs\.?\s*(?P<amount>[\d,]+(?:\.\d{1,2})?)\s+reversed to your kotak bank ac x*(?P<account>\d{4}) on (?P<date>\d{1,2}-\d{1,2}-\d{2,4})\.upi ref (?P<utr>\d{9,12})'

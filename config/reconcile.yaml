@@ -1,0 +1,10 @@
+# Reconciliation of captured payment events with ledger transactions (ADR-0001 D8, ADR-0002).
+match_order: [utr, amount_account_time]   # a UTR/RRN match is always tried first
+time_window_minutes: 20                   # for amount + account last 4 + time; ambiguity is never merged
+orphan_after_hours: 72                    # an event with no ledger match after this is shown as unverified
+provisional_ledger: true                  # accounts without AA: events form an unverified ledger
+
+coverage:                                 # "we saw 12 transactions at your bank but 0 alerts"
+  window_days: 14
+  min_ledger_txns: 5
+  warn_below_bp: 5000                     # fewer than half the ledger transactions had an alert

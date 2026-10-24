@@ -2,7 +2,6 @@
 Tests for Activity Timeline Phase 3 Additions and Forgotten Memory Privacy (Stage 3.10 & Section 5.10).
 """
 
-
 import pytest
 
 from copilot.core.timeline import build_timeline

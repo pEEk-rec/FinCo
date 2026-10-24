@@ -49,10 +49,7 @@ def is_user_in_rest_weeks(
 
     # Get all finished experiments (completed or abandoned)
     exps = list_experiments(conn, user_id)
-    finished = [
-        e for e in exps
-        if e.status in ("completed", "abandoned", "reviewed")
-    ]
+    finished = [e for e in exps if e.status in ("completed", "abandoned", "reviewed")]
     if len(finished) < 2:
         return False
 
@@ -132,9 +129,7 @@ def compute_value_weight(cand: CandidateOffer) -> float:
     # 1.0 base + goal relevance share (0.0 to 1.0) + expected effect normalized (up to ~₹2,000)
     goal_boost = cand.goal_relevance_bp / 10000.0
     effect_boost = (
-        min(1.0, cand.expected_effect_paise / 200000.0)
-        if cand.expected_effect_paise > 0
-        else 0.0
+        min(1.0, cand.expected_effect_paise / 200000.0) if cand.expected_effect_paise > 0 else 0.0
     )
     return 1.0 + goal_boost + effect_boost
 
@@ -304,9 +299,7 @@ def select_challenge_offers(
             conn, user_id, candidates, max_offers=limit, config=cfg
         )
     elif pol == "random":
-        selected, props = select_offers_random(
-            candidates, max_offers=limit, seed=seed
-        )
+        selected, props = select_offers_random(candidates, max_offers=limit, seed=seed)
     else:
         raise ValueError(f"Unknown offer policy: {pol}")
 

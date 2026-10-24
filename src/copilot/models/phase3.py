@@ -491,7 +491,7 @@ class FeedbackStat(BaseModel):
 
     id: str
     user_id: str
-    subject_kind: Literal["alert_kind", "advice_kind", "challenge_template"]
+    subject_kind: Literal["alert_kind", "advice_kind", "challenge_template", "capture_signal"]
     subject_key: str
     alpha_milli: int = Field(default=2000, gt=0)
     beta_milli: int = Field(default=2000, gt=0)

@@ -106,6 +106,45 @@ Try it (offline, about a minute): `bash scripts/demo_phase4.sh`, which follows
 
 ---
 
+## Payment capture: tag a payment the moment it happens
+
+Months-old transactions are hard to remember; a payment made a minute ago is not. FinCo watches for
+your bank's alert, asks you one tap ("What was this?") while you still remember, and learns from the
+answers. Web first: a card on any page, optional notifications on the laptop and the phone, and a
+**Today** screen that lists the day's payments in and out.
+
+**Safe by construction.** Only senders you switch on in `config/sms_senders.yaml` are read. OTP
+messages are dropped even from a bank. The text of a message goes from your phone to your own computer,
+is parsed in memory and discarded: it is never stored, logged, put in a notification or sent to a model.
+Only the amount, the payee's name and the account's last four digits are kept. A person is never
+remembered like a shop, and a model never hears a person's name. Nothing here moves money.
+
+**Try it with no phone** (the simulator uses the real parser and pipeline; everything is labelled
+Simulated): start the app (`cd frontend && npm run demo:imported`), open **Tag payments**, send a
+pretend payment. Or from a terminal: `copilot capture simulate --bank hdfc --kind debit --amount 250 --to "XQ9 Traders Yard"`.
+
+**Set up the phone bridge** (an owner task; about ten minutes):
+
+1. Check each sender ID in `config/sms_senders.yaml` against a real alert on your phone; set
+   `enabled: true` for your banks.
+2. Run `copilot capture bridge-setup`. It creates the secret (`data/capture_secret`, git-ignored)
+   and prints the exact rule for MacroDroid or Tasker (Shortcuts on iPhone): trigger on those sender
+   IDs only, then an HTTP POST of the sender and text to the printed address with the secret in a header.
+3. `copilot serve --real-time`, plug the phone in and run `adb reverse tcp:8765 tcp:8765`. (Wi-Fi
+   instead of a cable: `copilot serve --real-time --lan` and `copilot capture bridge-setup --lan`.)
+4. Install the web app on each device and press **Notify me on this device** under **Tag payments**.
+
+**Bank link.** **Connect and import → Bank link** shows the Account Aggregator consent in plain words
+(what is read, why, how often, how long, how to stop) and lets you approve, pause or revoke it.
+The practice link is a simulated bank; a real sandbox needs your credentials (`docs/production_path_aa.md`).
+
+**Evidence.** `copilot eval --capture` writes `docs/eval_report_capture.md` (parse accuracy per bank,
+reconciliation rate, double-count violations which must be 0, guess hit rates). The seven safety rules
+each have a test that fails when its guard is removed: `tests/security/test_capture_safety_rules.py`.
+Walkthrough: `docs/demo_script_capture.md`. Design: `docs/CAPTURE/ADR-0001*.md`, `ADR-0002*.md`.
+
+---
+
 ## Capability Matrix: Phase 1 vs. Phase 2 vs. Phase 3
 
 | Dimension | Phase 1 (Core Automation) | Phase 2 (Agentic Intelligence) | Phase 3 (Advanced Financial Copilot) |

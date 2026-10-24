@@ -134,8 +134,7 @@ def assess_readiness(
             name="enough_history",
             status="fail",
             value_text=(
-                f"{history_months_count} of {config.min_history_months} "
-                "complete months recorded"
+                f"{history_months_count} of {config.min_history_months} complete months recorded"
             ),
             threshold_text=f"At least {config.min_history_months} complete calendar months",
             what_would_change_it=(
@@ -436,17 +435,9 @@ def assess_readiness(
     criteria.append(crit_debt)
 
     # Overall level determination (PLAN Section 5.6)
-    if (
-        crit_pcf.status == "fail"
-        or crit_emg.status == "fail"
-        or crit_oblg.status == "fail"
-    ):
+    if crit_pcf.status == "fail" or crit_emg.status == "fail" or crit_oblg.status == "fail":
         level = "not_ready"
-    elif (
-        crit_stab.status == "fail"
-        or crit_p1.status == "fail"
-        or crit_debt.status == "fail"
-    ):
+    elif crit_stab.status == "fail" or crit_p1.status == "fail" or crit_debt.status == "fail":
         level = "building"
     elif any(c.status == "unknown" for c in criteria):
         level = "ready_with_conditions"

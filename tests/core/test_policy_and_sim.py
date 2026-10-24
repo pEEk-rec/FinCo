@@ -270,7 +270,9 @@ def test_off_policy_ips_and_snips_held_out():
 
 def test_cli_sim_run():
     runner = CliRunner()
-    result = runner.invoke(app, ["sim", "run", "--policy", "thompson", "--weeks", "4", "--seed", "42"])
+    result = runner.invoke(
+        app, ["sim", "run", "--policy", "thompson", "--weeks", "4", "--seed", "42"]
+    )
     assert result.exit_code == 0
     assert "Policy Simulation Results" in result.output
     assert "THOMPSON" in result.output

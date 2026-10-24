@@ -69,7 +69,10 @@ def test_edit_pause_and_finish(client):
 
 
 def test_bad_input_is_a_typed_error_not_a_crash(client):
-    assert client.post("/api/goals", json={"name": "x", "target_paise": 0}, headers=AUTH).status_code == 422
+    assert (
+        client.post("/api/goals", json={"name": "x", "target_paise": 0}, headers=AUTH).status_code
+        == 422
+    )
     missing = client.post("/api/goals/nope/update", json={"status": "done"}, headers=AUTH)
     assert missing.status_code == 404
     zero = client.post("/api/goals/nope/contributions", json={"amount_paise": 0}, headers=AUTH)

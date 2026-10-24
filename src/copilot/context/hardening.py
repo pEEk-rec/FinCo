@@ -27,7 +27,7 @@ _INJECTION_PATTERNS = [
     re.compile(r"(?i)\bcall\s+tool\s+[:=]?\s*\w+\b"),
     re.compile(r"(?i)\bgrant\s+(?:admin|superuser|full)\s+permissions?\b"),
     re.compile(r"(?i)\bsystem\s+override\b"),
-    re.compile(r'(?i)```(?:json)?\s*\{'),
+    re.compile(r"(?i)```(?:json)?\s*\{"),
     re.compile(r'(?i)"tool_name"\s*:'),
 ]
 

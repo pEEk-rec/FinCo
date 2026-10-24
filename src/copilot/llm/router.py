@@ -100,7 +100,9 @@ class SmartLLMRouter(LLMClient):
         rpm_per_key: float = 15.0,
     ) -> None:
         self.model = model
-        self.url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        self.url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        )
         self.rpm_per_key = rpm_per_key
 
         self.slots: dict[str, KeySlot] = {}

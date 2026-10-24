@@ -265,4 +265,3 @@ def test_failure_path_custom_audit_event_and_metadata(ctx):
     assert evt.metadata["refusal_reason"] == "disallowed_step"
     assert evt.metadata["step_idx"] == 42
     assert evt.metadata["error_code"] == "INVALID_INPUT"
-

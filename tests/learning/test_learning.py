@@ -307,9 +307,7 @@ def test_contextual_reason_dismissals_go_to_memory(
     assert any("festival" in str(m.statement_json) for m in mems)
 
 
-def test_generic_dismissals_update_beta(
-    test_db: sqlite3.Connection, policy: PolicySettings
-):
+def test_generic_dismissals_update_beta(test_db: sqlite3.Connection, policy: PolicySettings):
     """Verify that generic dismissal without contextual reason updates beta (negative feedback)."""
     alert = Alert(
         id="alt_gen_1",
@@ -353,9 +351,7 @@ def test_generic_dismissals_update_beta(
     assert stat.beta_milli == 3000
 
 
-def test_acknowledgment_updates_alpha(
-    test_db: sqlite3.Connection, policy: PolicySettings
-):
+def test_acknowledgment_updates_alpha(test_db: sqlite3.Connection, policy: PolicySettings):
     """Verify acknowledging an alert updates alpha (positive feedback signal)."""
     alert = Alert(
         id="alt_ack_1",
@@ -393,9 +389,7 @@ def test_acknowledgment_updates_alpha(
     assert stat.beta_milli == 2000
 
 
-def test_muted_category_updates_beta(
-    test_db: sqlite3.Connection, policy: PolicySettings
-):
+def test_muted_category_updates_beta(test_db: sqlite3.Connection, policy: PolicySettings):
     """Verify muting a category updates beta (negative feedback signal)."""
     ctx = ExecutionContext(
         conn=test_db,
@@ -414,9 +408,7 @@ def test_muted_category_updates_beta(
     assert stat.beta_milli == 3000
 
 
-def test_acted_on_reallocation_updates_alpha(
-    test_db: sqlite3.Connection, policy: PolicySettings
-):
+def test_acted_on_reallocation_updates_alpha(test_db: sqlite3.Connection, policy: PolicySettings):
     """Verify applying an approved reallocation draft updates alpha (useful signal)."""
     # Create two buckets
     b1 = Bucket(
@@ -589,7 +581,9 @@ def test_reset_restores_priors(test_db: sqlite3.Connection, default_config: Lear
     record_feedback(test_db, user_id, "alert_kind", subj, "useful", default_config)
     record_feedback(test_db, user_id, "alert_kind", subj, "useful", default_config)
 
-    m_before, p_before, _, _ = get_learned_multiplier(test_db, user_id, "alert_kind", subj, default_config)
+    m_before, p_before, _, _ = get_learned_multiplier(
+        test_db, user_id, "alert_kind", subj, default_config
+    )
     assert p_before > 0.5
     assert m_before > 1.0
 
@@ -625,20 +619,33 @@ def test_cli_learning_show_and_reset(test_db: sqlite3.Connection, tmp_path: Path
     conn.close()
 
     # 1. Show command
-    res_show = runner.invoke(app, ["learning", "show", "--user", "u1", "--db", str(db_file)], env={"COLUMNS": "200"})
+    res_show = runner.invoke(
+        app, ["learning", "show", "--user", "u1", "--db", str(db_file)], env={"COLUMNS": "200"}
+    )
     assert res_show.exit_code == 0
     assert "budget_risk:groceries" in res_show.output
     assert "overspend_pace:dining" in res_show.output
 
     # 2. Show command with JSON output
-    res_json = runner.invoke(app, ["learning", "show", "--user", "u1", "--db", str(db_file), "--json"])
+    res_json = runner.invoke(
+        app, ["learning", "show", "--user", "u1", "--db", str(db_file), "--json"]
+    )
     assert res_json.exit_code == 0
     assert '"subject_key": "budget_risk:groceries"' in res_json.output
 
     # 3. Reset specific subject
     res_reset_sub = runner.invoke(
         app,
-        ["learning", "reset", "--user", "u1", "--subject", "budget_risk:groceries", "--db", str(db_file)],
+        [
+            "learning",
+            "reset",
+            "--user",
+            "u1",
+            "--subject",
+            "budget_risk:groceries",
+            "--db",
+            str(db_file),
+        ],
     )
     assert res_reset_sub.exit_code == 0
     assert "Reset 1 feedback stat(s)" in res_reset_sub.output

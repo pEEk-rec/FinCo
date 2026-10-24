@@ -1,0 +1,154 @@
+[
+  {
+    "name": "upi sent to a person",
+    "sender": "HDFCBK",
+    "text": "Sent Rs.250.00 From HDFC Bank A/C *1234 To RAMESH K On 18/10/26 Ref 628912345678 Not You? Call 18002586161/SMS BLOCK UPI to 7308080808",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 25000,
+      "account_last4": "1234",
+      "utr": "628912345678",
+      "display_name": "RAMESH K",
+      "vpa": null,
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "upi debited to a vpa",
+    "sender": "VM-HDFCBK-S",
+    "text": "Rs 1,250.50 debited from a/c **1234 on 18-10-26 to VPA paytmqr28100505@paytm (UPI Ref No 628912345679).",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 125050,
+      "account_last4": "1234",
+      "utr": "628912345679",
+      "display_name": "Paytmqr",
+      "vpa": "paytmqr28100505@paytm",
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "card spend",
+    "sender": "HDFCBK",
+    "text": "Spent Rs.1299.00 On HDFC Bank Card 5678 At AMAZON PAY INDIA On 2026-10-18:10:45:12.Not You? Call 18002586161",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 129900,
+      "account_last4": "5678",
+      "utr": null,
+      "display_name": "AMAZON PAY INDIA",
+      "vpa": null,
+      "channel": "card",
+      "occurred_at_ist": "2026-10-18T10:45:12"
+    }
+  },
+  {
+    "name": "atm withdrawal",
+    "sender": "HDFCBK",
+    "text": "Rs 2000.00 withdrawn from HDFC Bank A/c XX1234 at ATM on 18-10-26 10:45",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 200000,
+      "account_last4": "1234",
+      "utr": null,
+      "display_name": "ATM cash withdrawal",
+      "vpa": null,
+      "channel": "atm",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "autopay mandate",
+    "sender": "HDFCBK",
+    "text": "Rs 199.00 debited from a/c **1234 on 18-10-26 for UPI AutoPay mandate NETFLIX (Ref 628912345680)",
+    "expect": {
+      "kind": "autopay",
+      "direction": "debit",
+      "amount_paise": 19900,
+      "account_last4": "1234",
+      "utr": "628912345680",
+      "display_name": "NETFLIX",
+      "vpa": null,
+      "channel": "autopay",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "credit from a vpa",
+    "sender": "HDFCBK",
+    "text": "Credit Alert! Rs.5000.00 credited to HDFC Bank A/c XX1234 on 18-10-26 from VPA priya.s@okaxis (UPI 628912345681)",
+    "expect": {
+      "kind": "credit",
+      "direction": "credit",
+      "amount_paise": 500000,
+      "account_last4": "1234",
+      "utr": "628912345681",
+      "display_name": "Priya S",
+      "vpa": "priya.s@okaxis",
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "reversal",
+    "sender": "HDFCBK",
+    "text": "Rs 250.00 credited to a/c **1234 on 18-10-26 towards reversal of UPI txn Ref 628912345678",
+    "expect": {
+      "kind": "reversal",
+      "direction": "credit",
+      "amount_paise": 25000,
+      "account_last4": "1234",
+      "utr": "628912345678",
+      "display_name": "Reversal",
+      "vpa": null,
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "upi lite daily summary",
+    "sender": "HDFCBK",
+    "text": "UPI Lite: Rs 120.00 spent today from HDFC Bank UPI Lite on 18-10-26 (4 payments)",
+    "expect": {
+      "kind": "upi_lite_summary",
+      "direction": "debit",
+      "amount_paise": 12000,
+      "account_last4": null,
+      "utr": null,
+      "display_name": "UPI Lite spends",
+      "vpa": null,
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "otp from the bank",
+    "sender": "HDFCBK",
+    "text": "123456 is your OTP for HDFC Bank transaction. Valid 5 mins. Do not share it with anyone.",
+    "expect": "dropped:otp"
+  },
+  {
+    "name": "otp mentioning an amount",
+    "sender": "HDFCBK",
+    "text": "OTP 884412 for Rs 250.00 payment to RAMESH K. Never share OTP.",
+    "expect": "dropped:otp"
+  },
+  {
+    "name": "a promotional message",
+    "sender": "HDFCBK",
+    "text": "Pre-approved personal loan up to Rs 10,00,000 for you. Apply now at hdfcbank.com/offers",
+    "expect": "unparsed"
+  },
+  {
+    "name": "a format the templates do not know",
+    "sender": "HDFCBK",
+    "text": "INR 250.00 was paid via your HDFC wallet on 18-10-26 to RAMESH K",
+    "expect": "unparsed"
+  }
+]

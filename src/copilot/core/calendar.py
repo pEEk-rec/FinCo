@@ -86,9 +86,7 @@ def build_calendar(
             f"horizon_days ({horizon_days}) must be between 1 and {config.max_horizon_days}"
         )
 
-    buffer_paise = (
-        min_buffer_paise if min_buffer_paise is not None else config.min_buffer_paise
-    )
+    buffer_paise = min_buffer_paise if min_buffer_paise is not None else config.min_buffer_paise
     if buffer_paise < 0:
         raise ValueError("min_buffer_paise cannot be negative")
 
@@ -321,4 +319,3 @@ def build_calendar(
 
 # Alias for backward/forward compatibility
 get_calendar_projection = build_calendar
-

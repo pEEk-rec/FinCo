@@ -81,9 +81,7 @@ class CompareTradeoffsOutput(ToolOutput):
 # -------------------------------------------------------------------------------------------------
 # 2. Tool Handlers
 # -------------------------------------------------------------------------------------------------
-def plan_contributions_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> PlanContributionsOutput:
+def plan_contributions_handler(ctx: "ExecutionContext", **kwargs) -> PlanContributionsOutput:
     params = PlanContributionsInput.model_validate(kwargs)
 
     if isinstance(ctx.clock, datetime):
@@ -106,9 +104,7 @@ def plan_contributions_handler(
     return PlanContributionsOutput(plan=plan)
 
 
-def compare_tradeoffs_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> CompareTradeoffsOutput:
+def compare_tradeoffs_handler(ctx: "ExecutionContext", **kwargs) -> CompareTradeoffsOutput:
     params = CompareTradeoffsInput.model_validate(kwargs)
 
     if isinstance(ctx.clock, datetime):

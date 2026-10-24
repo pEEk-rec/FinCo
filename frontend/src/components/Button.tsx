@@ -13,12 +13,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANTS: Record<ButtonVariant, string> = {
   // The only filled button in the system: liquid aqua, one per view.
-  primary:
-    'bg-brand text-brand-ink shadow-[0_8px_20px_-10px_var(--color-coral)] hover:glow-brand disabled:bg-ink-3',
-  secondary:
-    'bg-surface/80 text-ink border border-hairline-strong hover:bg-surface-hover hover:border-input-border',
+  primary: 'pop bg-brand text-brand-ink [--edge:var(--color-brand-edge)] disabled:bg-ink-3',
+  secondary: 'pop bg-surface text-ink border-2 border-ink [--edge:var(--color-ink)]',
   text: 'bg-transparent text-ink-2 hover:text-ink hover:bg-surface-sunken',
-  danger: 'bg-surface text-negative border border-hairline-strong hover:bg-negative-tint',
+  danger: 'pop bg-surface text-negative border-2 border-negative [--edge:var(--color-negative)]',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -41,9 +39,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || busy}
       aria-busy={busy || undefined}
       className={cx(
-        'inline-flex items-center justify-center gap-2 rounded-control font-medium whitespace-nowrap',
-        'transition-[color,background-color,box-shadow,transform] duration-fast ease-out-soft active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60',
-        size === 'sm' ? 'h-8 px-3 text-small' : 'h-10 px-4 text-[14px]',
+        'inline-flex items-center justify-center gap-2 rounded-control font-bold whitespace-nowrap',
+        'transition-[color,background-color,box-shadow,transform] duration-fast ease-out-soft disabled:cursor-not-allowed disabled:opacity-60',
+        size === 'sm' ? 'h-9 px-3.5 text-small' : 'h-12 px-6 text-[15px]',
         VARIANTS[variant],
         className,
       )}

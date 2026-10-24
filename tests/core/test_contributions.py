@@ -257,7 +257,9 @@ def test_waterfall_user_reordering(conn: sqlite3.Connection):
     # Default order: firm_commitments first, then essential, then planned_investments
     default_plan = plan_contributions(conn, u, horizon_months=6, start_date="2026-10-15")
     step_inv_default = next(
-        s for s in default_plan.steps if s.step_name in ("planned_investments", "planned_investment_contributions")
+        s
+        for s in default_plan.steps
+        if s.step_name in ("planned_investments", "planned_investment_contributions")
     )
     # Under default order, rent (30k) and essential (40k) consume 50k inflow, so investment does not fit
     assert step_inv_default.verdict == "does_not_fit"
@@ -277,7 +279,9 @@ def test_waterfall_user_reordering(conn: sqlite3.Connection):
         waterfall_order=reordered_order,
     )
     step_inv_reordered = next(
-        s for s in reordered_plan.steps if s.step_name in ("planned_investments", "planned_investment_contributions")
+        s
+        for s in reordered_plan.steps
+        if s.step_name in ("planned_investments", "planned_investment_contributions")
     )
     # When prioritized first, planned investment takes 30k of 50k, so it fits!
     assert step_inv_reordered.verdict in ("fits", "fits_expected_only")
@@ -509,7 +513,9 @@ def test_tradeoff_metrics_hand_computed(conn: sqlite3.Connection):
     ]
 
     h_months = 12
-    result = compare_tradeoffs(conn, u, alternatives, horizon_months=h_months, start_date="2026-10-15")
+    result = compare_tradeoffs(
+        conn, u, alternatives, horizon_months=h_months, start_date="2026-10-15"
+    )
 
     assert len(result.alternatives) == 2
 
@@ -523,7 +529,10 @@ def test_tradeoff_metrics_hand_computed(conn: sqlite3.Connection):
     assert alt_b.metrics["total_contributions_paise"] == 0
 
     # Alt B preserves more liquidity than Alt A
-    assert alt_b.metrics["lowest_projected_low_balance_paise"] >= alt_a.metrics["lowest_projected_low_balance_paise"]
+    assert (
+        alt_b.metrics["lowest_projected_low_balance_paise"]
+        >= alt_a.metrics["lowest_projected_low_balance_paise"]
+    )
 
 
 def test_best_stated_only_when_exactly_one_satisfies_constraints(conn: sqlite3.Connection):
@@ -650,10 +659,14 @@ def test_tenant_isolation_contributions(conn: sqlite3.Connection):
     plan_b = plan_contributions(conn, u_b, horizon_months=6, start_date="2026-10-15")
 
     step_a_inv = next(
-        s for s in plan_a.steps if s.step_name in ("planned_investments", "planned_investment_contributions")
+        s
+        for s in plan_a.steps
+        if s.step_name in ("planned_investments", "planned_investment_contributions")
     )
     step_b_inv = next(
-        s for s in plan_b.steps if s.step_name in ("planned_investments", "planned_investment_contributions")
+        s
+        for s in plan_b.steps
+        if s.step_name in ("planned_investments", "planned_investment_contributions")
     )
 
     assert step_a_inv.needed_paise == 3000000

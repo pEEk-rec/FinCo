@@ -254,9 +254,7 @@ def apply_learning_to_alert(
     learning_why_note: str | None = None
     if adjusted_severity != base_severity:
         if adjusted_score_bp < base_score_bp:
-            learning_why_note = (
-                "shown at lower priority because you usually dismiss these alerts"
-            )
+            learning_why_note = "shown at lower priority because you usually dismiss these alerts"
         elif adjusted_score_bp > base_score_bp:
             learning_why_note = (
                 "shown at higher priority because you usually find these alerts useful"
@@ -283,6 +281,7 @@ def order_advice_by_utility(
             evidence = item.get("evidence") or item.get("evidence_json") or {}
             if isinstance(evidence, str):
                 import json
+
                 try:
                     evidence = json.loads(evidence)
                 except Exception:
@@ -300,6 +299,7 @@ def order_advice_by_utility(
             evidence = getattr(item, "evidence", None) or getattr(item, "evidence_json", None)
             if isinstance(evidence, str):
                 import json
+
                 try:
                     evidence = json.loads(evidence)
                 except Exception:
@@ -378,18 +378,20 @@ def list_tenant_learning_stats(
             or "not_covered" in s.subject_key
             or "off_track" in s.subject_key
         )
-        results.append({
-            "id": s.id,
-            "user_id": s.user_id,
-            "subject_kind": s.subject_kind,
-            "subject_key": s.subject_key,
-            "alpha_milli": s.alpha_milli,
-            "beta_milli": s.beta_milli,
-            "alpha": s.alpha_milli / 1000.0,
-            "beta": s.beta_milli / 1000.0,
-            "p": round(p, 4),
-            "multiplier": m,
-            "hard_floor_protected": is_floor,
-            "updated_at": s.updated_at,
-        })
+        results.append(
+            {
+                "id": s.id,
+                "user_id": s.user_id,
+                "subject_kind": s.subject_kind,
+                "subject_key": s.subject_key,
+                "alpha_milli": s.alpha_milli,
+                "beta_milli": s.beta_milli,
+                "alpha": s.alpha_milli / 1000.0,
+                "beta": s.beta_milli / 1000.0,
+                "p": round(p, 4),
+                "multiplier": m,
+                "hard_floor_protected": is_floor,
+                "updated_at": s.updated_at,
+            }
+        )
     return results

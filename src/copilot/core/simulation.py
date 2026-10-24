@@ -179,9 +179,7 @@ def simulate(
         else:
             config = WhatIfConfig()
 
-    effective_horizon = min(
-        horizon_months or config.max_horizon_months, config.max_horizon_months
-    )
+    effective_horizon = min(horizon_months or config.max_horizon_months, config.max_horizon_months)
 
     # Cap scenario amount
     effective_amount = min(scenario.amount_paise, config.max_amount_paise)
@@ -258,9 +256,7 @@ def simulate(
                     reduction = min(current_spend, effective_amount)
                     if current_spend > 0:
                         for c, v in list(current_cats.items()):
-                            current_cats[c] = max(
-                                0, v - int(reduction * (v / current_spend))
-                            )
+                            current_cats[c] = max(0, v - int(reduction * (v / current_spend)))
 
         month_total_spend = sum(current_cats.values()) + snapshot.recurring_series_monthly_paise
         month_surplus = snapshot.estimated_monthly_income_paise - month_total_spend
@@ -334,9 +330,7 @@ def compare_scenarios(
     )
     baseline_proj = simulate(snapshot, baseline_scenario, horizon_months, config)
 
-    scenario_projections = [
-        simulate(snapshot, s, horizon_months, config) for s in capped_scenarios
-    ]
+    scenario_projections = [simulate(snapshot, s, horizon_months, config) for s in capped_scenarios]
 
     # Build side-by-side comparison table
     comparison_rows: list[dict[str, Any]] = []
@@ -349,9 +343,9 @@ def compare_scenarios(
             "baseline_surplus_paise": baseline_proj.monthly_surplus_paise[m],
         }
         for idx, p in enumerate(scenario_projections):
-            row[f"scenario_{idx+1}_spend_paise"] = p.monthly_spend_paise[m]
-            row[f"scenario_{idx+1}_surplus_paise"] = p.monthly_surplus_paise[m]
-            row[f"scenario_{idx+1}_spend_delta_paise"] = (
+            row[f"scenario_{idx + 1}_spend_paise"] = p.monthly_spend_paise[m]
+            row[f"scenario_{idx + 1}_surplus_paise"] = p.monthly_surplus_paise[m]
+            row[f"scenario_{idx + 1}_spend_delta_paise"] = (
                 p.monthly_spend_paise[m] - baseline_proj.monthly_spend_paise[m]
             )
         comparison_rows.append(row)

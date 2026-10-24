@@ -13,6 +13,8 @@ const SCREENS = [
   { name: 'transactions', path: '/transactions?period=2024-03' },
   { name: 'review', path: '/review' },
   { name: 'monthly', path: '/monthly?period=2024-02' },
+  { name: 'today', path: '/today' },
+  { name: 'capture', path: '/capture' },
   { name: 'goals', path: '/goals' },
   { name: 'challenges', path: '/challenges' },
   { name: 'progress', path: '/progress' },
@@ -28,8 +30,8 @@ for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     for (const screen of SCREENS) {
       await page.goto(screen.path);
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(1200); // let chart draw-in finish
+      await page.waitForLoadState('load');
+      await page.waitForTimeout(2200); // data fetch and chart draw-in (the live stream never goes idle)
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
       );

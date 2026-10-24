@@ -228,7 +228,9 @@ def test_match_tolerances_and_status_determination():
         "amount_paise": 98000,
         "direction": "debit",
     }
-    matches = match_occurrences([occ], [tx1], tolerance_bp=500, date_tolerance_days=3, as_of_date="2024-03-10")
+    matches = match_occurrences(
+        [occ], [tx1], tolerance_bp=500, date_tolerance_days=3, as_of_date="2024-03-10"
+    )
     assert matches[0][1] is not None
     assert matches[0][0].status == "partially_paid"  # 98000 < low bound 100000
 

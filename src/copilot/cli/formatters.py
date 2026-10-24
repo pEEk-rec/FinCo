@@ -58,9 +58,7 @@ def print_transactions_table(txs: list[dict[str, Any]]) -> None:
         amount_paise = t.get("amount_paise", 0)
         amt_str = format_inr(abs(amount_paise))
         amt_styled = (
-            f"[green]+{amt_str}[/green]"
-            if direction == "credit"
-            else f"[red]-{amt_str}[/red]"
+            f"[green]+{amt_str}[/green]" if direction == "credit" else f"[red]-{amt_str}[/red]"
         )
         needs_rev = "[bold yellow]YES[/bold yellow]" if t.get("needs_review") else "[dim]no[/dim]"
         cat = t.get("category_id") or "[dim]uncategorised[/dim]"

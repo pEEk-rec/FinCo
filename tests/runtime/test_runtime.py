@@ -68,7 +68,9 @@ def test_config() -> RuntimeConfig:
 # -------------------------------------------------------------------------------------------------
 # 1. Due-job selection with an injected clock
 # -------------------------------------------------------------------------------------------------
-def test_due_job_selection_with_injected_clock(conn: sqlite3.Connection, test_config: RuntimeConfig) -> None:
+def test_due_job_selection_with_injected_clock(
+    conn: sqlite3.Connection, test_config: RuntimeConfig
+) -> None:
     # Set up jobs with specific next_run_at
     ref_dt = datetime(2026, 4, 1, 6, 30, 0, tzinfo=UTC)
     now_iso = to_utc_iso(ref_dt)
@@ -161,7 +163,9 @@ def test_lease_prevents_double_runs(conn: sqlite3.Connection, test_config: Runti
 # -------------------------------------------------------------------------------------------------
 # 3. Idempotent re-run for the same period writes nothing
 # -------------------------------------------------------------------------------------------------
-def test_idempotent_rerun_for_same_period(conn: sqlite3.Connection, test_config: RuntimeConfig) -> None:
+def test_idempotent_rerun_for_same_period(
+    conn: sqlite3.Connection, test_config: RuntimeConfig
+) -> None:
     clock = datetime(2026, 4, 1, 0, 10, 0, tzinfo=UTC)
 
     # Run rollover_buckets for period 2026-04
@@ -176,7 +180,9 @@ def test_idempotent_rerun_for_same_period(conn: sqlite3.Connection, test_config:
     assert run1.summary_json.get("period") == "2026-04"
 
     # Count audit events before re-run
-    events_before = conn.execute("SELECT COUNT(*) FROM audit_events WHERE user_id = 'u1'").fetchone()[0]
+    events_before = conn.execute(
+        "SELECT COUNT(*) FROM audit_events WHERE user_id = 'u1'"
+    ).fetchone()[0]
 
     # Re-run for the exact same period (2026-04)
     run2 = run_job(
@@ -191,14 +197,18 @@ def test_idempotent_rerun_for_same_period(conn: sqlite3.Connection, test_config:
     assert run2.summary_json.get("reason") == "idempotent_already_run_for_period"
 
     # Zero writes made during idempotent skip
-    events_after = conn.execute("SELECT COUNT(*) FROM audit_events WHERE user_id = 'u1'").fetchone()[0]
+    events_after = conn.execute(
+        "SELECT COUNT(*) FROM audit_events WHERE user_id = 'u1'"
+    ).fetchone()[0]
     assert events_after == events_before
 
 
 # -------------------------------------------------------------------------------------------------
 # 4. Backoff schedule and dead-letter after max attempts
 # -------------------------------------------------------------------------------------------------
-def test_backoff_schedule_and_dead_letter(conn: sqlite3.Connection, test_config: RuntimeConfig) -> None:
+def test_backoff_schedule_and_dead_letter(
+    conn: sqlite3.Connection, test_config: RuntimeConfig
+) -> None:
     clock = datetime(2026, 4, 1, 10, 0, 0, tzinfo=UTC)
 
     # Patch handler to simulate failure
@@ -276,7 +286,9 @@ def test_retry_from_dead_letter(conn: sqlite3.Connection, test_config: RuntimeCo
     )
 
     # Run retry_dead_letter_job
-    run = retry_dead_letter_job(conn, user_id="u1", job_kind="coverage_scan", as_of=clock, config=test_config)
+    run = retry_dead_letter_job(
+        conn, user_id="u1", job_kind="coverage_scan", as_of=clock, config=test_config
+    )
 
     assert run.status == "ok"
     j = get_scheduled_job(conn, "u1", "coverage_scan")
@@ -309,7 +321,12 @@ def test_jobs_cannot_perform_user_actor_writes(conn: sqlite3.Connection) -> None
     assert not res.ok
     assert res.error is not None
     # Must be denied by policy or rejected without affecting DB
-    assert res.error.code.value in ("DENIED_BY_POLICY", "APPROVAL_REQUIRED", "NOT_FOUND", "INVALID_INPUT")
+    assert res.error.code.value in (
+        "DENIED_BY_POLICY",
+        "APPROVAL_REQUIRED",
+        "NOT_FOUND",
+        "INVALID_INPUT",
+    )
 
 
 # -------------------------------------------------------------------------------------------------

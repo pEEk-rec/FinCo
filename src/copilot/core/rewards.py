@@ -212,8 +212,7 @@ def award_experiment_outcome_xp(
         return []
     review = get_experiment_review(conn, user_id, experiment_id)
     was_abandoned = exp.status == "abandoned" or bool(
-        review is not None
-        and (review.data_quality_json or {}).get("abandoned") is True
+        review is not None and (review.data_quality_json or {}).get("abandoned") is True
     )
 
     now_dt = clock or datetime.now(tz=IST)
@@ -223,7 +222,8 @@ def award_experiment_outcome_xp(
     # 1. Completion / Learning Review XP
     if exp.status in ("completed", "reviewed") and not was_abandoned:
         ev = award_xp(
-            conn, user_id,
+            conn,
+            user_id,
             rule_code="experiment_completed",
             ref_kind="experiment",
             ref_id=experiment_id,
@@ -237,7 +237,8 @@ def award_experiment_outcome_xp(
         rev = review
         if rev is not None:
             ev = award_xp(
-                conn, user_id,
+                conn,
+                user_id,
                 rule_code="experiment_reviewed_abandoned",
                 ref_kind="experiment",
                 ref_id=experiment_id,
@@ -250,7 +251,8 @@ def award_experiment_outcome_xp(
     # 2. Target Met XP (requires integrity confirmation if flagged)
     if can_award_target_met_xp(conn, user_id, experiment_id):
         ev = award_xp(
-            conn, user_id,
+            conn,
+            user_id,
             rule_code="target_met",
             ref_kind="experiment",
             ref_id=experiment_id,
@@ -395,8 +397,7 @@ def check_and_award_badges(
 
     # 7. thoughtful_reflector
     feedback_reviews = [
-        r for r in reviews
-        if r.user_difficulty is not None or r.user_helpful is not None
+        r for r in reviews if r.user_difficulty is not None or r.user_helpful is not None
     ]
     if len(feedback_reviews) >= 3:
         _try_award(

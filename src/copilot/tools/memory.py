@@ -49,6 +49,7 @@ if TYPE_CHECKING:
 # 1. Models
 # -------------------------------------------------------------------------------------------------
 
+
 class MemorySummary(ToolOutput):
     """Summary representation of a behavioural memory item."""
 
@@ -86,21 +87,23 @@ class EvidenceItemView(ToolOutput):
 class ListMemoriesInput(ToolInput):
     """Input parameters for listing behavioural memories."""
 
-    status: (
-        Literal["candidate", "active", "stale", "retired", "rejected", "forgotten"]
-        | None
-    ) = Field(
-        default=None,
-        description="Filter by memory status.",
+    status: Literal["candidate", "active", "stale", "retired", "rejected", "forgotten"] | None = (
+        Field(
+            default=None,
+            description="Filter by memory status.",
+        )
     )
 
-    kind: Literal[
-        "recurring_pattern",
-        "contextual_exception",
-        "advice_feedback",
-        "preference",
-        "merchant_habit",
-    ] | None = Field(
+    kind: (
+        Literal[
+            "recurring_pattern",
+            "contextual_exception",
+            "advice_feedback",
+            "preference",
+            "merchant_habit",
+        ]
+        | None
+    ) = Field(
         default=None,
         description="Filter by memory kind.",
     )
@@ -228,6 +231,7 @@ class RecordContextualExceptionOutput(ToolOutput):
 # -------------------------------------------------------------------------------------------------
 # 2. Handlers
 # -------------------------------------------------------------------------------------------------
+
 
 def _resolve_clock(ctx: ExecutionContext) -> datetime:
     if isinstance(ctx.clock, datetime):
@@ -403,7 +407,6 @@ def reject_memory_handler(ctx: ExecutionContext, **kwargs) -> RejectMemoryOutput
             ErrorCode.INVALID_INPUT,
             f"Cannot reject forgotten memory '{params.memory_id}'.",
         )
-
 
     update_memory_status(
         ctx.conn,
@@ -583,7 +586,6 @@ MEMORY_SPECS = [
         side_effect=SideEffect.WRITE_LOGICAL,
         handler=forget_memory_handler,
     ),
-
     ToolSpec(
         name="refresh_memories",
         description="Run observers across transactions and preferences to refresh memory store.",
@@ -601,7 +603,6 @@ MEMORY_SPECS = [
         handler=record_contextual_exception_handler,
     ),
 ]
-
 
 
 def register_memory_tools(register_fn: Callable[[ToolSpec], None] = register) -> None:

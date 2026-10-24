@@ -66,13 +66,24 @@ def create_sample_experiment(
         user_id="u_alice",
         title="Weekend Dining Reduction",
         template_code=template_code,
-        hypothesis_json={"intervention": "cook", "metric": "dining_spend", "direction": "lower", "target": 40000},
+        hypothesis_json={
+            "intervention": "cook",
+            "metric": "dining_spend",
+            "direction": "lower",
+            "target": 40000,
+        },
         metric_def_json={"metric": "dining_spend", "categories": ["dining"]},
         params_json={},
         difficulty="moderate",
         window_start=window_start,
         window_end=window_end,
-        baseline_json={"k": 4, "window_values": [50000], "median": 50000, "low": 42000, "high": 58000},
+        baseline_json={
+            "k": 4,
+            "window_values": [50000],
+            "median": 50000,
+            "low": 42000,
+            "high": 58000,
+        },
         target_value=40000,
         status=status,
         origin="offer",
@@ -143,9 +154,7 @@ def test_posterior_updates_exact(conn):
     assert stat2.beta_milli == 3000
 
     # 4. Abandoned experiment: +1.0 beta (1000 milli)
-    stat3 = update_template_posterior(
-        conn, "u_alice", "tpl_dining_weekend", "abandoned", clock=DT0
-    )
+    stat3 = update_template_posterior(conn, "u_alice", "tpl_dining_weekend", "abandoned", clock=DT0)
     assert stat3.alpha_milli == 3000
     assert stat3.beta_milli == 4000
 
@@ -268,15 +277,21 @@ def test_advice_citation_non_causal(conn):
 def test_unhelpful_template_suppressed_in_advice(conn):
     """Rating a template unhelpful suppresses it in advice drafting during cooldown."""
     create_sample_experiment(conn, "exp_unhelp", template_code="tpl_unhelpful_test")
-    create_sample_review(conn, "rev_unhelp", "exp_unhelp", user_helpful=False, created_at="2026-08-01T00:00:00Z")
+    create_sample_review(
+        conn, "rev_unhelp", "exp_unhelp", user_helpful=False, created_at="2026-08-01T00:00:00Z"
+    )
 
     today = date(2026, 8, 15)
     # Suppressed on day 14 (within 30-day cooldown)
-    assert is_template_suppressed_in_advice(conn, "u_alice", "tpl_unhelpful_test", as_of=today, cooldown_days=30)
+    assert is_template_suppressed_in_advice(
+        conn, "u_alice", "tpl_unhelpful_test", as_of=today, cooldown_days=30
+    )
 
     # Unsuppressed after cooldown expires (day 35)
     future = today + timedelta(days=25)
-    assert not is_template_suppressed_in_advice(conn, "u_alice", "tpl_unhelpful_test", as_of=future, cooldown_days=30)
+    assert not is_template_suppressed_in_advice(
+        conn, "u_alice", "tpl_unhelpful_test", as_of=future, cooldown_days=30
+    )
 
 
 # -------------------------------------------------------------------------------------------------
@@ -304,7 +319,9 @@ def test_forgotten_memories_excluded_from_advice(conn):
 def test_contribution_plan_experiment_options(conn):
     """Successful experiments are converted into candidate contribution plan options."""
     create_sample_experiment(conn, "exp_plan")
-    create_sample_review(conn, "rev_plan", "exp_plan", outcome="beyond_usual_range", effect_value=-15000)
+    create_sample_review(
+        conn, "rev_plan", "exp_plan", outcome="beyond_usual_range", effect_value=-15000
+    )
     record_experiment_outcome_memory(conn, "u_alice", "exp_plan", clock=DT0)
 
     options = get_contribution_plan_experiment_options(conn, "u_alice", clock=DT0)

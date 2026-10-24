@@ -196,14 +196,10 @@ def merge_specialist_reports(
             first_val = occurrences[0][1]
             for _role, val, _finding in occurrences[1:]:
                 if val != first_val:
-
                     conflicting_metrics.add(metric)
                     contradiction_data = {
                         "metric": metric,
-                        "values": [
-                            {"role": r, "value": v}
-                            for r, v, _ in occurrences
-                        ],
+                        "values": [{"role": r, "value": v} for r, v, _ in occurrences],
                     }
                     contradictions.append(contradiction_data)
                     logger.warning("Merge contradiction detected: %s", contradiction_data)

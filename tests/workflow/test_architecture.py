@@ -61,9 +61,7 @@ def test_workflow_nodes_only_call_tools_via_execute_tool():
     """
     Verify that workflow/nodes.py explicitly uses execute_tool for tool executions.
     """
-    nodes_file = (
-        Path(__file__).resolve().parents[2] / "src" / "copilot" / "workflow" / "nodes.py"
-    )
+    nodes_file = Path(__file__).resolve().parents[2] / "src" / "copilot" / "workflow" / "nodes.py"
     content = nodes_file.read_text(encoding="utf-8")
     tree = ast.parse(content, filename=str(nodes_file))
 

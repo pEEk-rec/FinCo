@@ -60,8 +60,12 @@ def test_ctx():
     )
     # Standard categories
     for cat in ["income", "rent", "dining", "groceries"]:
-        insert_category(c, Category(id=f"cat_{cat}_u1", user_id="u1", name=cat.title(), created_at=T0))
-        insert_category(c, Category(id=f"cat_{cat}_u2", user_id="u2", name=cat.title(), created_at=T0))
+        insert_category(
+            c, Category(id=f"cat_{cat}_u1", user_id="u1", name=cat.title(), created_at=T0)
+        )
+        insert_category(
+            c, Category(id=f"cat_{cat}_u2", user_id="u2", name=cat.title(), created_at=T0)
+        )
 
     # Add 3 complete months of history for u1 (July, August, September 2026)
     for mo in (7, 8, 9):

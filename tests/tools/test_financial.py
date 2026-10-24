@@ -394,7 +394,11 @@ def test_user_correction_resolves_review_flag_and_undo_restores_it(ctx):
 
     if get_tool("undo") is None:
         register(UNDO_TOOL)
-    ctx.policy = ctx.policy.model_copy(update={"tools": {**ctx.policy.tools, "undo": ctx.policy.tools.get("recategorize_transaction")}})
+    ctx.policy = ctx.policy.model_copy(
+        update={
+            "tools": {**ctx.policy.tools, "undo": ctx.policy.tools.get("recategorize_transaction")}
+        }
+    )
     result = run(ctx, "undo", {"audit_event_id": out.audit_event_id}, approved=True)
     assert result.ok, result.error
     restored = get_transaction(ctx.conn, "u1", "t3")

@@ -391,15 +391,14 @@ def test_approve_without_apply_changes_nothing():
     insert_reallocation_draft(conn, draft)
 
     # Approve draft
-    update_reallocation_draft_status(
-        conn, uid, draft.id, "approved", decided_at=now_str
-    )
+    update_reallocation_draft_status(conn, uid, draft.id, "approved", decided_at=now_str)
 
     # Invariant: No new allocations are inserted by approval alone
     allocs = [a for a in list_bucket_allocations(conn, uid, "bk_src") if a.id != "al_init_src"]
     assert len(allocs) == 0
 
     from copilot.workflow.nodes import ensure_tools_registered
+
     ensure_tools_registered()
 
     # Only when apply_reallocation is executed do allocations write
@@ -530,7 +529,10 @@ def test_festival_exception_damps_alert_and_supports_hypothesis():
         reason="festival",
     )
     items = list_memory_items(conn, uid, status="active")
-    assert any(m.kind == "contextual_exception" and m.statement_json.get("reason") == "festival" for m in items)
+    assert any(
+        m.kind == "contextual_exception" and m.statement_json.get("reason") == "festival"
+        for m in items
+    )
     conn.close()
 
 
@@ -614,7 +616,9 @@ def test_forgotten_memory_unrecoverable():
 
 # 16. Refusal of "which SIP should I buy"
 def test_refusal_which_sip_should_i_buy():
-    is_refused, refusal_class, msg = check_input_gate("which SIP mutual fund should I buy for high returns?")
+    is_refused, refusal_class, msg = check_input_gate(
+        "which SIP mutual fund should I buy for high returns?"
+    )
     assert is_refused is True
     assert refusal_class in ("INVESTMENT_ADVICE", "MARKET_PREDICTION")
 
@@ -703,6 +707,7 @@ def test_job_lease_prevents_double_rollover():
     init_scheduled_jobs(conn, uid)
 
     from copilot.db.repo_phase3 import list_scheduled_jobs
+
     jobs = list_scheduled_jobs(conn, uid, enabled_only=False)
     target = next(j for j in jobs if j.job_kind == "rollover_buckets")
 
@@ -739,7 +744,13 @@ async def test_mcp_lists_no_write_tool():
     server = create_mcp_server(user_id="u_test")
     tools = await server.list_tools()
     tool_names = {t.name for t in tools}
-    write_tools = {"create_commitment", "allocate_bucket", "create_goal", "transfer_money", "delete_memory"}
+    write_tools = {
+        "create_commitment",
+        "allocate_bucket",
+        "create_goal",
+        "transfer_money",
+        "delete_memory",
+    }
     for tool_name in write_tools:
         assert tool_name not in tool_names
 
@@ -792,6 +803,7 @@ def test_multi_tenant_isolation_phase3():
 
     # User 2 must see zero buckets
     from copilot.db.repo_phase3 import list_buckets
+
     u2_buckets = list_buckets(conn, u2)
     assert len(u2_buckets) == 0
 

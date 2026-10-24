@@ -64,9 +64,7 @@ def retrieve_relevant_memories(
     ctx_cfg_path = CONFIG_DIR / "context.yaml"
     ctx_cfg = load_context_config(ctx_cfg_path) if ctx_cfg_path.exists() else None
 
-    effective_top_k = (
-        top_k if top_k is not None else (ctx_cfg.top_k_memories if ctx_cfg else 5)
-    )
+    effective_top_k = top_k if top_k is not None else (ctx_cfg.top_k_memories if ctx_cfg else 5)
     now_dt = now_utc(clock) if clock is not None else datetime.now(UTC)
 
     # Multi-tenant query: only memories of user_id, excluding forgotten
@@ -125,9 +123,8 @@ def retrieve_relevant_memories(
 
         if subject_match_weight == 0 and clean_parent:
             # Check parent category match
-            is_parent = (
-                f"category:{clean_parent}" in item_subj_key
-                or (stmt_cat and clean_parent == stmt_cat)
+            is_parent = f"category:{clean_parent}" in item_subj_key or (
+                stmt_cat and clean_parent == stmt_cat
             )
             if is_parent:
                 subject_match_weight = 2

@@ -57,9 +57,7 @@ def test_seed(test_db_path: str) -> None:
     init_res = runner.invoke(app, ["init-db", "--db", test_db_path])
     assert init_res.exit_code == 0
 
-    seed_res = runner.invoke(
-        app, ["seed", "--db", test_db_path, "--months", "2", "--seed", "123"]
-    )
+    seed_res = runner.invoke(app, ["seed", "--db", test_db_path, "--months", "2", "--seed", "123"])
     assert seed_res.exit_code == 0
     assert "Seeded environment for user" in seed_res.output
     assert "Accounts:" in seed_res.output
@@ -244,9 +242,7 @@ def test_budgets_forecast_anomalies_recurring_state(test_db_path: str) -> None:
     assert a_res.exit_code == 0
     assert "Detected Anomalies" in a_res.output
 
-    a_json = runner.invoke(
-        app, ["anomalies", "--db", test_db_path, "--month", "2024-02", "--json"]
-    )
+    a_json = runner.invoke(app, ["anomalies", "--db", test_db_path, "--month", "2024-02", "--json"])
     assert a_json.exit_code == 0
     assert isinstance(json.loads(a_json.output), list)
 

@@ -107,6 +107,7 @@ alerts_app = typer.Typer(
 )
 app.add_typer(alerts_app, name="alerts")
 
+from copilot.cli.capture import capture_app  # noqa: E402
 from copilot.cli.experiments import (  # noqa: E402
     adjustments_app,
     challenges_app,
@@ -119,6 +120,7 @@ app.add_typer(sim_app, name="sim")
 app.add_typer(experiments_app, name="experiments")
 app.add_typer(challenges_app, name="challenges")
 app.add_typer(adjustments_app, name="adjustments")
+app.add_typer(capture_app, name="capture")
 
 
 @app.command("progress")
@@ -129,7 +131,6 @@ def progress_cmd(
 ) -> None:
     """Display user level, XP, unlocked badges, streaks, and personal bests (PLAN_PHASE4)."""
     render_progress_cmd(user=user, db=db, json_output=json_output)
-
 
 
 def parse_cli_amount(amt_str: str) -> int:
@@ -1216,9 +1217,38 @@ def eval_cmd(
     trials: Annotated[
         int, typer.Option("--trials", help="Phase 4: trials per seed per persona")
     ] = 40,
+    capture: Annotated[
+        bool, typer.Option("--capture", help="Evaluate payment capture instead of a phase")
+    ] = False,
 ) -> None:
     from rich import box
     from rich.table import Table
+
+    if capture:
+        from dataclasses import asdict
+
+        from copilot.eval.harness_capture import run_capture_evaluation, write_report
+
+        cap_report = run_capture_evaluation()
+        out_path = write_report(cap_report)
+        if as_json:
+            print_json(asdict(cap_report))
+        else:
+            tbl = Table(title="Capture evaluation", box=box.ROUNDED)
+            tbl.add_column("Check", style="bold")
+            tbl.add_column("Measured")
+            tbl.add_column("Target")
+            tbl.add_column("Result", justify="center")
+            for c in cap_report.checks:
+                mark = "[green]PASS[/green]" if c.passed else "[red]FAIL[/red]"
+                tbl.add_row(c.name, c.measured, c.target, mark)
+            console.print(tbl)
+            for item in cap_report.pending:
+                console.print(f"[yellow]not measured:[/yellow] {item}")
+            print_success(f"Report written to [cyan]{out_path}[/cyan]")
+        if not cap_report.all_passed:
+            raise typer.Exit(1)
+        return
 
     if phase == 4:
         from dataclasses import asdict
@@ -1890,7 +1920,9 @@ def goals_decompose_cmd(
                 f"{c.gap_share_pct}%",
             )
 
-        monthly_str = format_inr(decomp.required_monthly_paise) if decomp.required_monthly_paise else "N/A"  # noqa: E501
+        monthly_str = (
+            format_inr(decomp.required_monthly_paise) if decomp.required_monthly_paise else "N/A"
+        )  # noqa: E501
         console.print(
             Panel(
                 f"[bold cyan]Deficit:[/bold cyan] {format_inr(decomp.deficit_paise)} | "
@@ -1902,10 +1934,11 @@ def goals_decompose_cmd(
         )
         console.print(table)
         if not decomp.candidate_experiments:
-            console.print("[dim]No candidate experiments could be fitted for this goal deficit.[/dim]")  # noqa: E501
+            console.print(
+                "[dim]No candidate experiments could be fitted for this goal deficit.[/dim]"
+            )  # noqa: E501
     finally:
         conn.close()
-
 
 
 # =================================================================================================
@@ -2810,11 +2843,17 @@ def serve_cmd(
     port: Annotated[int, typer.Option("--port")] = 8765,
     demo: Annotated[str, typer.Option("--demo", help="empty or imported")] = "empty",
     token: Annotated[str | None, typer.Option("--token", help="Fixed session token (dev)")] = None,
+    real_time: Annotated[
+        bool, typer.Option("--real-time", help="Real clock, for live bank alerts")
+    ] = False,
+    lan: Annotated[
+        bool, typer.Option("--lan", help="Listen on the local network (phone on Wi-Fi)")
+    ] = False,
 ) -> None:
-    """Start the local HTTP API for the web UI (localhost only)."""
+    """Start the local HTTP API for the web UI (localhost only unless --lan)."""
     from copilot.api.server import serve
 
-    serve(get_db_path(db), port=port, demo=demo, token=token)
+    serve(get_db_path(db), port=port, demo=demo, token=token, real_time=real_time, lan=lan)
 
 
 # -------------------------------------------------------------------------------------------------
@@ -3959,15 +3998,23 @@ def memory_exception_cmd(
     conn = open_db(get_db_path(db))
     try:
         ctx = make_exec_ctx(conn=conn, user_id=user_id, actor="user")
-        args = {"category": category, "reason": reason, "period": period,
-                "from_date": from_date, "to_date": to_date}
+        args = {
+            "category": category,
+            "reason": reason,
+            "period": period,
+            "from_date": from_date,
+            "to_date": to_date,
+        }
         res = execute_tool(ctx, "record_contextual_exception", args)
         conn.commit()
         if not res.ok:
             print_error(f"Could not record the exception: {res.error.message}")
             raise typer.Exit(code=1)
-        print_success(f"Noted: {category} ({reason}) {from_date or period}"
-                      + (f" to {to_date}" if to_date else "") + ".")
+        print_success(
+            f"Noted: {category} ({reason}) {from_date or period}"
+            + (f" to {to_date}" if to_date else "")
+            + "."
+        )
     finally:
         conn.close()
 
@@ -4553,12 +4600,33 @@ def learning_show_cmd(
         stats = list_tenant_learning_stats(conn, user_id=user)
         if subject:
             stats = [
-                s for s in stats
+                s
+                for s in stats
                 if s.get("subject_kind") == subject or s.get("subject_key") == subject
             ]
+        from copilot.config.capture import load_capture_config
+        from copilot.core import capture_learning
+
+        capture_rows = capture_learning.summary(conn, user, load_capture_config())
         if json_output:
-            print_json(stats)
+            print_json(capture_rows if subject == "capture" else stats)
             return
+
+        cap = Table(
+            title="How payment guesses are weighted (basis points of 10000)", box=box.ROUNDED
+        )
+        for col in ("Signal", "Configured", "Learned", "Multiplier", "p", "Labels seen"):
+            cap.add_column(col, justify="left" if col == "Signal" else "right")
+        for r in capture_rows:
+            cap.add_row(
+                r["signal"],
+                str(r["base_bp"]),
+                str(r["effective_bp"]),
+                f"{r['multiplier']:.4f}",
+                f"{r['p']:.4f}",
+                str(r["evidence"]),
+            )
+        console.print(cap)
 
         table = Table(title=f"Learned Feedback Multipliers for User '{user}'", box=box.ROUNDED)
         table.add_column("Subject Kind", style="cyan", no_wrap=True)
@@ -4608,13 +4676,11 @@ def learning_reset_cmd(
     try:
         sub_kind = (
             subject
-            if subject in ("challenge_template", "alert_type", "anomaly_type")
+            if subject in ("challenge_template", "alert_type", "anomaly_type", "capture_signal")
             else None
         )
         sub_key = subject if sub_kind is None else None
-        cnt = reset_learning(
-            conn, user_id=user, subject_kind=sub_kind, subject_key=sub_key
-        )
+        cnt = reset_learning(conn, user_id=user, subject_kind=sub_kind, subject_key=sub_key)
         conn.commit()
         if subject:
             console.print(

@@ -129,8 +129,7 @@ def estimate_snips(
 
     # Asymptotic variance of ratio estimator: sum(w_i^2 * (y_i - v_hat)^2) / (sum(w_i))^2
     var_numerator = sum(
-        (w**2) * ((y - v_hat) ** 2)
-        for w, y in zip(weights, logged_rewards, strict=False)
+        (w**2) * ((y - v_hat) ** 2) for w, y in zip(weights, logged_rewards, strict=False)
     )
     variance = var_numerator / (sum_w**2)
     se = math.sqrt(max(0.0, variance))

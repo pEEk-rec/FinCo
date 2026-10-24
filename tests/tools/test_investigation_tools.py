@@ -52,7 +52,7 @@ def inv_ctx():
                 id=f"tx_base_{i}",
                 user_id="u1",
                 account_id="acc_1",
-                occurred_at=f"2026-09-0{i+1}T12:00:00Z",
+                occurred_at=f"2026-09-0{i + 1}T12:00:00Z",
                 amount_paise=250_00,
                 direction="debit",
                 merchant_raw="SWIGGY",
@@ -225,7 +225,9 @@ def test_investigation_user_isolation(inv_ctx):
     assert res.error.code == ErrorCode.INVALID_INPUT
 
     # First run investigation as u1
-    res_u1 = execute_tool(inv_ctx["agent"], "investigate_anomaly", {"anomaly_id": "tx_target_croma"})
+    res_u1 = execute_tool(
+        inv_ctx["agent"], "investigate_anomaly", {"anomaly_id": "tx_target_croma"}
+    )
     assert res_u1.ok
     inv_id = res_u1.data.investigation.id
 

@@ -60,8 +60,7 @@ def investigate_anomaly_handler(
     if not matching_txs:
         # Check by merchant or partial ID
         matching_txs = [
-            t for t in all_txs
-            if anomaly_id in t.id or anomaly_id in (t.merchant_raw or "")
+            t for t in all_txs if anomaly_id in t.id or anomaly_id in (t.merchant_raw or "")
         ]
 
     if not matching_txs:
@@ -78,9 +77,7 @@ def investigate_anomaly_handler(
     target_txns = repo.list_transactions(ctx.conn, ctx.user_id, *target_bounds)
 
     # Baseline lookback
-    baseline_txns = [
-        t for t in all_txs if t.occurred_at < target_bounds[0]
-    ]
+    baseline_txns = [t for t in all_txs if t.occurred_at < target_bounds[0]]
 
     decomp = decompose_spend_change(baseline_txns, target_txns)
     inv = run_investigation_suite(
@@ -202,11 +199,13 @@ def explain_change_handler(
         subject_ref = {"category_id": category_id, "period": period, "baseline": baseline_period}
     elif merchant:
         target_txns = [
-            t for t in target_all
+            t
+            for t in target_all
             if merchant.lower() in (t.merchant_normalized or t.merchant_raw or "").lower()
         ]
         base_txns = [
-            t for t in base_all
+            t
+            for t in base_all
             if merchant.lower() in (t.merchant_normalized or t.merchant_raw or "").lower()
         ]
         subject_kind = "merchant_change"

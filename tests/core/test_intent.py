@@ -40,15 +40,30 @@ from copilot.models.domain import Category, User
 # Test Fixtures & Setup
 # ---------------------------------------------------------------------------------------------
 
+
 @pytest.fixture
 def conn():
     c = get_connection(":memory:")
     init_db(c)
     insert_user(c, User(id="u1", created_at="2026-01-01T00:00:00Z"))
-    insert_category(c, Category(id="cat_dining", user_id="u1", name="Dining", created_at="2026-01-01T00:00:00Z"))
-    insert_category(c, Category(id="cat_groceries", user_id="u1", name="Groceries", created_at="2026-01-01T00:00:00Z"))
-    insert_category(c, Category(id="cat_shopping", user_id="u1", name="Shopping", created_at="2026-01-01T00:00:00Z"))
-    insert_category(c, Category(id="cat_travel", user_id="u1", name="Travel", created_at="2026-01-01T00:00:00Z"))
+    insert_category(
+        c, Category(id="cat_dining", user_id="u1", name="Dining", created_at="2026-01-01T00:00:00Z")
+    )
+    insert_category(
+        c,
+        Category(
+            id="cat_groceries", user_id="u1", name="Groceries", created_at="2026-01-01T00:00:00Z"
+        ),
+    )
+    insert_category(
+        c,
+        Category(
+            id="cat_shopping", user_id="u1", name="Shopping", created_at="2026-01-01T00:00:00Z"
+        ),
+    )
+    insert_category(
+        c, Category(id="cat_travel", user_id="u1", name="Travel", created_at="2026-01-01T00:00:00Z")
+    )
 
     insert_goal(
         c,
@@ -87,6 +102,7 @@ def conn():
 # 1. Amount Parser Tests
 # ---------------------------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize(
     "text,expected_paise",
     [
@@ -119,6 +135,7 @@ def test_parse_amount_paise(text, expected_paise):
 # ---------------------------------------------------------------------------------------------
 # 2. Period Parser Tests (Month Rollover, IST Boundaries, Horizons)
 # ---------------------------------------------------------------------------------------------
+
 
 def test_parse_period_relative_and_rollover():
     # 1. Standard reference date mid-year: Oct 14, 2026
@@ -160,6 +177,7 @@ def test_parse_period_explicit_and_horizons():
 # ---------------------------------------------------------------------------------------------
 # 3. Entity Resolution Tests (Zero Hallucination)
 # ---------------------------------------------------------------------------------------------
+
 
 def test_resolve_entities(conn):
     # Category matches by direct name or synonym
@@ -263,12 +281,13 @@ def test_labelled_queries_deterministic_accuracy(conn):
             print(f"FAILED: '{query}' -> got '{intent.type}', expected '{expected_type}'")
 
     accuracy = correct / total
-    assert accuracy == 1.0, f"Expected 100% accuracy, got {accuracy*100:.1f}% ({correct}/{total})"
+    assert accuracy == 1.0, f"Expected 100% accuracy, got {accuracy * 100:.1f}% ({correct}/{total})"
 
 
 # ---------------------------------------------------------------------------------------------
 # 5. Input Gate Refusal vs Benign Look-Alike Tests
 # ---------------------------------------------------------------------------------------------
+
 
 def test_input_gate_refuses_malicious_and_allows_benign():
     # 1. INVESTMENT_ADVICE: Refuse vs Allow
@@ -351,6 +370,7 @@ def test_input_gate_refuses_malicious_and_allows_benign():
 # 6. Safety Rule 4: LLM Refusal Added; LLM Cannot Remove Deterministic Refusal
 # ---------------------------------------------------------------------------------------------
 
+
 def test_safety_rule_4_llm_cannot_remove_deterministic_refusal(conn):
     """
     If the deterministic input gate triggers a refusal (e.g. MONEY_MOVEMENT),
@@ -398,6 +418,7 @@ def test_safety_rule_4_llm_proposed_refusal_is_added(conn):
 # 7. Hallucinated Entity Dropped
 # ---------------------------------------------------------------------------------------------
 
+
 def test_hallucinated_entity_is_dropped():
     user_cats = {"Dining": "cat_dining", "Groceries": "cat_groceries"}
     user_goals = {"Car": "g_car"}
@@ -409,9 +430,7 @@ def test_hallucinated_entity_is_dropped():
         ]
     )
 
-    intent, _ = llm_classify_intent(
-        fake_llm, "project my crypto spend", user_cats, user_goals
-    )
+    intent, _ = llm_classify_intent(fake_llm, "project my crypto spend", user_cats, user_goals)
     assert intent is not None
     assert intent.type == "forecast"
     # Both hallucinated entities must be dropped to None
@@ -423,6 +442,7 @@ def test_hallucinated_entity_is_dropped():
 # ---------------------------------------------------------------------------------------------
 # 8. Clarification Flow (Single Round)
 # ---------------------------------------------------------------------------------------------
+
 
 def test_clarification_generation_and_task_status(conn):
     # Explain change without category produces a clarification listing user categories
@@ -443,15 +463,14 @@ def test_clarification_generation_and_task_status(conn):
 # 9. PII Redaction Asserted on Captured Prompts
 # ---------------------------------------------------------------------------------------------
 
+
 def test_redaction_on_captured_prompts(conn):
     fake_llm = FakeLLMClient(
         [
             '{"intent_type": "unknown", "refusal_class": null, "category_name": null, "goal_name": null, "amount_inr": null, "period": null}'
         ]
     )
-    query_with_pii = (
-        "Check account 123456789012 for user alice@okaxis with phone 9876543210"
-    )
+    query_with_pii = "Check account 123456789012 for user alice@okaxis with phone 9876543210"
 
     create_agent_task(conn, "u1", query_with_pii, llm_client=fake_llm)
     assert len(fake_llm.prompts) == 1
@@ -469,6 +488,7 @@ def test_redaction_on_captured_prompts(conn):
 # ---------------------------------------------------------------------------------------------
 # 10. Raw Text Never Appears in Logs or Audit Events
 # ---------------------------------------------------------------------------------------------
+
 
 def test_raw_text_never_appears_in_logs_or_audit(conn, caplog):
     caplog.set_level(logging.DEBUG)
@@ -494,6 +514,7 @@ def test_raw_text_never_appears_in_logs_or_audit(conn, caplog):
 # ---------------------------------------------------------------------------------------------
 # 11. Works With LLM Completely Off
 # ---------------------------------------------------------------------------------------------
+
 
 def test_works_with_llm_completely_off(conn):
     """The entire pipeline functions deterministically when no LLM client is supplied."""

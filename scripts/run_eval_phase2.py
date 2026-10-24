@@ -31,8 +31,7 @@ def main() -> None:
     false_exp = report["investigation_standard"]["false_explanation_rate_pct"]
     print(f"False Explanation Rate: {false_exp}%")
     sim_ok = (
-        report["simulation"]["identity_pass"]
-        and report["simulation"]["conservation_of_paise_pass"]
+        report["simulation"]["identity_pass"] and report["simulation"]["conservation_of_paise_pass"]
     )
     print(f"Simulation Invariants: {'PASS' if sim_ok else 'FAIL'}")
     print(f"Alerts Ordinary Month Silence: {report['alerts']['ordinary_month_silence_pct']}%")

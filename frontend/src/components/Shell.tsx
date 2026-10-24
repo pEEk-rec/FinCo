@@ -10,16 +10,19 @@ import {
   Target,
   Trophy,
   Flask,
+  Lightning,
+  CalendarCheck,
 } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
 import { motion } from 'motion/react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 
 import { useReviewQueue, useSession } from '../api/hooks';
 import { ApiError } from '../api/client';
 import { copy } from '../copy/en';
 import { Badge } from './Badge';
 import { cx } from './cx';
+import { CaptureOverlay } from './capture/CaptureOverlay';
 import { LiquidBackdrop } from '../motion/LiquidBackdrop';
 import { ErrorState } from './States';
 
@@ -27,6 +30,8 @@ const NAV: { to: string; label: string; icon: ReactNode; end?: boolean }[] = [
   { to: '/', label: copy.nav.dashboard, icon: <SquaresFour size={18} />, end: true },
   { to: '/transactions', label: copy.nav.transactions, icon: <ArrowsLeftRight size={18} /> },
   { to: '/review', label: copy.nav.review, icon: <ListChecks size={18} /> },
+  { to: '/today', label: copy.nav.today, icon: <CalendarCheck size={18} /> },
+  { to: '/capture', label: copy.nav.capture, icon: <Lightning size={18} /> },
   { to: '/goals', label: copy.nav.goals, icon: <Target size={18} /> },
   { to: '/challenges', label: copy.nav.challenges, icon: <Flask size={18} /> },
   { to: '/progress', label: copy.nav.progress, icon: <Trophy size={18} /> },
@@ -48,8 +53,8 @@ function NavItem({
       end={end}
       className={({ isActive }) =>
         cx(
-          'relative flex h-9 items-center gap-3 rounded-control px-3 text-[14px] transition-colors duration-fast',
-          (active ?? isActive) ? 'font-medium text-brand' : 'text-ink-2 hover:text-ink',
+          'relative flex h-10 items-center gap-3 rounded-control px-3 text-[14px] font-semibold transition-colors duration-fast',
+          (active ?? isActive) ? 'text-ink-inverse' : 'text-ink-2 hover:text-ink',
         )
       }
     >
@@ -60,13 +65,13 @@ function NavItem({
             <motion.span
               layoutId="nav-liquid"
               aria-hidden
-              className="absolute inset-0 -z-10 rounded-control bg-brand-tint ring-1 ring-coral/35 ring-inset"
+              className="absolute inset-0 -z-10 rounded-control bg-ink shadow-[0_3px_0_var(--color-coral)]"
               transition={{ type: 'spring', stiffness: 380, damping: 30 }}
             />
           ) : null}
           <span
             aria-hidden
-            className={cx('flex', (active ?? isActive) ? 'text-brand' : 'text-ink-3')}
+            className={cx('flex', (active ?? isActive) ? 'text-coral' : 'text-ink-3')}
           >
             {icon}
           </span>
@@ -90,20 +95,25 @@ export function Shell() {
   return (
     <div className="relative isolate grid min-h-screen grid-cols-1 lg:grid-cols-[15rem_minmax(0,1fr)]">
       <LiquidBackdrop />
+      <CaptureOverlay />
       <a
         href="#content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-control focus:bg-ink focus:px-3 focus:py-2 focus:text-ink-inverse"
       >
         {copy.nav.skip}
       </a>
-      <aside className="no-print glass sticky top-0 hidden h-screen flex-col rounded-none border-y-0 border-l-0 px-3 py-5 lg:flex">
-        <div className="mb-8 flex items-center gap-2.5 px-3">
+      <aside className="no-print sticky top-0 hidden h-screen flex-col border-r-[1.5px] border-ink/15 bg-surface px-3 py-5 lg:flex">
+        <Link
+          to="/welcome"
+          className="mb-8 flex items-center gap-2.5 px-3 transition-opacity hover:opacity-80"
+          title="Return to welcome page"
+        >
           <span
             aria-hidden
-            className="h-6 w-6 rounded-full bg-[conic-gradient(from_200deg,var(--color-coral),var(--color-peach),var(--color-brand),var(--color-coral))] shadow-[0_0_18px_-4px_var(--color-coral)]"
+            className="h-7 w-7 rounded-full border-2 border-ink bg-coral shadow-[2px_2px_0_var(--color-ink)]"
           />
-          <span className="serif-light text-[26px] leading-none">{copy.product}</span>
-        </div>
+          <span className="serif-light text-[28px] leading-none text-ink">{copy.product}</span>
+        </Link>
         <nav aria-label="Main" className="isolate flex flex-col gap-0.5">
           {NAV.map((item) => (
             <NavItem
@@ -141,7 +151,7 @@ export function Shell() {
           <button
             type="button"
             onClick={() => navigate('/agent')}
-            className="flex h-10 items-center gap-2 rounded-control border border-hairline bg-surface px-3 text-[14px] text-agent transition-colors duration-fast hover:border-agent"
+            className="flex h-10 items-center gap-2 pop rounded-control border-2 border-agent bg-surface px-3 text-[14px] font-bold text-agent [--edge:var(--color-agent)]"
           >
             <Sparkle size={16} weight="fill" aria-hidden />
             {copy.nav.ask}
@@ -150,8 +160,14 @@ export function Shell() {
       </aside>
 
       <div className="min-w-0">
-        <header className="no-print flex h-14 items-center justify-between border-b border-hairline px-4 lg:hidden">
-          <span className="serif-light text-[22px]">{copy.product}</span>
+        <header className="no-print flex h-14 items-center justify-between border-b-[1.5px] border-ink/15 bg-surface px-4 lg:hidden">
+          <Link
+            to="/welcome"
+            className="serif-light text-[22px] text-ink transition-opacity hover:opacity-80"
+            title="Return to welcome page"
+          >
+            {copy.product}
+          </Link>
           <nav aria-label="Main" className="flex gap-1 overflow-x-auto">
             {NAV.map((item) => (
               <NavLink
@@ -160,10 +176,7 @@ export function Shell() {
                 end={item.end}
                 aria-label={item.label}
                 className={({ isActive }) =>
-                  cx(
-                    'rounded-control p-2',
-                    isActive ? 'bg-surface-selected text-ink' : 'text-ink-3',
-                  )
+                  cx('rounded-control p-2', isActive ? 'bg-ink text-coral' : 'text-ink-3')
                 }
               >
                 {item.icon}
@@ -225,7 +238,7 @@ export function Page({
     >
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-2xl">
-          <h1 className="serif-light text-[32px] leading-[1.15] sm:text-[36px]">{title}</h1>
+          <h1 className="serif-light text-[34px] sm:text-[44px]">{title}</h1>
           {lead ? <p className="mt-2 text-body text-ink-2">{lead}</p> : null}
         </div>
         {actions}

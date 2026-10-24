@@ -81,7 +81,9 @@ def eval_ctx():
         insert_category(conn, Category(id=cid, user_id="u1", name=cname, created_at=T0))
 
     policy = load_policy(POLICY_PATH)
-    return ExecutionContext(conn=conn, user_id="u1", run_id="gold_run_1", policy=policy, actor="agent")
+    return ExecutionContext(
+        conn=conn, user_id="u1", run_id="gold_run_1", policy=policy, actor="agent"
+    )
 
 
 # 1. Double ingestion
@@ -115,7 +117,9 @@ def test_golden_double_ingestion(eval_ctx: ExecutionContext):
     assert res1.ok
     assert res1.data.inserted > 0
 
-    count_after_first = len(list_transactions(eval_ctx.conn, "u1", "1970-01-01T00:00:00Z", "2030-01-01T00:00:00Z"))
+    count_after_first = len(
+        list_transactions(eval_ctx.conn, "u1", "1970-01-01T00:00:00Z", "2030-01-01T00:00:00Z")
+    )
 
     # Second ingestion with identical session
     res2 = execute_tool(eval_ctx, "ingest_statements", {"consent_id": cid, "account_id": "a1"})
@@ -123,7 +127,9 @@ def test_golden_double_ingestion(eval_ctx: ExecutionContext):
     assert res2.data.inserted == 0
     assert res2.data.skipped_existing > 0
 
-    count_after_second = len(list_transactions(eval_ctx.conn, "u1", "1970-01-01T00:00:00Z", "2030-01-01T00:00:00Z"))
+    count_after_second = len(
+        list_transactions(eval_ctx.conn, "u1", "1970-01-01T00:00:00Z", "2030-01-01T00:00:00Z")
+    )
     assert count_after_first == count_after_second
 
 
@@ -198,7 +204,9 @@ def test_golden_subscription_detected_and_forecast_as_fixed(eval_ctx: ExecutionC
 
     # Forecast category spend
     f_res = execute_tool(
-        eval_ctx, "forecast_category_spend", {"year": 2024, "month": 3, "category_id": "subscriptions"}
+        eval_ctx,
+        "forecast_category_spend",
+        {"year": 2024, "month": 3, "category_id": "subscriptions"},
     )
     assert f_res.ok
     assert f_res.data.projected_spend_paise >= 11900
@@ -349,7 +357,9 @@ def test_golden_correction_propagates_to_monthly_review_v2(eval_ctx: ExecutionCo
     # Build initial Monthly Review (v1)
     rev_v1 = build_monthly_review(eval_ctx.conn, "u1", 2024, 2, "run_v1")
     assert rev_v1.version == 1
-    assert any(c.category_id == "food" and c.current_spend_paise == 200000 for c in rev_v1.category_totals)
+    assert any(
+        c.category_id == "food" and c.current_spend_paise == 200000 for c in rev_v1.category_totals
+    )
 
     # User recategorizes transaction from food -> travel
     user_ctx = ExecutionContext(
@@ -365,7 +375,10 @@ def test_golden_correction_propagates_to_monthly_review_v2(eval_ctx: ExecutionCo
     # Build Monthly Review again (v2)
     rev_v2 = build_monthly_review(eval_ctx.conn, "u1", 2024, 2, "run_v2")
     assert rev_v2.version == 2
-    assert any(c.category_id == "travel" and c.current_spend_paise == 200000 for c in rev_v2.category_totals)
+    assert any(
+        c.category_id == "travel" and c.current_spend_paise == 200000
+        for c in rev_v2.category_totals
+    )
 
     # Verify v1 is still preserved in database
     v1_stored = get_monthly_review(eval_ctx.conn, "u1", 2024, 2, version=1)
@@ -515,4 +528,3 @@ def test_golden_consent_expired_blocks_fetch(eval_ctx: ExecutionContext):
     res = execute_tool(eval_ctx, "ingest_statements", {"consent_id": cid, "account_id": "a1"})
     assert not res.ok
     assert res.error.code in (ErrorCode.DENIED_BY_POLICY, ErrorCode.TOOL_FAILURE)
-

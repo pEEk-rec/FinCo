@@ -104,9 +104,7 @@ class DesignExperimentOutput(ToolOutput):
     experiment: Experiment
 
 
-def design_experiment_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> DesignExperimentOutput:
+def design_experiment_handler(ctx: "ExecutionContext", **kwargs) -> DesignExperimentOutput:
     params = DesignExperimentInput.model_validate(kwargs)
     exp = core_design(
         conn=ctx.conn,
@@ -141,9 +139,7 @@ class StartExperimentOutput(ToolOutput):
     experiment: Experiment
 
 
-def start_experiment_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> StartExperimentOutput:
+def start_experiment_handler(ctx: "ExecutionContext", **kwargs) -> StartExperimentOutput:
     params = StartExperimentInput.model_validate(kwargs)
     exp = core_start(
         conn=ctx.conn,
@@ -178,9 +174,7 @@ class PauseExperimentOutput(ToolOutput):
     experiment: Experiment
 
 
-def pause_experiment_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> PauseExperimentOutput:
+def pause_experiment_handler(ctx: "ExecutionContext", **kwargs) -> PauseExperimentOutput:
     params = PauseExperimentInput.model_validate(kwargs)
     exp = core_pause(
         conn=ctx.conn,
@@ -215,9 +209,7 @@ class ResumeExperimentOutput(ToolOutput):
     experiment: Experiment
 
 
-def resume_experiment_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> ResumeExperimentOutput:
+def resume_experiment_handler(ctx: "ExecutionContext", **kwargs) -> ResumeExperimentOutput:
     params = ResumeExperimentInput.model_validate(kwargs)
     exp = core_resume(
         conn=ctx.conn,
@@ -252,9 +244,7 @@ class AbandonExperimentOutput(ToolOutput):
     review: ExperimentReview
 
 
-def abandon_experiment_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> AbandonExperimentOutput:
+def abandon_experiment_handler(ctx: "ExecutionContext", **kwargs) -> AbandonExperimentOutput:
     params = AbandonExperimentInput.model_validate(kwargs)
     exp, rev = core_abandon(
         conn=ctx.conn,
@@ -298,9 +288,7 @@ class AnswerCheckinOutput(ToolOutput):
     checkin: ExperimentCheckin
 
 
-def answer_checkin_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> AnswerCheckinOutput:
+def answer_checkin_handler(ctx: "ExecutionContext", **kwargs) -> AnswerCheckinOutput:
     params = AnswerCheckinInput.model_validate(kwargs)
     chk = core_answer_checkin(
         conn=ctx.conn,
@@ -343,9 +331,7 @@ class SubmitReviewFeedbackOutput(ToolOutput):
     review: ExperimentReview
 
 
-def submit_review_feedback_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> SubmitReviewFeedbackOutput:
+def submit_review_feedback_handler(ctx: "ExecutionContext", **kwargs) -> SubmitReviewFeedbackOutput:
     params = SubmitReviewFeedbackInput.model_validate(kwargs)
     r_id = params.review_id
     if not r_id and params.experiment_id:
@@ -359,9 +345,7 @@ def submit_review_feedback_handler(
         raise ValueError("Either review_id or experiment_id must be provided")
 
     diff = (
-        params.difficulty_rating
-        if params.difficulty_rating is not None
-        else params.user_difficulty
+        params.difficulty_rating if params.difficulty_rating is not None else params.user_difficulty
     )
     rep = params.would_repeat if params.would_repeat is not None else params.user_would_repeat
 
@@ -459,9 +443,7 @@ class GetExperimentOutput(ToolOutput):
     experiment: Experiment | None
 
 
-def get_experiment_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> GetExperimentOutput:
+def get_experiment_handler(ctx: "ExecutionContext", **kwargs) -> GetExperimentOutput:
     params = GetExperimentInput.model_validate(kwargs)
     exp = repo_get_experiment(ctx.conn, ctx.user_id, params.experiment_id)
     return GetExperimentOutput(experiment=exp)
@@ -478,9 +460,7 @@ class ListExperimentsOutput(ToolOutput):
     experiments: list[Experiment]
 
 
-def list_experiments_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> ListExperimentsOutput:
+def list_experiments_handler(ctx: "ExecutionContext", **kwargs) -> ListExperimentsOutput:
     params = ListExperimentsInput.model_validate(kwargs)
     exps = repo_list_experiments(ctx.conn, ctx.user_id, status=params.status)
     return ListExperimentsOutput(experiments=exps)
@@ -497,9 +477,7 @@ class ExperimentProgressOutput(ToolOutput):
     progress: ExperimentProgress
 
 
-def experiment_progress_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> ExperimentProgressOutput:
+def experiment_progress_handler(ctx: "ExecutionContext", **kwargs) -> ExperimentProgressOutput:
     params = ExperimentProgressInput.model_validate(kwargs)
     prog = core_get_progress(
         conn=ctx.conn,
@@ -521,9 +499,7 @@ class CreateCheckinsOutput(ToolOutput):
     checkins: list[ExperimentCheckin]
 
 
-def create_checkins_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> CreateCheckinsOutput:
+def create_checkins_handler(ctx: "ExecutionContext", **kwargs) -> CreateCheckinsOutput:
     CreateCheckinsInput.model_validate(kwargs)
     chks = core_create_checkins(ctx.conn, ctx.user_id, clock=ctx.clock)
     if chks:
@@ -551,9 +527,7 @@ class CreateDueReviewsOutput(ToolOutput):
     reviews: list[ExperimentReview]
 
 
-def create_due_reviews_handler(
-    ctx: "ExecutionContext", **kwargs
-) -> CreateDueReviewsOutput:
+def create_due_reviews_handler(ctx: "ExecutionContext", **kwargs) -> CreateDueReviewsOutput:
     CreateDueReviewsInput.model_validate(kwargs)
     revs = core_create_due_reviews(ctx.conn, ctx.user_id, clock=ctx.clock)
     if revs:

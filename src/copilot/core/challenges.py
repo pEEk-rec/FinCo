@@ -745,8 +745,15 @@ def generate_challenge_offers(
     try:
         with savepoint(conn):
             created_offers = _insert_offers(
-                conn, user_id, today_str, selected, propensities, offers_cfg, rng_seed,
-                returning, now_dt,
+                conn,
+                user_id,
+                today_str,
+                selected,
+                propensities,
+                offers_cfg,
+                rng_seed,
+                returning,
+                now_dt,
             )
     except sqlite3.IntegrityError:
         return [
@@ -858,7 +865,8 @@ def decompose_goal_gap(
         # Load non-essential candidate templates
         templates = list(load_challenge_templates().values())
         eligible_tmpls = [
-            t for t in templates
+            t
+            for t in templates
             if t.metric in ("category_spend", "merchant_group_spend")
             and "non_essential_only" in t.safety_tags
         ]

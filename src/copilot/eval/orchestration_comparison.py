@@ -266,20 +266,36 @@ class BenchmarkLLMClient:
         if "critique" in p_lower or "critic" in p_lower:
             return json.dumps({"critique_code": "ok", "explanation": "findings verified"})
         if "decompose" in p_lower:
-            return json.dumps({
-                "subquestions": [
-                    {"domain": "cashflow", "question_kind": "calendar_coverage", "parameters": {"horizon_days": 60}},
-                    {"domain": "goals", "question_kind": "goal_impact", "parameters": {"amount_paise": 5000000}},
-                    {"domain": "readiness", "question_kind": "readiness_assessment", "parameters": {}},
-                ]
-            })
+            return json.dumps(
+                {
+                    "subquestions": [
+                        {
+                            "domain": "cashflow",
+                            "question_kind": "calendar_coverage",
+                            "parameters": {"horizon_days": 60},
+                        },
+                        {
+                            "domain": "goals",
+                            "question_kind": "goal_impact",
+                            "parameters": {"amount_paise": 5000000},
+                        },
+                        {
+                            "domain": "readiness",
+                            "question_kind": "readiness_assessment",
+                            "parameters": {},
+                        },
+                    ]
+                }
+            )
         if "plan" in p_lower:
-            return json.dumps({
-                "plan": [
-                    {"tool": "get_calendar", "arguments": {"horizon_days": 60}},
-                    {"tool": "evaluate_goal_impact", "arguments": {"amount_paise": 5000000}},
-                ]
-            })
+            return json.dumps(
+                {
+                    "plan": [
+                        {"tool": "get_calendar", "arguments": {"horizon_days": 60}},
+                        {"tool": "evaluate_goal_impact", "arguments": {"amount_paise": 5000000}},
+                    ]
+                }
+            )
         if "reflect" in p_lower:
             return json.dumps({"replan_needed": False})
         return json.dumps({"ok": True})
@@ -374,7 +390,11 @@ def _run_single_query(
                 tokens = 850
 
             if q.is_adversarial:
-                accuracy = 1.0 if result.get("refusal_reason") or result.get("status") == "stopped" else 0.0
+                accuracy = (
+                    1.0
+                    if result.get("refusal_reason") or result.get("status") == "stopped"
+                    else 0.0
+                )
                 coverage = 1.0
             elif q.is_gap_case:
                 is_partial = True
@@ -423,7 +443,11 @@ def _run_single_query(
                 tokens = 1120
 
             if q.is_adversarial:
-                accuracy = 1.0 if result.get("refusal_reason") or result.get("status") == "stopped" else 0.0
+                accuracy = (
+                    1.0
+                    if result.get("refusal_reason") or result.get("status") == "stopped"
+                    else 0.0
+                )
                 coverage = 1.0
             elif q.is_gap_case:
                 is_partial = True
@@ -522,7 +546,9 @@ def generate_orchestration_paradigms_document(
     output_path: Path | str | None = None,
 ) -> str:
     """Generate docs/orchestration_paradigms.md containing measured benchmarks and comprehensive analysis."""
-    dest = Path(output_path) if output_path else PROJECT_ROOT / "docs" / "orchestration_paradigms.md"
+    dest = (
+        Path(output_path) if output_path else PROJECT_ROOT / "docs" / "orchestration_paradigms.md"
+    )
 
     p1 = metrics["phase1_fixed"]
     p2_off = metrics["phase2_single_loop_llm_off"]

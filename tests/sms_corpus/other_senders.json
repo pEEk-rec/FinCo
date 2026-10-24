@@ -1,0 +1,32 @@
+[
+  {
+    "name": "a friend texting about money",
+    "sender": "+919812345678",
+    "text": "Sent Rs.250.00 From HDFC Bank A/C *1234 To RAMESH K On 18/10/26 Ref 628912345678",
+    "expect": "dropped:sender_not_allowed"
+  },
+  {
+    "name": "a lookalike header that is not on the list",
+    "sender": "HDFCBK1",
+    "text": "Sent Rs.250.00 From HDFC Bank A/C *1234 To RAMESH K On 18/10/26 Ref 628912345678",
+    "expect": "dropped:sender_not_allowed"
+  },
+  {
+    "name": "a spoofed bank wording from a shop",
+    "sender": "OFFERS",
+    "text": "Credit Alert! Rs.50000.00 credited to HDFC Bank A/c XX1234 on 18-10-26 from VPA win@prize (UPI 111111111111). Claim now",
+    "expect": "dropped:sender_not_allowed"
+  },
+  {
+    "name": "an otp from another service",
+    "sender": "AMZNOT",
+    "text": "123456 is your Amazon OTP",
+    "expect": "dropped:sender_not_allowed"
+  },
+  {
+    "name": "an empty sender",
+    "sender": "",
+    "text": "Sent Rs.250.00 From HDFC Bank A/C *1234 To RAMESH K On 18/10/26 Ref 628912345678",
+    "expect": "dropped:sender_not_allowed"
+  }
+]

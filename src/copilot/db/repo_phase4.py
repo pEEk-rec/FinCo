@@ -81,9 +81,7 @@ def _row_to_experiment(row: sqlite3.Row) -> Experiment:
     )
 
 
-def get_experiment(
-    conn: sqlite3.Connection, user_id: str, experiment_id: str
-) -> Experiment | None:
+def get_experiment(conn: sqlite3.Connection, user_id: str, experiment_id: str) -> Experiment | None:
     query = "SELECT * FROM experiments WHERE user_id = ? AND id = ?"
     row = conn.execute(query, (user_id, experiment_id)).fetchone()
     if row is None:
@@ -98,8 +96,7 @@ def list_experiments(
 ) -> list[Experiment]:
     if status:
         query = (
-            "SELECT * FROM experiments WHERE user_id = ? AND status = ? "
-            "ORDER BY window_start DESC"
+            "SELECT * FROM experiments WHERE user_id = ? AND status = ? ORDER BY window_start DESC"
         )
         rows = conn.execute(query, (user_id, status)).fetchall()
     else:
@@ -142,8 +139,7 @@ def update_experiment_window(
 ) -> None:
     if target_value is not None:
         query = (
-            "UPDATE experiments SET window_end = ?, target_value = ? "
-            "WHERE user_id = ? AND id = ?"
+            "UPDATE experiments SET window_end = ?, target_value = ? WHERE user_id = ? AND id = ?"
         )
         conn.execute(query, (window_end, target_value, user_id, experiment_id))
     else:
@@ -306,12 +302,10 @@ def insert_experiment_review(conn: sqlite3.Connection, review: ExperimentReview)
             json.dumps(review.integrity_json),
             json.dumps(review.data_quality_json),
             review.user_difficulty,
-            1 if review.user_helpful is True else (
-                0 if review.user_helpful is False else None
-            ),
-            1 if review.user_would_repeat is True else (
-                0 if review.user_would_repeat is False else None
-            ),
+            1 if review.user_helpful is True else (0 if review.user_helpful is False else None),
+            1
+            if review.user_would_repeat is True
+            else (0 if review.user_would_repeat is False else None),
             review.created_at,
         ),
     )
@@ -336,9 +330,7 @@ def get_experiment_review(
         integrity_json=json.loads(row["integrity_json"]),
         data_quality_json=json.loads(row["data_quality_json"]),
         user_difficulty=row["user_difficulty"],
-        user_helpful=(
-            bool(row["user_helpful"]) if row["user_helpful"] is not None else None
-        ),
+        user_helpful=(bool(row["user_helpful"]) if row["user_helpful"] is not None else None),
         user_would_repeat=(
             bool(row["user_would_repeat"]) if row["user_would_repeat"] is not None else None
         ),
@@ -362,9 +354,7 @@ def list_experiment_reviews(conn: sqlite3.Connection, user_id: str) -> list[Expe
             integrity_json=json.loads(r["integrity_json"]),
             data_quality_json=json.loads(r["data_quality_json"]),
             user_difficulty=r["user_difficulty"],
-            user_helpful=(
-                bool(r["user_helpful"]) if r["user_helpful"] is not None else None
-            ),
+            user_helpful=(bool(r["user_helpful"]) if r["user_helpful"] is not None else None),
             user_would_repeat=(
                 bool(r["user_would_repeat"]) if r["user_would_repeat"] is not None else None
             ),
@@ -393,9 +383,7 @@ def get_experiment_review_by_id(
         integrity_json=json.loads(row["integrity_json"]),
         data_quality_json=json.loads(row["data_quality_json"]),
         user_difficulty=row["user_difficulty"],
-        user_helpful=(
-            bool(row["user_helpful"]) if row["user_helpful"] is not None else None
-        ),
+        user_helpful=(bool(row["user_helpful"]) if row["user_helpful"] is not None else None),
         user_would_repeat=(
             bool(row["user_would_repeat"]) if row["user_would_repeat"] is not None else None
         ),
@@ -517,8 +505,7 @@ def update_adjustment_status(
     decided_at: str,
 ) -> None:
     query = (
-        "UPDATE adjustment_proposals SET status = ?, decided_at = ? "
-        "WHERE user_id = ? AND id = ?"
+        "UPDATE adjustment_proposals SET status = ?, decided_at = ? WHERE user_id = ? AND id = ?"
     )
     conn.execute(query, (status, decided_at, user_id, proposal_id))
 

@@ -178,9 +178,7 @@ def compute_ops_telemetry(
         params_p.append(user_id)
     fb_count = int(conn.execute(query_fb, params_p).fetchone()[0])
     total_plans = int(conn.execute(query_plans, params_p).fetchone()[0])
-    report.validator_fallback_rate = (
-        round(fb_count / total_plans, 4) if total_plans > 0 else 0.0
-    )
+    report.validator_fallback_rate = round(fb_count / total_plans, 4) if total_plans > 0 else 0.0
 
     # 6. Critic catch rate & Revision success rate
     query_ref = "SELECT round, outcome, critique_codes_json FROM reflections"
@@ -208,9 +206,7 @@ def compute_ops_telemetry(
     report.critic_catch_rate = (
         round(critic_catches / total_reviews, 4) if total_reviews > 0 else 0.0
     )
-    report.revision_success_rate = (
-        round(improved / revisions, 4) if revisions > 0 else 0.0
-    )
+    report.revision_success_rate = round(improved / revisions, 4) if revisions > 0 else 0.0
 
     # 7. Job Success & Dead Letter Counts
     query_jobs = "SELECT status, COUNT(*) FROM job_runs"

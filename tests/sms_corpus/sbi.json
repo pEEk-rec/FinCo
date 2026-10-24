@@ -1,0 +1,110 @@
+[
+  {
+    "name": "upi debit",
+    "sender": "SBIUPI",
+    "text": "Dear UPI user A/C X1234 debited by 250.0 on date 18Oct26 trf to RAMESH K Refno 628912345682. If not u? call 1800111109. -SBI",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 25000,
+      "account_last4": "1234",
+      "utr": "628912345682",
+      "display_name": "RAMESH K",
+      "vpa": null,
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "upi credit",
+    "sender": "SBIINB",
+    "text": "Dear UPI user A/C X1234 credited by Rs 5,000.00 on 18Oct26 trf from PRIYA S Refno 628912345683 -SBI",
+    "expect": {
+      "kind": "credit",
+      "direction": "credit",
+      "amount_paise": 500000,
+      "account_last4": "1234",
+      "utr": "628912345683",
+      "display_name": "PRIYA S",
+      "vpa": null,
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "card spend",
+    "sender": "SBIPSG",
+    "text": "Rs 1299.00 spent on your SBI Card ending 4321 at AMAZON on 18/10/26",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 129900,
+      "account_last4": "4321",
+      "utr": null,
+      "display_name": "AMAZON",
+      "vpa": null,
+      "channel": "card",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "atm withdrawal",
+    "sender": "SBIINB",
+    "text": "Rs 2000.00 withdrawn at SBI ATM from A/C X1234 on 18Oct26. Avl Bal Rs 9000.00",
+    "expect": {
+      "kind": "debit",
+      "direction": "debit",
+      "amount_paise": 200000,
+      "account_last4": "1234",
+      "utr": null,
+      "display_name": "ATM cash withdrawal",
+      "vpa": null,
+      "channel": "atm",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "autopay mandate",
+    "sender": "SBIINB",
+    "text": "Rs 199.00 debited from A/C X1234 on 18Oct26 UPI AutoPay mandate to SPOTIFY Refno 628912345684",
+    "expect": {
+      "kind": "autopay",
+      "direction": "debit",
+      "amount_paise": 19900,
+      "account_last4": "1234",
+      "utr": "628912345684",
+      "display_name": "SPOTIFY",
+      "vpa": null,
+      "channel": "autopay",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "refund",
+    "sender": "SBIINB",
+    "text": "Dear UPI user A/C X1234 credited by Rs 250.00 on 18Oct26 refund of Refno 628912345682 -SBI",
+    "expect": {
+      "kind": "reversal",
+      "direction": "credit",
+      "amount_paise": 25000,
+      "account_last4": "1234",
+      "utr": "628912345682",
+      "display_name": "Reversal",
+      "vpa": null,
+      "channel": "upi",
+      "occurred_at_ist": "2026-10-18T00:00:00"
+    }
+  },
+  {
+    "name": "otp",
+    "sender": "SBIINB",
+    "text": "Your OTP for SBI online banking is 553210. Valid for 10 minutes.",
+    "expect": "dropped:otp"
+  },
+  {
+    "name": "account statement notice",
+    "sender": "SBIINB",
+    "text": "Your e-statement for September 2026 is ready. -SBI",
+    "expect": "unparsed"
+  }
+]

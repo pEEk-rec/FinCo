@@ -34,51 +34,49 @@ def generate_matrix() -> str:
         "|---|---|---|---|---|",
     ]
 
-    autonomous = [
-        (name, cap) for name, cap in cfg.tools.items() if cap.planner_selectable
-    ]
+    autonomous = [(name, cap) for name, cap in cfg.tools.items() if cap.planner_selectable]
     for name, cap in sorted(autonomous, key=lambda x: x[0]):
         intents_str = ", ".join(cap.intents) if cap.intents else "all"
         desc = cap.short_description
-        lines.append(
-            f"| `{name}` | `{cap.tool_class}` | `{cap.cost}` | {desc} | {intents_str} |"
-        )
+        lines.append(f"| `{name}` | `{cap.tool_class}` | `{cap.cost}` | {desc} | {intents_str} |")
 
-    lines.extend([
-        "",
-        "## 2. Protected State Mutation & Governance Tools (Approval Required / User Only)",
-        "",
-        "These tools write to financial/user state, or require explicit human decisions.",
-        "They are **permanently barred** from autonomous selection by the planner.",
-        "",
-        "| Tool Name | Class | Cost | Description | Reason Barred from Planner |",
-        "|---|---|---|---|---|",
-    ])
+    lines.extend(
+        [
+            "",
+            "## 2. Protected State Mutation & Governance Tools (Approval Required / User Only)",
+            "",
+            "These tools write to financial/user state, or require explicit human decisions.",
+            "They are **permanently barred** from autonomous selection by the planner.",
+            "",
+            "| Tool Name | Class | Cost | Description | Reason Barred from Planner |",
+            "|---|---|---|---|---|",
+        ]
+    )
 
-    protected = [
-        (name, cap) for name, cap in cfg.tools.items() if not cap.planner_selectable
-    ]
+    protected = [(name, cap) for name, cap in cfg.tools.items() if not cap.planner_selectable]
     for name, cap in sorted(protected, key=lambda x: x[0]):
         reason = "State mutation requires user authorization or fixed pipeline node"
         lines.append(
             f"| `{name}` | `{cap.tool_class}` | `{cap.cost}` | {cap.short_description} | {reason} |"
         )
 
-    lines.extend([
-        "",
-        "## 3. Permanently Prohibited Tool Classes",
-        "",
-        "The following operations have no tool contracts and are permanently denied by policy:",
-        "",
-        "- **Money Movement:** Initiating payments, bank transfers, UPI transactions, charges.",
-        "- **Trading / Execution:** Executing stock, mutual fund, crypto, or commodity orders.",
-        "- **Credential Ingestion:** Requesting or caching OTPs, PINs, passwords, or card numbers.",
-        "- **External Mutations:** Modifying third-party bank records or external APIs.",
-        "",
-        "---",
-        "*Generated from `config/planner_capabilities.yaml`.*",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "## 3. Permanently Prohibited Tool Classes",
+            "",
+            "The following operations have no tool contracts and are permanently denied by policy:",
+            "",
+            "- **Money Movement:** Initiating payments, bank transfers, UPI transactions, charges.",
+            "- **Trading / Execution:** Executing stock, mutual fund, crypto, or commodity orders.",
+            "- **Credential Ingestion:** Requesting or caching OTPs, PINs, passwords, or card numbers.",
+            "- **External Mutations:** Modifying third-party bank records or external APIs.",
+            "",
+            "---",
+            "*Generated from `config/planner_capabilities.yaml`.*",
+            "",
+        ]
+    )
 
     return "\n".join(lines)
 

@@ -27,9 +27,7 @@ class AlertSignalBreakdown:
     components: dict[str, Any]
 
 
-def compute_threshold_signal(
-    budget_status: str, spent_paise: int, limit_paise: int
-) -> float:
+def compute_threshold_signal(budget_status: str, spent_paise: int, limit_paise: int) -> float:
     """
     Threshold signal in [0.0, 1.0].
     Exceeded budget = 1.0, warning = 0.5..1.0, normal < 80% = 0.0.

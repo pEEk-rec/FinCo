@@ -69,9 +69,7 @@ class Intent(AgenticModel):
 # ---------------------------------------------------------------------------------------------
 # 2. Plan, Steps & Observations
 # ---------------------------------------------------------------------------------------------
-StepStatus = Literal[
-    "proposed", "rejected", "running", "done", "failed", "skipped_memoized"
-]
+StepStatus = Literal["proposed", "rejected", "running", "done", "failed", "skipped_memoized"]
 
 
 class PlanStep(AgenticModel):
@@ -170,9 +168,7 @@ class Goal(AgenticModel):
 # ---------------------------------------------------------------------------------------------
 # 5. Investigations & Hypotheses
 # ---------------------------------------------------------------------------------------------
-InvestigationSubjectKind = Literal[
-    "anomaly", "category_change", "merchant_change", "period_change"
-]
+InvestigationSubjectKind = Literal["anomaly", "category_change", "merchant_change", "period_change"]
 InvestigationOutcome = Literal[
     "explained", "partially_explained", "inconclusive", "needs_clarification"
 ]
@@ -285,9 +281,7 @@ class AlertPreference(AgenticModel):
 # ---------------------------------------------------------------------------------------------
 # 8. Explainable Recommendations & Timeline
 # ---------------------------------------------------------------------------------------------
-RecommendationOrigin = Literal[
-    "monthly_review", "investigation", "whatif", "alert", "goal"
-]
+RecommendationOrigin = Literal["monthly_review", "investigation", "whatif", "alert", "goal"]
 
 
 class CalcStep(AgenticModel):

@@ -84,10 +84,10 @@ def _setup_test_user(conn: sqlite3.Connection, user_id: str = "u_mem"):
         )
 
 
-
 # -------------------------------------------------------------------------------------------------
 # 1. Observer 1: Recurring Patterns
 # -------------------------------------------------------------------------------------------------
+
 
 def test_observer_recurring_patterns_weekend_heavy(conn: sqlite3.Connection):
     """Observer detects weekend-heavy spend when weekend daily average significantly exceeds weekday."""
@@ -135,7 +135,9 @@ def test_observer_recurring_patterns_weekend_heavy(conn: sqlite3.Connection):
         )
 
     candidates = observe_recurring_patterns(conn, user_id, clock)
-    dining_cands = [c for c in candidates if c.statement_json.get("category") == f"dining_{user_id}"]
+    dining_cands = [
+        c for c in candidates if c.statement_json.get("category") == f"dining_{user_id}"
+    ]
 
     assert len(dining_cands) >= 1
     cand = dining_cands[0]
@@ -190,7 +192,9 @@ def test_observer_recurring_patterns_month_start_heavy(conn: sqlite3.Connection)
         )
 
     candidates = observe_recurring_patterns(conn, user_id, clock)
-    util_cands = [c for c in candidates if c.statement_json.get("category") == f"utilities_{user_id}"]
+    util_cands = [
+        c for c in candidates if c.statement_json.get("category") == f"utilities_{user_id}"
+    ]
 
     assert len(util_cands) >= 1
     cand = util_cands[0]
@@ -225,10 +229,10 @@ def test_observer_recurring_patterns_stays_silent_on_noise(conn: sqlite3.Connect
     assert len(cands) == 0
 
 
-
 # -------------------------------------------------------------------------------------------------
 # 2. Observer 2: Contextual Exceptions
 # -------------------------------------------------------------------------------------------------
+
 
 def test_observer_contextual_exceptions_from_dismissed_alerts(conn: sqlite3.Connection):
     """Observer extracts contextual exceptions from dismissed alerts with allowed reason labels."""
@@ -294,7 +298,6 @@ def test_contextual_exception_rejects_unallowed_reason(conn: sqlite3.Connection)
         )
     assert exc_info.value.error.code == ErrorCode.INVALID_INPUT
 
-
     # Valid reason succeeds
     item = record_contextual_exception(
         conn,
@@ -312,8 +315,13 @@ def test_contextual_exception_can_cover_a_dated_range(conn: sqlite3.Connection):
     user_id = "u_ctx_range"
     _setup_test_user(conn, user_id)
     item = record_contextual_exception(
-        conn, user_id=user_id, category="dining", period="",
-        reason="travel", from_date="2026-09-10", to_date="2026-09-16",
+        conn,
+        user_id=user_id,
+        category="dining",
+        period="",
+        reason="travel",
+        from_date="2026-09-10",
+        to_date="2026-09-16",
     )
     assert item.statement_json["from_date"] == "2026-09-10"
     assert item.statement_json["to_date"] == "2026-09-16"
@@ -321,8 +329,13 @@ def test_contextual_exception_can_cover_a_dated_range(conn: sqlite3.Connection):
     for first, last in (("2026-09-16", "2026-09-10"), ("2026-09-10", None), ("bad", "2026-09-12")):
         with pytest.raises(ToolFailure) as exc_info:
             record_contextual_exception(
-                conn, user_id=user_id, category="dining", period="",
-                reason="travel", from_date=first, to_date=last,
+                conn,
+                user_id=user_id,
+                category="dining",
+                period="",
+                reason="travel",
+                from_date=first,
+                to_date=last,
             )
         assert exc_info.value.error.code == ErrorCode.INVALID_INPUT
 
@@ -330,6 +343,7 @@ def test_contextual_exception_can_cover_a_dated_range(conn: sqlite3.Connection):
 # -------------------------------------------------------------------------------------------------
 # 3. Observer 3: Advice Feedback
 # -------------------------------------------------------------------------------------------------
+
 
 def test_observer_advice_feedback(conn: sqlite3.Connection):
     """Observer extracts user approved and rejected advice items with advice_kind and subject."""
@@ -382,6 +396,7 @@ def test_observer_advice_feedback(conn: sqlite3.Connection):
 # 4. Observer 4: User Preferences
 # -------------------------------------------------------------------------------------------------
 
+
 def test_observer_preferences(conn: sqlite3.Connection):
     """Observer extracts user preferences and marks them active without time decay."""
     user_id = "u_pref_obs"
@@ -410,6 +425,7 @@ def test_observer_preferences(conn: sqlite3.Connection):
 # 5. Observer 5: Merchant Habits
 # -------------------------------------------------------------------------------------------------
 
+
 def test_observer_merchant_habits(conn: sqlite3.Connection):
     """Observer extracts user merchant overrides."""
     user_id = "u_merch_obs"
@@ -437,10 +453,10 @@ def test_observer_merchant_habits(conn: sqlite3.Connection):
     assert cand.source == "user_stated"
 
 
-
 # -------------------------------------------------------------------------------------------------
 # 6. Lifecycle: Candidate, Active, Stale, Retired
 # -------------------------------------------------------------------------------------------------
+
 
 def test_candidate_to_active_lifecycle(conn: sqlite3.Connection):
     """Observed items start as candidate and promote to active when confidence reaches use threshold."""
@@ -553,6 +569,7 @@ def test_user_confirmed_contradicted_memory_becomes_stale(conn: sqlite3.Connecti
 # 7. Forgetting Invariant (PLAN_PHASE3 Section 4 & 5.8)
 # -------------------------------------------------------------------------------------------------
 
+
 def test_forgetting_removes_content_and_keeps_content_free_audit(conn: sqlite3.Connection):
     """forget_memory clears statement_json, deletes evidence, sets status=forgotten, audit has zero content."""
     user_id = "u_forget"
@@ -605,12 +622,17 @@ def test_forgetting_removes_content_and_keeps_content_free_audit(conn: sqlite3.C
     assert "medical" not in after_json
     assert "medical" not in reason
     before_data = json.loads(before_json)
-    assert before_data == {"memory_id": mem_id, "kind": "contextual_exception", "subject_key": "category:dining|period:2026-11"}
+    assert before_data == {
+        "memory_id": mem_id,
+        "kind": "contextual_exception",
+        "subject_key": "category:dining|period:2026-11",
+    }
 
 
 # -------------------------------------------------------------------------------------------------
 # 8. Multi-Tenant Isolation
 # -------------------------------------------------------------------------------------------------
+
 
 def test_memory_multi_tenant_isolation(conn: sqlite3.Connection):
     """User A cannot access or manipulate User B's memories or evidence."""
@@ -649,10 +671,10 @@ def test_memory_multi_tenant_isolation(conn: sqlite3.Connection):
     assert exc_info.value.error.code == ErrorCode.NOT_FOUND
 
 
-
 # -------------------------------------------------------------------------------------------------
 # 9. Idempotency
 # -------------------------------------------------------------------------------------------------
+
 
 def test_refresh_memories_idempotent_for_same_clock(conn: sqlite3.Connection):
     """Calling refresh_memories twice with the same clock and state produces zero duplicate records."""
@@ -671,12 +693,16 @@ def test_refresh_memories_idempotent_for_same_clock(conn: sqlite3.Connection):
     # First run
     res1 = refresh_memories(conn, user_id, clock)
     count_items_1 = len(list_memory_items(conn, user_id))
-    count_ev_1 = conn.execute("SELECT COUNT(*) FROM memory_evidence WHERE user_id = ?", (user_id,)).fetchone()[0]
+    count_ev_1 = conn.execute(
+        "SELECT COUNT(*) FROM memory_evidence WHERE user_id = ?", (user_id,)
+    ).fetchone()[0]
 
     # Second run with exact same clock
     res2 = refresh_memories(conn, user_id, clock)
     count_items_2 = len(list_memory_items(conn, user_id))
-    count_ev_2 = conn.execute("SELECT COUNT(*) FROM memory_evidence WHERE user_id = ?", (user_id,)).fetchone()[0]
+    count_ev_2 = conn.execute(
+        "SELECT COUNT(*) FROM memory_evidence WHERE user_id = ?", (user_id,)
+    ).fetchone()[0]
 
     assert count_items_1 == count_items_2
     assert count_ev_1 == count_ev_2
@@ -687,6 +713,7 @@ def test_refresh_memories_idempotent_for_same_clock(conn: sqlite3.Connection):
 # -------------------------------------------------------------------------------------------------
 # 10. LLM Provider Invariant: Never Called
 # -------------------------------------------------------------------------------------------------
+
 
 def test_llm_provider_never_called_by_memory_system(conn: sqlite3.Connection):
     """Verify that zero LLM provider calls are made by any behavioural memory observer or operation."""
