@@ -1,0 +1,29 @@
+sequenceDiagram
+  autonumber
+  actor U as You
+  participant G as Input gate
+  participant S as Supervisor
+  participant SP as Specialists<br/>budget, goals, subscriptions
+  participant X as execute_tool<br/>(the gate)
+  participant M as Merge<br/>(deterministic)
+  participant R as Reviewer<br/>(Reflexion-style)
+  participant K as Claim checker
+  U->>G: How am I doing on budget, goals and subscriptions?
+  G->>G: refuse money movement, OTPs, tips
+  G->>S: allowed question
+  S->>S: split into areas, one sub-question each
+  par each specialist, only its own tools
+    S->>SP: sub-questions
+    SP->>X: read tools (policy checked, audited)
+    X-->>SP: computed figures
+  end
+  SP-->>M: findings, or a gap instead of an error
+  M->>R: merged draft
+  alt a claim lacks evidence
+    R->>S: one revision request (at most one)
+    S->>SP: revise that part
+    SP-->>M: revised findings
+  end
+  R->>K: reviewed answer
+  K->>K: drop any number no tool computed
+  K-->>U: answer with the steps shown

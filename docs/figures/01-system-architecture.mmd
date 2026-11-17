@@ -1,0 +1,39 @@
+flowchart TB
+  subgraph UI["You: React + TypeScript web app (installable PWA)"]
+    direction LR
+    W1["Overview"] ~~~ W2["Transactions / Review"] ~~~ W3["Plan"] ~~~ W4["Ask (live steps)"] ~~~ W5["Settings / Connect"]
+  end
+  PH["Phone: bank alert, forwarded by a macro"]
+  UI -->|"HTTPS, bearer token, GET and POST only"| API
+  PH -->|"POST /api/capture/sms (secret header)"| API
+  subgraph APIL["FastAPI service"]
+    API["Routes: ask (SSE), capture (SSE), ledger, plan, consents, push"]
+  end
+  API --> ASK
+  API --> CAP
+  API --> CAT
+  API --> RUN
+  subgraph BRAINS["Agents and pipelines"]
+    direction LR
+    ASK["Ask agent (LangGraph)<br/>understand, plan, act, reflect, answer<br/>+ multi-agent supervisor, specialists, reviewer"]
+    CAP["Capture pipeline<br/>parse alert, ask policy, three guesses"]
+    CAT["Categoriser cascade<br/>rules, history, brands, model, ask you"]
+    RUN["Check-in agent + scheduled runtime<br/>leases, retries, dead letter"]
+  end
+  ASK --> PLN["Planner: templates first, model second,<br/>PlanValidator rejects disallowed tools"]
+  PLN --> GATE
+  CAP --> GATE
+  CAT --> GATE
+  RUN --> GATE
+  ASK -. "words only" .-> LLM
+  CAT -. "suggests, never decides alone" .-> LLM
+  LLM["Optional model: Gemini via a router<br/>key pool, failover, redaction"]
+  GATE["THE ONE GATE: execute_tool<br/>1 policy by actor  2 user id enforced  3 validate input<br/>4 run in a savepoint  5 validate output  6 append audit row"]
+  GATE --> DB[("SQLite, integer paise<br/>ledger, budgets, goals, memory,<br/>append-only audit log")]
+  GATE --> TOOLS["155 typed tools: read or logical write<br/>none external: nothing can pay, transfer or trade"]
+  classDef gate fill:#FBE9E4,stroke:#BA3A25,stroke-width:3px,color:#3a1008;
+  classDef agent fill:#EEF0FB,stroke:#4a55c4,color:#1c2150;
+  classDef data fill:#F1EEE9,stroke:#6b625a,color:#2a2622;
+  class GATE gate
+  class ASK,CAP,CAT,RUN,PLN agent
+  class DB,TOOLS data

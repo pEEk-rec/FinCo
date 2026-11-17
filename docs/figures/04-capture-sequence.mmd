@@ -1,0 +1,21 @@
+sequenceDiagram
+  autonumber
+  participant Bank as Bank
+  participant Ph as Phone macro
+  participant W as Webhook and parser
+  participant A as Ask policy
+  participant App as Web app and push
+  actor U as You
+  participant L as Ledger and learning
+  Bank->>Ph: debit alert text
+  Ph->>W: sender and text, secret header
+  W->>W: drop OTPs, mandates and phone-number senders, keep no raw text
+  W->>A: amount, direction, payee
+  alt a known shop
+    A-->>App: quiet tag with a Change button
+  else a new shop, or a person
+    A-->>App: card with three guesses
+    App-->>U: tap one
+    U->>L: answer, which adjusts how much each guess signal is trusted
+  end
+  Note over L: later the statement arrives and is reconciled with the ledger row, so nothing is counted twice

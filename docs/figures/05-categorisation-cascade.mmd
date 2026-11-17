@@ -1,0 +1,14 @@
+flowchart TB
+  P(["A payment"]) --> PER{"A person?"}
+  PER -->|"always"| ASK
+  PER -->|"no"| S0{"S0 your own earlier answer?"}
+  S0 -->|"yes"| APPLY0["Apply, never overwrite your choice"]
+  S0 -->|"no"| S1{"S1 a rule matches?"}
+  S1 -->|"yes"| APPLY1["Apply"]
+  S1 -->|"no"| S2["S2 similar shops you tagged<br/>S3 brand dictionary<br/>S4 model shown your examples<br/>(suggests only)"]
+  S2 --> CAL{"calibrated on your answers:<br/>probability at or above the level?"}
+  CAL -->|"yes"| APPLY2["Apply the label,<br/>audit one in every twenty"]
+  CAL -->|"no"| ASK["S5 ask you, best guess first"]
+  ASK --> LEARN["Your answer teaches the next payment"]
+  classDef ask fill:#FBE9E4,stroke:#BA3A25,color:#3a1008;
+  class ASK,PER,CAL ask

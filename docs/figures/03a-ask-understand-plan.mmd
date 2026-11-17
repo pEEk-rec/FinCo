@@ -1,0 +1,16 @@
+flowchart TB
+  Q(["Question"]) --> IG{"Input gate"}
+  IG -->|"refused"| RF["Plain refusal and what FinCo can do"]
+  IG -->|"allowed"| UN["understand<br/>intent, period, category"]
+  UN --> CL{"clarify?"}
+  CL -->|"something missing"| ASKU["Ask you one question"]
+  ASKU --> UN
+  CL -->|"complete"| PL["plan<br/>templates first, model second"]
+  PL --> PV{"PlanValidator"}
+  PV -->|"rejected and audited"| FB["fall back to the template plan"]
+  PV -->|"ok"| MA{"spans several areas?"}
+  FB --> ONE(["to act: one area"])
+  MA -->|"no"| ONE
+  MA -->|"yes"| MANY(["to the supervisor:<br/>several areas"])
+  classDef good fill:#FBE9E4,stroke:#BA3A25,color:#3a1008;
+  class PV,IG good

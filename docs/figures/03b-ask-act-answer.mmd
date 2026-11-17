@@ -1,0 +1,14 @@
+flowchart TB
+  ONE(["one area"]) --> AC["act<br/>governed tool calls"]
+  AC --> RE{"reflect:<br/>enough evidence?"}
+  RE -->|"no, bounded rounds"| AC
+  RE -->|"yes"| SY["synthesize from tool results"]
+  MANY(["several areas"]) --> SUP["multi-agent supervisor<br/>specialists, merge, reviewer"]
+  SUP --> SY
+  SY --> RW["optional reword by model"]
+  RW --> CC{"claim check"}
+  CC -->|"a figure no tool computed"| KEEP["keep the rules wording"]
+  CC -->|"all figures verified"| ANS(["Answer + steps"])
+  KEEP --> ANS
+  classDef good fill:#FBE9E4,stroke:#BA3A25,color:#3a1008;
+  class CC good

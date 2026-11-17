@@ -84,6 +84,24 @@ finally a question to you. People are never labelled automatically.
 The full backend map is in [src/copilot/README.md](src/copilot/README.md), with more detail in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## The agents
+
+FinCo has eight agents, each with its own goal and trigger. Two run as LangGraph state machines with
+a planner in the middle (open-ended work), one on a fixed loop (narrow, repeated work), and the rest
+as deliberate pipelines that decide one payment at a time and ask you when unsure. `copilot agents`
+prints this table from the code.
+
+| Agent | Wakes on | Runs as | Goal |
+| --- | --- | --- | --- |
+| **ask** | a question | LangGraph graph | Answer from computed figures, never invented ones; the steps stream live |
+| **multi_agent** | a question spanning areas | LangGraph graph | A supervisor splits it, specialists answer with only their own tools, a reviewer checks the merge |
+| **coach** | a question | specialist | Answer about experiments, challenges and progress |
+| **checkin** | a schedule | fixed kernel loop | Once in a while say the one thing that matters most, or stay quiet |
+| **monthly_review** | a schedule | LangGraph graph | Write the month's review: what changed, why, what to look at |
+| **categoriser** | each payment | pipeline | Give the payment a category, or ask you when not sure enough |
+| **capture** | a bank alert | pipeline | Decide whether to ask right now, and what to guess |
+| **runtime** | a schedule | pipeline | Run the jobs: reconcile, expire prompts, fetch, check in, learn |
+
 ## Run it
 
 You need Python 3.11+ and Node 20+.
