@@ -11,9 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from copilot.config.capture import SmsSendersConfig, load_sms_senders, load_sms_templates
-from copilot.core import sms_parser
-from copilot.core.sms_parser import (
+from copilot.capture import sms_parser
+from copilot.capture.sms_parser import (
     Dropped,
     ParsedPayment,
     Unparsed,
@@ -23,7 +22,8 @@ from copilot.core.sms_parser import (
     parse_sms,
     record_parse_outcome,
 )
-from copilot.core.timeutil import IST, to_utc_iso
+from copilot.common.timeutil import IST, to_utc_iso
+from copilot.config.capture import SmsSendersConfig, load_sms_senders, load_sms_templates
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_user
 from copilot.models.domain import User

@@ -8,14 +8,16 @@ from datetime import date, timedelta
 
 import pytest
 
-from copilot.core.baseline import (
+from copilot.db.connection import get_connection, init_db
+from copilot.db.repo import insert_account, insert_category, insert_user
+from copilot.engagement.baseline import (
     calculate_baseline,
     calculate_integrity_notes,
     calculate_pace,
     evaluate_outcome,
     generate_candidate_windows,
 )
-from copilot.core.metrics import (
+from copilot.engagement.metrics import (
     calculate_category_spend,
     calculate_checkin_rate,
     calculate_merchant_group_spend,
@@ -23,10 +25,8 @@ from copilot.core.metrics import (
     calculate_tagging_completeness,
     calculate_txn_count,
 )
-from copilot.db.connection import get_connection, init_db
-from copilot.db.repo import insert_account, insert_category, insert_user
 from copilot.models.domain import Account, Category, User
-from copilot.models.phase4 import Baseline
+from copilot.models.engagement import Baseline
 
 
 @pytest.fixture

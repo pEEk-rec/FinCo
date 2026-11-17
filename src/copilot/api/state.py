@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Literal
 
 from copilot.api.llm import GuardedLLM, build_llm
-from copilot.core.config import load_settings
+from copilot.common.settings import load_settings
 from copilot.db.connection import get_connection, init_db
 from copilot.governance.policy import PolicySettings, load_policy
 from copilot.llm.client import LLMClient
@@ -41,6 +41,10 @@ class ApiState:
     #: config. Tests pass their own.
     capture_secret: str | None = None
     capture_senders: object | None = None
+    #: Which scripted live payment the demo plays next.
+    demo_cursor: int = 0
+    #: Tests set this to pin the any-bank reader on or off; None follows config/capture.yaml.
+    capture_any_sender: bool | None = None
     #: Sends Web Push messages. None means the real sender; tests pass a fake.
     push_sender: object | None = None
 

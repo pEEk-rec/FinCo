@@ -15,7 +15,7 @@ from typing import Any, Protocol, TypeVar, get_args
 
 from pydantic import BaseModel, ValidationError
 
-from copilot.core.errors import ErrorCode, ToolFailure
+from copilot.common.errors import ErrorCode, ToolFailure
 from copilot.llm import prompts
 
 ModelT = TypeVar("ModelT", bound=BaseModel)

@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from copilot.core.forecast import forecast_month
+from copilot.domain.forecast import forecast_month
 
 Tx = namedtuple(
     "Tx",

@@ -18,10 +18,9 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel
 
 from copilot.audit.events import record_event
-from copilot.core.advice import format_inr
-from copilot.core.categorisation import evaluate_rules, load_aliases, load_rules, normalize_merchant
-from copilot.core.config import load_settings
-from copilot.core.timeutil import IST, from_utc_iso, month_bounds, now_utc, to_utc_iso
+from copilot.common.settings import load_settings
+from copilot.common.timeutil import IST, from_utc_iso, month_bounds, now_utc, to_utc_iso
+from copilot.conversation.advice import format_inr
 from copilot.rails.receipts import (
     NotAReceipt,
     Receipt,
@@ -30,6 +29,7 @@ from copilot.rails.receipts import (
     split_by_category,
 )
 from copilot.rails.sms import NotAPayment, ParsedSms, parse_sms
+from copilot.understand.rules import evaluate_rules, load_aliases, load_rules, normalize_merchant
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS rail_events (

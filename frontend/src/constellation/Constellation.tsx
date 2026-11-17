@@ -74,9 +74,11 @@ function hexToRgba(hex: string, alpha: number): string {
 function layoutClusters(clusters: ClusterSpec[], width: number, height: number) {
   const regular = clusters.filter((c) => !c.isReview);
   const review = clusters.find((c) => c.isReview);
-  const cols = Math.max(1, Math.ceil(Math.sqrt(regular.length * 1.6)));
-  const rows = Math.max(1, Math.ceil(regular.length / cols));
   const areaW = review ? width * 0.74 : width;
+  // Enough columns to fit the clusters, but never so many that two labels share a column.
+  const wanted = Math.ceil(Math.sqrt(regular.length * 1.6));
+  const cols = Math.max(2, Math.min(wanted, Math.floor(areaW / 95)));
+  const rows = Math.max(1, Math.ceil(regular.length / cols));
   const centres = new Map<string, { x: number; y: number; r: number }>();
   const r = Math.max(18, Math.min(areaW / cols, height / rows) * 0.3);
   regular.forEach((c, i) => {
@@ -172,7 +174,11 @@ export function Constellation({
       for (const node of Array.from(host.children) as HTMLElement[]) {
         const c = centres.get(node.dataset.cluster ?? '');
         if (!c) continue;
-        node.style.transform = `translate(${c.x}px, ${c.y + c.r + 10}px) translateX(-50%)`;
+        // Keep the whole label inside the canvas: a cluster near an edge would clip its name.
+        const half = node.offsetWidth / 2 + 4;
+        const x = Math.min(Math.max(c.x, half), Math.max(half, sizeRef.current.width - half));
+        const y = Math.min(c.y + c.r + 10, height - node.offsetHeight - 2);
+        node.style.transform = `translate(${x}px, ${y}px) translateX(-50%)`;
       }
     };
 

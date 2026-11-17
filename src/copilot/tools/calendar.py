@@ -11,9 +11,9 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import Field
 
-from copilot.core.calendar import build_calendar, load_calendar_config
-from copilot.core.timeutil import IST, now_utc
-from copilot.models.phase3 import Calendar, Coverage
+from copilot.common.timeutil import IST, now_utc
+from copilot.domain.calendar import build_calendar, load_calendar_config
+from copilot.models.money import Calendar, Coverage
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
 from copilot.tools.registry import register
 

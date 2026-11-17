@@ -22,29 +22,17 @@ from rich.table import Table
 
 from copilot.cli.formatters import console, format_inr, print_error, print_json, print_success
 from copilot.cli.storage import get_db_path, make_exec_ctx, open_db
-from copilot.core.intent import parse_amount_paise
-from copilot.core.review_wording import describe_review
-from copilot.core.rewards import get_user_progress as core_get_user_progress
-from copilot.core.timeutil import IST, from_utc_iso, now_utc
-from copilot.db.repo_phase4 import (
-    get_experiment as repo_get_experiment,
-)
-from copilot.db.repo_phase4 import (
-    get_experiment_review as repo_get_experiment_review,
-)
-from copilot.db.repo_phase4 import (
-    list_adjustment_proposals as repo_list_adjustment_proposals,
-)
-from copilot.db.repo_phase4 import (
-    list_experiment_checkins as repo_list_experiment_checkins,
-)
-from copilot.db.repo_phase4 import (
-    list_experiments as repo_list_experiments,
-)
-from copilot.db.repo_phase4 import (
-    list_offers as repo_list_offers,
-)
-from copilot.models.phase4 import Progress
+from copilot.common.timeutil import IST, from_utc_iso, now_utc
+from copilot.conversation.intent import parse_amount_paise
+from copilot.db.repo_engagement import get_experiment as repo_get_experiment
+from copilot.db.repo_engagement import get_experiment_review as repo_get_experiment_review
+from copilot.db.repo_engagement import list_adjustment_proposals as repo_list_adjustment_proposals
+from copilot.db.repo_engagement import list_experiment_checkins as repo_list_experiment_checkins
+from copilot.db.repo_engagement import list_experiments as repo_list_experiments
+from copilot.db.repo_engagement import list_offers as repo_list_offers
+from copilot.engagement.review_wording import describe_review
+from copilot.engagement.rewards import get_user_progress as core_get_user_progress
+from copilot.models.engagement import Progress
 from copilot.runtime.runner import run_job
 from copilot.tools.executor import execute_tool
 from copilot.workflow.nodes import ensure_tools_registered
@@ -523,7 +511,7 @@ def experiments_checkin_cmd(
 
         checkin_id = experiment_id if experiment_id.startswith("chk_") else None
         if not checkin_id:
-            from copilot.core.experiments import create_checkins as core_create_checkins
+            from copilot.engagement.experiments import create_checkins as core_create_checkins
 
             chks = repo_list_experiment_checkins(conn, user_id=user, experiment_id=experiment_id)
             if chks:
@@ -538,11 +526,11 @@ def experiments_checkin_cmd(
                     if exp is not None and exp.status == "active":
                         import uuid
 
-                        from copilot.core.experiments import calculate_pace
-                        from copilot.core.metrics import calculate_metric
-                        from copilot.core.timeutil import IST, to_utc_iso
-                        from copilot.db.repo_phase4 import insert_experiment_checkin
-                        from copilot.models.phase4 import ExperimentCheckin
+                        from copilot.common.timeutil import IST, to_utc_iso
+                        from copilot.db.repo_engagement import insert_experiment_checkin
+                        from copilot.engagement.experiments import calculate_pace
+                        from copilot.engagement.metrics import calculate_metric
+                        from copilot.models.engagement import ExperimentCheckin
 
                         now_dt = clock_dt or now_utc()
                         cur_date_str = now_dt.astimezone(IST).date().isoformat()

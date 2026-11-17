@@ -1,362 +1,155 @@
-# Finance Copilot
+# FinCo
 
-An autonomous personal finance and budgeting copilot designed for students in India.
+A personal-finance copilot for students in India. It reads your bank statements and payment alerts,
+works out what each payment was for, answers questions about where your money went, and helps you
+stick to a budget. It never moves money, and every number it shows is one that code computed and
+checked.
 
-Finance Copilot ingests bank statements, classifies messy UPI transactions, discovers recurring subscriptions and transfers, monitors budgets, detects spending anomalies, and compiles versioned monthly financial reviews with mathematically verified advice. In Phase 2, FinCo introduces an **autonomous agentic intelligence layer** with dynamic planning, causal spend investigation, counterfactual what-if simulation, multi-signal adaptive alerts, and grounded explanations with a unified activity timeline.
+<p align="center">
+  <img src="docs/screenshots/06-overview.png" alt="FinCo overview: this month's budget, pace and review queue" width="820">
+</p>
 
----
+## What it does
 
-## Agentic Architecture & Safety Firewalls
+- **Connect a bank, see your history sorted.** You approve a consent screen that says what is read
+  and for how long. FinCo imports the statement and categorises it: most payments by rules and a
+  brand list, the rest queued for you.
+- **Tag a payment the moment it happens.** A bank alert arrives, FinCo reads it, and a card asks
+  "what was this?" with three guesses and one tap to answer. A shop it already knows is tagged
+  quietly, with a Change button. A person is always asked, never guessed.
+- **Ask in your own words.** "Why did my food spend change this month?" is answered by an agent that
+  plans, runs tools, checks its own work and shows each step as it happens. Hinglish works too.
+- **Plan.** Monthly review, budgets that follow what you care about, goals, bills and subscriptions,
+  and small challenges that compare you only with yourself.
+- **Stay in control.** Anything consequential is a proposal that waits for your approval, every
+  change is audited, and every change can be undone.
 
-```
-                ┌─────────────────────────────────────────────────────────┐
-                │          User Interfaces (CLI / Streamlit / API)        │
-                │    copilot ask / investigate / whatif / goals / alerts  │
-                └────────────────────────────┬────────────────────────────┘
-                                             │
-                                             ▼
-                ┌─────────────────────────────────────────────────────────┐
-                │              Intent Understanding Gate                  │
-                │   - Intent Classification (deterministic regex + LLM)   │
-                │   - Entity Resolution (period, amount, category, goal)  │
-                │   - Refusal Firewall (investment, money movement block) │
-                └────────────────────────────┬────────────────────────────┘
-                                             │
-                                             ▼
-                ┌─────────────────────────────────────────────────────────┐
-                │             Dynamic Planner & PlanValidator             │
-                │   - Step Budget Enforcement (max 5 steps per task)      │
-                │   - Whitelist & Tool Signature Validation               │
-                │   - Safety Invariant: Read plans reject write tools     │
-                │   - Human Confirmation Gate for sensitive state writes  │
-                └────────────────────────────┬────────────────────────────┘
-                                             │
-                                             ▼
-         ┌───────────────────────────────────────────────────────────────────────┐
-         │              Governance Firewall & Execution Choke Point              │
-         │                 (`execute_tool(ctx, tool_name, args)`)                │
-         └───────┬───────────────────┬───────────────────┬────────────────┬──────┘
-                 │                   │                   │                │
-                 ▼                   ▼                   ▼                ▼
-        ┌─────────────────┐ ┌─────────────────┐ ┌────────────────┐ ┌────────────┐
-        │  Investigation  │ │What-If Simulation│ │Adaptive Alerts │ │ Financial  │
-        │     Engine      │ │     Engine      │ │    Engine      │ │ & AA Tools │
-        │ (Decomposition, │ │ (Counterfactual,│ │ (Multi-signal, │ │(Budgets,   │
-        │  Hypotheses)    │ │  Conservation)  │ │  Suppression)  │ │ Category)  │
-        └────────┬────────┘ └────────┬────────┘ └────────┬───────┘ └──────┬─────┘
-                 │                   │                   │                │
-                 └───────────────────┼───────────────────┴────────────────┘
-                                     ▼
-                ┌─────────────────────────────────────────────────────────┐
-                │             Explanation Grounding Firewall              │
-                │   - Number Extraction & Causal-Claim Verification       │
-                │   - Missing Simulation Defense (consequence checks)     │
-                │   - Inconclusive Hedged Sentence Fallback               │
-                └────────────────────────────┬────────────────────────────┘
-                                             │
-                                             ▼
-                ┌─────────────────────────────────────────────────────────┐
-                │            SQLite Core Engine & Audit Trail             │
-                │   - Strict Tables, Integer-Paise Math, User Isolation   │
-                │   - Unified Activity Timeline (events, traces, actions) │
-                └─────────────────────────────────────────────────────────┘
-```
+| Connect and import | A payment arrives |
+| --- | --- |
+| <img src="docs/screenshots/03-import.png" alt="Importing and categorising" width="400"> | <img src="docs/screenshots/04-live-payment-card.png" alt="Payment card asking what it was" width="400"> |
 
----
+| Review what FinCo is unsure about | Ask, with the steps shown |
+| --- | --- |
+| <img src="docs/screenshots/08-review.png" alt="Review queue" width="400"> | <img src="docs/screenshots/12-ask.png" alt="Ask answer with checked figures" width="400"> |
 
-## Phase 4: Behavioural Engagement and Gamification
+On a phone it installs as an app and sends a notification for each payment:
 
-Phase 4 turns the copilot's advice into small, optional, measured experiments ("challenges") and
-tells the user honestly whether they worked. Nothing here moves money, and nothing is automatic:
-the user opts in to every challenge.
+<p align="center">
+  <img src="docs/screenshots/phone-4-payment-card.png" alt="Payment card on a phone" width="200">
+  <img src="docs/screenshots/phone-1-overview.png" alt="Overview on a phone" width="200">
+  <img src="docs/screenshots/phone-2-review.png" alt="Review on a phone" width="200">
+  <img src="docs/screenshots/phone-3-ask.png" alt="Ask on a phone" width="200">
+</p>
 
-```
- weekly job -> offers (Thompson sampling, logged propensity) -> user accepts (opt-in)
-      ^                                                              |
-      |                                                              v
- learning loop  <- feedback <- review (rank vs own history) <- experiment (frozen baseline, pace)
- (Beta posteriors,                    ^                              |
-  outcome memory)                     |            dated exception -> auto-pause / extend (user accepts)
-                                      +-- integrity note if payments were recategorised
+All screens: [docs/screenshots/](docs/screenshots/).
+
+## How it works
+
+Three ideas hold the whole system together. Each is enforced by tests, not just written down.
+
+1. **Tools are the only way to touch data.** There are 155 small typed functions, each declared as
+   a read or a logical write. Every call, from the API, the CLI, a planner or an agent, passes one
+   gate (`execute_tool`) that checks policy, enforces the user's id and writes an audit row. No tool
+   can reach outside FinCo, so nothing can pay, transfer or trade.
+2. **Code does the arithmetic; a model only helps with words.** Totals, forecasts, budgets and
+   what-ifs are deterministic and in integer paise. A language model may read a question, suggest a
+   plan or phrase an answer, and code checks whatever it produces. With no model at all, everything
+   still works from rules and templates.
+3. **Agents check themselves and can say why.** You can ask "why was this tagged Dining?" or "why did
+   you say that?" and get an answer from stored evidence.
+
+```mermaid
+flowchart TB
+  subgraph You
+    UI["Web app (React, installable on a phone)"]
+    SMS["Bank alert via phone macro"]
+  end
+  UI --> API
+  SMS --> API
+  API["FastAPI: token-protected, GET and POST only"] --> AG["Ask agent (LangGraph):<br/>understand, plan, act, reflect, answer"]
+  API --> CAP["Capture: parse alert, decide whether to ask"]
+  API --> CAT["Categorise: rules, brands, your history,<br/>model, then ask you"]
+  AG --> GATE
+  CAP --> GATE
+  CAT --> GATE
+  GATE["execute_tool: policy, user id, validation, audit"] --> DB[("SQLite, integer paise,<br/>append-only audit log")]
+  AG -. "words only" .-> LLM["Optional model (Gemini)"]
+  CAT -. "suggests, never decides alone" .-> LLM
 ```
 
-What it adds:
+The categoriser is a cascade that trusts each stage only as far as its record on your own answers:
+your past choices, rules, similar shops you tagged, a brand list, a model shown your examples, and
+finally a question to you. People are never labelled automatically.
 
-- **Honest measurement.** A result is ranked against the user's own K=6 earlier comparable periods
-  ("lower than all 6 of your previous 14-day periods"). With six earlier periods a quiet window
-  still looks "beyond usual range" about 1 time in 7 by chance, so the wording says what was
-  compared and never claims the challenge caused the change. Small differences (under 10% and under
-  ₹200) are called "within your usual range".
-- **Forgiving by design.** One grace day per week on streaks, streak freezes and window pauses for
-  declared exceptions (`copilot memory exception ... --from --to`), rest weeks after two abandoned
-  challenges, quiet weeks after repeated "not now" answers, and no social comparison anywhere.
-- **Gamification that follows real behaviour.** XP for things the user actually did, levels, badges,
-  and personal bests compared only with the user's own past.
-- **Learning loop.** Feedback moves a per-template Beta posterior and writes an outcome memory; the
-  offer policy (Thompson sampling with a seeded generator) uses it, and an offline simulator with
-  IPS/SNIPS estimates checks the policy without touching a user.
-- **Model first, rules as guard.** A configured model reads each question first; the rules validate
-  its answer and are the fallback (`llm_primary`, `FINCO_LLM_PRIMARY=0` to flip). Tests never use
-  the network; recorded replies are in `tests/cassettes/`.
+The full backend map is in [src/copilot/README.md](src/copilot/README.md), with more detail in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-Try it (offline, about a minute): `bash scripts/demo_phase4.sh`, which follows
-`docs/demo_script_phase4.md`. Evidence: `copilot eval --phase 4` writes `docs/eval_report_phase4.md`;
-`python scripts/mutation_check_phase4.py` records that all 12 safety rules are guarded
-(`docs/phase4_mutation_checks.md`). Weak spots are listed in `docs/known_issues.md`.
+## Run it
 
----
-
-## Payment capture: tag a payment the moment it happens
-
-Months-old transactions are hard to remember; a payment made a minute ago is not. FinCo watches for
-your bank's alert, asks you one tap ("What was this?") while you still remember, and learns from the
-answers. Web first: a card on any page, optional notifications on the laptop and the phone, and a
-**Today** screen that lists the day's payments in and out.
-
-**Safe by construction.** Only senders you switch on in `config/sms_senders.yaml` are read. OTP
-messages are dropped even from a bank. The text of a message goes from your phone to your own computer,
-is parsed in memory and discarded: it is never stored, logged, put in a notification or sent to a model.
-Only the amount, the payee's name and the account's last four digits are kept. A person is never
-remembered like a shop, and a model never hears a person's name. Nothing here moves money.
-
-**Try it with no phone** (the simulator uses the real parser and pipeline; everything is labelled
-Simulated): start the app (`cd frontend && npm run demo:imported`), open **Tag payments**, send a
-pretend payment. Or from a terminal: `copilot capture simulate --bank hdfc --kind debit --amount 250 --to "XQ9 Traders Yard"`.
-
-**Set up the phone bridge** (an owner task; about ten minutes):
-
-1. Check each sender ID in `config/sms_senders.yaml` against a real alert on your phone; set
-   `enabled: true` for your banks.
-2. Run `copilot capture bridge-setup`. It creates the secret (`data/capture_secret`, git-ignored)
-   and prints the exact rule for MacroDroid or Tasker (Shortcuts on iPhone): trigger on those sender
-   IDs only, then an HTTP POST of the sender and text to the printed address with the secret in a header.
-3. `copilot serve --real-time`, plug the phone in and run `adb reverse tcp:8765 tcp:8765`. (Wi-Fi
-   instead of a cable: `copilot serve --real-time --lan` and `copilot capture bridge-setup --lan`.)
-4. Install the web app on each device and press **Notify me on this device** under **Tag payments**.
-
-**Bank link.** **Connect and import → Bank link** shows the Account Aggregator consent in plain words
-(what is read, why, how often, how long, how to stop) and lets you approve, pause or revoke it.
-The practice link is a simulated bank; a real sandbox needs your credentials (`docs/production_path_aa.md`).
-
-**Evidence.** `copilot eval --capture` writes `docs/eval_report_capture.md` (parse accuracy per bank,
-reconciliation rate, double-count violations which must be 0, guess hit rates). The seven safety rules
-each have a test that fails when its guard is removed: `tests/security/test_capture_safety_rules.py`.
-Walkthrough: `docs/demo_script_capture.md`. Design: `docs/CAPTURE/ADR-0001*.md`, `ADR-0002*.md`.
-
----
-
-## Capability Matrix: Phase 1 vs. Phase 2 vs. Phase 3
-
-| Dimension | Phase 1 (Core Automation) | Phase 2 (Agentic Intelligence) | Phase 3 (Advanced Financial Copilot) |
-|---|---|---|---|
-| **Query Understanding** | Structured CLI arguments only | Natural language intent routing with slot filling & refusal firewall | Automated multi-domain intent routing to multi-agent supervisor |
-| **Workflow Execution** | Fixed sequential LangGraph DAG | Dynamic autonomous planner with deterministic `PlanValidator` | Supervisor + parallel specialists with Reflexion-style reviewer |
-| **Cashflow & Planning** | Aggregations and category sums | Causal spend decomposition & what-if counterfactual simulations | 60-day projected calendar, virtual buckets, waterfall contributions |
-| **Health & Readiness** | Basic balance checks | Static goal feasibility forecasting | Comprehensive readiness assessment, emergency reserve & debt runway |
-| **Memory System** | Stateless | In-session ephemeral conversation state | Dual-tier memory with Bayesian confidence, recency decay & forgetting |
-| **Protocol & Skills** | Internal CLI only | Internal tool registry | Model Context Protocol (MCP) server & executable compound skills |
-| **Budget Alerts** | Hard static percentage thresholds | Multi-signal adaptive alerts with confidence damping | Festival & seasonal exceptions, 30-day advice suppression cooldown |
-| **Safety & Governance** | Schema checks & integer paise | Consequence rule & causal claim firewall | Zero money movement, two-phase approval gates, audit choke point |
-
----
-
-## Safety & Governance Invariants
-
-1. **Deterministic Integer Paise:** All money amounts are stored and calculated as integer paise (`₹1.00 = 100 paise`). Floating-point money arithmetic is strictly rejected across all code paths.
-2. **Unified Execution Choke Point:** No tool handler can execute directly. Every tool invocation routes through `execute_tool(ctx, tool_name, args)`, enforcing caller permissions, user data isolation (`user_id`), and writing immutable audit events.
-3. **No Money Movement:** Read and analytical operations only; no money movement tools exist in the system (enforced by automated structural and dynamic tests).
-4. **Autonomous Plan Safety:** Plans proposed by LLMs must pass through `PlanValidator`. Any plan exceeding 5 steps, calling non-whitelisted tools, or calling write tools for read/investigation intents is rejected 100% of the time and audited under `plan_rejected`.
-5. **Causal-Claim Defense (Safety Rule 5):** Words asserting causation (`because`, `due to`, `caused by`) are strictly forbidden unless backed by an investigation with outcome `explained` and confidence >= `medium`.
-6. **Consequence Rule (Safety Rule 6):** Consequential recommendations proposing spending decisions or budget adjustments must cite a completed what-if simulation ID.
-7. **Conservation of Paise:** All what-if simulation projections and spend decompositions sum exactly:
-   $$\Delta \text{Total} = \Delta \text{Fixed} + \Delta \text{Variable} + \text{Unexplained}$$
-8. **Multi-Tier Categorization Hierarchy:** `User Override` > `Categorization Rules` > `Local Cache` > `Redacted LLM` > `Review Queue`. The agent is strictly prevented from altering user-assigned categories.
-
----
-
-## Installation & Setup
-
-Requires Python 3.11+ and SQLite 3.37+.
+You need Python 3.11+ and Node 20+.
 
 ```bash
-# 1. Clone repository
-git clone https://github.com/pEEk-rec/FinCo.git
-cd FinCo/implementation
-
-# 2. Create virtual environment
+# Backend
 python -m venv .venv
-# Windows:
-.\.venv\Scripts\activate
-# Linux/macOS:
-source .venv/bin/activate
+.venv\Scripts\activate            # Linux/macOS: source .venv/bin/activate
+pip install -e ".[dev]"
 
-# 3. Install package with dev dependencies
-pip install -e .[dev]
+# Frontend
+cd frontend && npm install && cd ..
+
+# Start the demo: a fresh database, the API on :8765 and the web app on :5173
+npm run demo
 ```
 
----
+Open the address it prints. The demo starts empty, so you can connect the bank and watch the
+history arrive, then play new payments from Settings, Connections. No API key is needed.
 
-## Running the Application
+To use a model for harder questions and unfamiliar shops, copy `.env.example` to `.env` and add a
+Gemini key. Without one, FinCo uses rules and templates, and the numbers are the same.
 
-### 1. Interactive CLI (`copilot`)
+On Windows, `powershell -File scripts\demo.ps1` also makes the app reachable from a phone. The
+five-minute demo story, the phone setup and troubleshooting are in [docs/DEMO.md](docs/DEMO.md).
 
-Finance Copilot provides a comprehensive terminal CLI with rich formatted tables:
+The same data is available from a terminal:
 
 ```bash
-# Initialize database schema
-copilot init-db
-
-# Seed synthetic student financial data (3 months, 2 accounts)
-copilot seed --user-id u1
-
-# View account balances and overall financial state
-copilot state --user-id u1
-
-# --- Phase 2 Agentic Commands ---
-
-# Ask a natural language question (routes to autonomous planner)
-copilot ask "Why did my food spend increase in September?"
-
-# Run a dedicated causal spend investigation
-copilot investigate --period 2026-09 --subject food
-
-# Run what-if financial simulations
-copilot whatif add-spend 1500000 --category shopping --note "New laptop"
-copilot whatif reduce-spend 200000 --category food --months 3
-copilot whatif compare sim_1 sim_2
-
-# Manage financial goals
-copilot goals list
-copilot goals add "Emergency Fund" 5000000 --target-date 2026-12-31 --monthly-target 1000000
-
-# Adaptive alerts evaluation and lifecycle
-copilot alerts evaluate --period 2026-09
-copilot alerts list --status open
-copilot alerts ack alert_1
-copilot alerts snooze alert_1 7
-
-# Inspect the unified agent activity timeline
-copilot timeline --limit 20
-
-# Run Phase 2 evaluation benchmark harness
-copilot eval --phase 2
+copilot seed                                # synthetic student data (3 months)
+copilot consent approve consent_seed_u1_42  # nothing is read without a consent
+copilot run                                 # ingest, categorise, analyse, advise
+copilot ask "how is my budget doing?"       # the same agent as the Ask screen
+copilot --help                              # every command
 ```
 
-### 2. Streamlit Web Blueprint
+The terminal gives a terse answer; the web app shows the full one with its steps.
 
-Launch the web interface:
+## Tests and evaluation
 
 ```bash
-streamlit run src/copilot/ui/app.py
+python -m pytest                     # backend: unit, golden, API and journey tests
+cd frontend && npm run verify        # types, lint, unit tests, contrast and number checks
+cd frontend && npx playwright test --project=demo     # end-to-end in a real browser
+cd frontend && npm run screenshots   # regenerate docs/screenshots
+copilot eval --list                  # offline evaluation suites
 ```
 
-### 3. Comprehensive Evaluation & Benchmarks
+Evaluation suites declare their targets before they measure, and a missed target stays visible.
+Headline results, and the checks that do not pass, are in [docs/EVALUATION.md](docs/EVALUATION.md).
 
-Run the deterministic golden evaluation harness across held-out seeds (`[777, 888, 999]`):
-
-```bash
-# CLI table view
-copilot eval --phase 2
-
-# Machine-readable JSON output
-copilot eval --phase 2 --json
-
-# Standalone runner script
-python scripts/run_eval_phase2.py
-```
-
-Outputs a detailed benchmark report at `docs/eval_report_phase2.md`.
-
----
-
-## Web UI
-
-A calm light-theme web app over the same governed backend (React + FastAPI, localhost only).
-
-```powershell
-.\.venv\Scriptsctivate && pip install -e .[dev]
-cd frontend && npm install
-npm run demo            # API on :8765 and app on :5173; prints the URL to open
-npm run demo:imported   # same, with statements already imported
-npm run verify          # typecheck, lint, unit tests, honesty gates
-npx playwright test --project=demo   # browser tests against the real API
-```
-
-Open the printed URL (`http://127.0.0.1:5173/welcome#token=demo`). Walkthrough:
-`docs/ui_demo_script.md`. Status and decisions: `docs/ui_status.md`.
-The API alone: `copilot serve --db data/copilot.db --demo empty --token demo`.
-
----
-
-## Test Suite & Code Quality
-
-Run tests across the entire codebase:
-
-```bash
-# Run all 564 unit, golden, and integration tests
-pytest -q
-
-# Run Phase 2 golden invariant scenarios specifically (16/16 scenarios)
-pytest tests/golden/phase2/test_golden_phase2.py -v
-
-# Run Phase 2 CLI integration tests
-pytest tests/cli/test_phase2_cli.py -v
-
-# Run Ruff linting and formatting check
-ruff check src tests config scripts
-```
-
----
-
-## Project Structure
+## Project layout
 
 ```
-FinCo/
-├── config/
-│   ├── policy.yaml                # Governance permission matrix
-│   ├── settings.yaml              # Application runtime settings
-│   ├── categorization_rules.yaml  # Regex categorization rules
-│   ├── advice_templates.yaml      # Fallback deterministic templates
-│   ├── plan_templates.yaml        # Phase 2 canonical plan templates & tool signatures
-│   ├── investigation_rules.yaml   # Causal investigation thresholds & hypotheses
-│   ├── alerts_config.yaml         # Multi-signal alert weights and suppression tiers
-│   └── explanation_templates.yaml # Hedged sentences and explanation builders
-├── docs/
-│   ├── PLAN_PHASE1.md             # Phase 1 specification and stage roadmap
-│   ├── PLAN_PHASE2.md             # Phase 2 Agentic Intelligence layer specification
-│   ├── eval_report.md             # Phase 1 benchmark report
-│   ├── eval_report_phase2.md      # Phase 2 evaluation benchmark report
-│   ├── decisions.md               # Architecture decision log (all stages)
-│   └── demo_script_phase2.md      # 6-minute offline demo walkthrough script
-├── scripts/
-│   ├── run_eval.py                # Phase 1 evaluation runner
-│   ├── run_eval_phase2.py         # Phase 2 evaluation runner
-│   └── generate_sample_report.py  # Sample report generator
-├── src/copilot/
-│   ├── alerts/                    # Adaptive alert signal computation & rules
-│   ├── audit/                     # Append-only audit logging & events
-│   ├── bank/                      # Account Aggregator connector & synthetic generator v3
-│   ├── cli/                       # Rich Typer CLI commands (ask, whatif, goals, timeline)
-│   ├── core/                      # Intent router, investigation, simulation, timeline
-│   ├── db/                        # SQLite connection, migrations, phase 2 schema, repo
-│   ├── eval/                      # Phase 1 & Phase 2 evaluation harness
-│   ├── goals/                     # Goal impact and feasibility forecasting
-│   ├── governance/                # Policy enforcement & execution choke point
-│   ├── llm/                       # Provider interface, PII redactor, prompt cache
-│   ├── models/                    # Pydantic domain models & agentic schemas
-│   ├── planner/                   # Dynamic LLM planner & deterministic PlanValidator
-│   ├── review/                    # Monthly Review builder & Jinja2 renderers
-│   ├── tools/                     # Tool specifications, registry, executor, alerts, whatif
-│   ├── ui/                        # Minimal Streamlit UI blueprint
-│   └── workflow/                  # LangGraph autonomous state graph & agentic nodes
-├── tests/                         # 564 tests covering all layers
-│   ├── cli/                       # CLI integration tests
-│   ├── core/                      # Domain logic, money arithmetic, intent tests
-│   ├── db/                        # Database schema, repo, and migration tests
-│   ├── eval/                      # Evaluation harness unit tests
-│   ├── golden/                    # Phase 1 & Phase 2 golden invariant tests
-│   ├── planner/                   # Planner and validator tests
-│   ├── tools/                     # Tool execution and governance tests
-│   └── workflow/                  # LangGraph workflow tests
-└── pyproject.toml                 # Package definition & dependencies
+src/copilot/     backend: tools, agents, categoriser, capture, planner, API, CLI
+config/          policy, rules, merchant lists and thresholds, all in YAML
+frontend/        React + TypeScript web app (PWA) and its tests
+tests/           backend tests, a golden SMS corpus and a one-user journey test
+eval/            evaluation data and simulators
+scripts/         demo launcher, API schema export, and a live proof of the safety claims
+docs/            architecture, demo guide, evaluation, limits, ADRs, screenshots
 ```
+
+## Limits
+
+FinCo is a working prototype. The demo bank is synthetic, the evaluations use simulated people, and
+the real-bank paths (Account Aggregator, bank SMS wording) have been tested against fakes and a
+small hand-written corpus, not at scale. [docs/LIMITATIONS.md](docs/LIMITATIONS.md) lists what is
+known to be missing.

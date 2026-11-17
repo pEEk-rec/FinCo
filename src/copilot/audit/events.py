@@ -15,7 +15,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-from copilot.core.timeutil import now_utc, to_utc_iso
+from copilot.common.timeutil import now_utc, to_utc_iso
 
 Actor = Literal["user", "agent", "system"]
 PolicyDecision = Literal["allow", "deny", "needs_approval"]

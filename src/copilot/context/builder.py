@@ -23,13 +23,13 @@ from typing import Any, TypeVar
 
 from pydantic import BaseModel
 
-from copilot.config.phase3 import ContextConfig, load_context_config
+from copilot.common.timeutil import now_utc, to_utc_iso
+from copilot.config.agent_runtime import ContextConfig, load_context_config
 from copilot.context.hardening import delimit_data_field, redact_and_count
-from copilot.core.timeutil import now_utc, to_utc_iso
-from copilot.db.repo_phase3 import insert_context_manifest
+from copilot.db.repo_agent_runtime import insert_context_manifest
 from copilot.llm.client import LLMClient
 from copilot.llm.client import structured_call as core_structured_call
-from copilot.models.phase3 import ContextManifest, MemoryItem
+from copilot.models.agent_runtime import ContextManifest, MemoryItem
 from copilot.ops.tracing import span
 
 CONFIG_DIR = Path(__file__).resolve().parents[3] / "config"

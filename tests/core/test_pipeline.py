@@ -1,6 +1,6 @@
-from copilot.core.categorisation import CategorizationRule
-from copilot.core.pipeline import run_categorization_pipeline
 from copilot.llm.client import FakeLLMClient
+from copilot.understand.legacy_pipeline import run_categorization_pipeline
+from copilot.understand.rules import CategorizationRule
 from tests.tools.test_categorisation_tools import ctx  # noqa: F401
 
 

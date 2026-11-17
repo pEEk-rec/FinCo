@@ -17,16 +17,15 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import interrupt
 
 from copilot.audit.events import record_event
-from copilot.core.config import PROJECT_ROOT, load_settings
-from copilot.core.intent import (
+from copilot.common.settings import PROJECT_ROOT, load_settings
+from copilot.common.timeutil import now_utc, to_utc_iso
+from copilot.conversation.intent import (
     classify_intent,
     create_agent_task,
     parse_amount_paise,
     parse_period,
     resolve_entities,
 )
-from copilot.core.recommendations import build_recommendation, find_relevant_memories
-from copilot.core.timeutil import now_utc, to_utc_iso
 from copilot.db.connection import get_connection
 from copilot.db.repo import (
     get_agent_task,
@@ -34,6 +33,7 @@ from copilot.db.repo import (
     insert_recommendation,
     update_agent_task_status,
 )
+from copilot.engagement.recommendations import build_recommendation, find_relevant_memories
 from copilot.governance.policy import load_policy
 from copilot.llm.client import LLMClient
 from copilot.models.agentic import AgentTask, Intent, Plan, PlanStep

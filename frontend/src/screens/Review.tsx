@@ -1,8 +1,10 @@
+import { AnimatePresence } from 'motion/react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 
 import { ApiError, type ReviewItem } from '../api/client';
 import {
+  useCaptureInbox,
   useCategories,
   useCreateCategory,
   useRecategorize,
@@ -12,6 +14,7 @@ import {
 import { Badge, CategoryPill } from '../components/Badge';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { PaymentPrompt } from '../components/capture/PaymentPrompt';
 import { cx } from '../components/cx';
 import { Page } from '../components/Shell';
 import { EmptyState, ErrorState, SkeletonBlock } from '../components/States';
@@ -20,11 +23,17 @@ import { Toggle } from '../components/Toggle';
 import { copy } from '../copy/en';
 import { formatDay } from '../format/date';
 import { formatINR } from '../format/money';
+import { useGuessShortcuts } from './Capture';
 
 const T = copy.review;
 
 export function ReviewScreen() {
   const queue = useReviewQueue();
+  const inbox = useCaptureInbox();
+  const phone = inbox.data?.prompts ?? [];
+  const [params] = useSearchParams();
+  const focusPrompt = params.get('prompt');
+  useGuessShortcuts(inbox.data);
   const categories = useCategories();
   const recategorize = useRecategorize();
   const createCategory = useCreateCategory();
@@ -93,6 +102,8 @@ export function ReviewScreen() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
+      // While payments from the phone are waiting, the number keys answer those first.
+      if (phone.length > 0) return;
       if (
         target.closest('input, textarea, select, [role="dialog"]') ||
         event.metaKey ||
@@ -127,7 +138,37 @@ export function ReviewScreen() {
 
   return (
     <Page title={T.title} lead={T.subtitle}>
-      {queue.isPending ? (
+      {phone.length > 0 ? (
+        <section aria-labelledby="phone-title" className="mb-10">
+          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="phone-title" className="flex items-center gap-2.5 text-[18px] font-semibold">
+              <span className="relative flex size-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-agent/60" />
+                <span className="relative inline-flex size-2.5 rounded-full bg-agent" />
+              </span>
+              {T.fromPhone}
+            </h2>
+            <span className="text-small text-ink-3">{T.phoneKeys}</span>
+          </div>
+          <ul className="flex flex-col gap-4">
+            <AnimatePresence initial={false}>
+              {phone.map((p, i) => (
+                <PaymentPrompt
+                  key={p.prompt_id}
+                  prompt={p}
+                  creditKinds={inbox.data?.credit_kinds ?? []}
+                  shortcuts={i === 0}
+                  openSheet={p.prompt_id === focusPrompt}
+                />
+              ))}
+            </AnimatePresence>
+          </ul>
+        </section>
+      ) : null}
+      {phone.length > 0 && (queue.data?.total ?? 0) > 0 ? (
+        <h2 className="mb-4 text-[18px] font-semibold">{T.fromStatements}</h2>
+      ) : null}
+      {phone.length > 0 && !queue.isPending && !current ? null : queue.isPending ? (
         <Card className="p-6">
           <SkeletonBlock lines={6} />
         </Card>

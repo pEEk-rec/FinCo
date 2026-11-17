@@ -7,7 +7,7 @@ Maintains JSON-serialisable workflow state and interoperability with Phase 0 Run
 import operator
 from typing import Annotated, Any, Literal, TypedDict
 
-from copilot.core.timeutil import now_utc
+from copilot.common.timeutil import now_utc
 from copilot.models.domain import Id, UtcTimestamp
 from copilot.models.run_state import RunState, ToolCallRecord
 

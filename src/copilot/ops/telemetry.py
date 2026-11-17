@@ -20,8 +20,8 @@ import sqlite3
 from dataclasses import dataclass, field
 from typing import Any
 
-from copilot.config.phase3 import OpsConfig, load_ops_config
-from copilot.core.config import PROJECT_ROOT
+from copilot.common.settings import PROJECT_ROOT
+from copilot.config.agent_runtime import OpsConfig, load_ops_config
 
 
 def _percentile(values: list[float | int], p: int) -> float:

@@ -1,6 +1,6 @@
 from copilot.bank.synth import generate_transactions
-from copilot.core.patterns import detect_recurring, detect_transfers
-from copilot.core.timeutil import from_utc_iso
+from copilot.common.timeutil import from_utc_iso
+from copilot.domain.patterns import detect_recurring, detect_transfers
 
 
 def test_detect_transfers_ground_truth():

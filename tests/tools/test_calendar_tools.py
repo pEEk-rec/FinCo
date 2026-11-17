@@ -15,10 +15,10 @@ import pytest
 
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_user
-from copilot.db.repo_phase3 import insert_commitment
+from copilot.db.repo_money import insert_commitment
 from copilot.governance.policy import PolicySettings
 from copilot.models.domain import Account, User
-from copilot.models.phase3 import Commitment
+from copilot.models.money import Commitment
 from copilot.tools.calendar import register_calendar_tools
 from copilot.tools.executor import ExecutionContext, execute_tool
 from copilot.tools.registry import clear_registry

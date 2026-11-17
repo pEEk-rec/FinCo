@@ -14,8 +14,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from copilot.core.forecast import Series, forecast_month
-from copilot.core.timeutil import IST, from_utc_iso, month_bounds, now_utc, to_utc_iso
+from copilot.common.timeutil import IST, from_utc_iso, month_bounds, now_utc, to_utc_iso
 from copilot.db.repo import (
     get_transaction,
     list_accounts,
@@ -24,6 +23,7 @@ from copilot.db.repo import (
     list_categories,
     list_transactions,
 )
+from copilot.domain.forecast import Series, forecast_month
 from copilot.models.domain import Transaction
 from copilot.tools.financial import (
     budget_status,
@@ -32,7 +32,7 @@ from copilot.tools.financial import (
     run_rate_forecast,
 )
 
-FORECAST_MIN_DAYS = 3  # matches copilot.core.forecast.forecast_month's insufficient_data rule
+FORECAST_MIN_DAYS = 3  # matches copilot.domain.forecast.forecast_month's insufficient_data rule
 UPCOMING_DAYS = 14
 UNDOABLE_EVENTS = ("transaction_recategorized", "override_applied")
 
@@ -132,6 +132,8 @@ class CategoryRow(BaseModel):
     spent_paise: int
     limit_paise: int | None
     pct_used: int | None
+    #: How far spend is past the limit (0 when within it); None when there is no budget.
+    over_paise: int | None = None
     status: Literal["ok", "warning", "exceeded", "projected_exceed", "none"]
 
 
@@ -327,6 +329,7 @@ def build_category_rows(
                     spent_paise=spent,
                     limit_paise=budget.limit_paise,
                     pct_used=pct,
+                    over_paise=max(0, spent - budget.limit_paise),
                     status=status,
                 )
             )

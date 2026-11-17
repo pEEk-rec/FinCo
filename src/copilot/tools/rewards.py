@@ -15,25 +15,27 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
-from copilot.core.goals import goal_progress
-from copilot.core.metrics import _date_to_utc_bounds, calculate_tagging_completeness
-from copilot.core.rewards import (
+from copilot.common.timeutil import IST, from_utc_iso, now_utc
+from copilot.db.repo import list_goals
+from copilot.db.repo_engagement import list_experiment_checkins, list_experiments
+from copilot.domain.goals import goal_progress
+from copilot.engagement.metrics import _date_to_utc_bounds, calculate_tagging_completeness
+from copilot.engagement.rewards import (
     award_experiment_outcome_xp,
 )
-from copilot.core.rewards import (
+from copilot.engagement.rewards import (
     award_xp as core_award_xp,
 )
-from copilot.core.rewards import (
+from copilot.engagement.rewards import (
     check_and_award_badges as core_check_and_award_badges,
 )
-from copilot.core.rewards import (
+from copilot.engagement.rewards import (
     get_user_progress as core_get_user_progress,
 )
-from copilot.core.self_competition import compute_personal_bests as core_compute_personal_bests
-from copilot.core.timeutil import IST, from_utc_iso, now_utc
-from copilot.db.repo import list_goals
-from copilot.db.repo_phase4 import list_experiment_checkins, list_experiments
-from copilot.models.phase4 import PersonalBest, Progress
+from copilot.engagement.self_competition import (
+    compute_personal_bests as core_compute_personal_bests,
+)
+from copilot.models.engagement import PersonalBest, Progress
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
 from copilot.tools.registry import register
 

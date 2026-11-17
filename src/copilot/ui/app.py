@@ -15,8 +15,8 @@ from pathlib import Path
 
 import streamlit as st
 
-from copilot.core.advice import format_inr
-from copilot.core.config import PROJECT_ROOT, load_settings
+from copilot.common.settings import PROJECT_ROOT, load_settings
+from copilot.conversation.advice import format_inr
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     get_monthly_review,

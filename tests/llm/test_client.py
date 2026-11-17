@@ -3,7 +3,7 @@ from typing import Literal
 import pytest
 from pydantic import BaseModel, Field
 
-from copilot.core.errors import ErrorCode, ToolFailure
+from copilot.common.errors import ErrorCode, ToolFailure
 from copilot.llm.client import (
     FakeLLMClient,
     StructuredOutputError,

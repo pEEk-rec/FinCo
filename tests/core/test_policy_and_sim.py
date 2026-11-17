@@ -11,19 +11,19 @@ import pytest
 from typer.testing import CliRunner
 
 from copilot.cli.main import app
-from copilot.core.challenges import CandidateOffer
-from copilot.core.policy import (
+from copilot.common.timeutil import IST, to_utc_iso
+from copilot.db.connection import get_connection, init_db
+from copilot.db.repo import insert_account, insert_category, insert_user
+from copilot.db.repo_engagement import insert_experiment
+from copilot.engagement.challenges import CandidateOffer
+from copilot.learning.offers import (
     compute_value_weight,
     is_user_in_rest_weeks,
     select_challenge_offers,
     select_offers_thompson,
 )
-from copilot.core.timeutil import IST, to_utc_iso
-from copilot.db.connection import get_connection, init_db
-from copilot.db.repo import insert_account, insert_category, insert_user
-from copilot.db.repo_phase4 import insert_experiment
 from copilot.models.domain import Account, Category, User
-from copilot.models.phase4 import Experiment
+from copilot.models.engagement import Experiment
 from eval.sim.off_policy import evaluate_arm_off_policy
 from eval.sim.personas import DEV_SEEDS, HELD_OUT_SEEDS, get_default_personas
 from eval.sim.simulator import create_simulated_candidates, run_simulation
@@ -172,7 +172,7 @@ def test_essential_category_exclusion_in_offers(sim_db):
     ]
 
     # Filter through challenges safety filter
-    from copilot.core.challenges import filter_safe_candidates
+    from copilot.engagement.challenges import filter_safe_candidates
 
     safe_candidates = filter_safe_candidates(conn, user_id, candidates)
     # The essential rent arm must be excluded

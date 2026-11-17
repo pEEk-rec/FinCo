@@ -5,7 +5,7 @@ import { Link } from 'react-router';
 import { api, ApiError, type ConsentView, type ImportResult } from '../api/client';
 import { useConsents, useImports, keys, useInvalidateFinancials } from '../api/hooks';
 import { Badge } from '../components/Badge';
-import { BankLink } from '../components/BankLink';
+import { LiveDemoFeed } from '../components/LiveDemoFeed';
 import { Button } from '../components/Button';
 import { Card, CardHeader } from '../components/Card';
 import { Page } from '../components/Shell';
@@ -198,7 +198,7 @@ export function ConnectScreen() {
               <EmptyState message={copy.dashboard.noData} />
             </Card>
           )}
-          <BankLink />
+          {top?.status === 'active' ? <LiveDemoFeed /> : null}
           {imports.data && imports.data.length > 0 ? (
             <Card labelledBy="imports-title">
               <CardHeader id="imports-title" label="Imports" />

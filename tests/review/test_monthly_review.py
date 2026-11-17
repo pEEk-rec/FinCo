@@ -15,7 +15,6 @@ from decimal import Decimal
 
 import pytest
 
-from copilot.core.anomalies import detect_anomalies
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     get_monthly_review,
@@ -26,6 +25,7 @@ from copilot.db.repo import (
     insert_user,
     list_transactions,
 )
+from copilot.domain.anomalies import detect_anomalies
 from copilot.models.domain import Account, Budget, Category, Transaction, User
 from copilot.review.builder import build_monthly_review
 from copilot.review.renderers import (

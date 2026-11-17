@@ -8,7 +8,7 @@ import pytest
 
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_goal, insert_user
-from copilot.db.repo_phase4 import (
+from copilot.db.repo_engagement import (
     get_adjustment_proposal,
     get_experiment,
     get_experiment_review,
@@ -34,7 +34,7 @@ from copilot.db.repo_phase4 import (
 )
 from copilot.models.agentic import Goal
 from copilot.models.domain import Account, User
-from copilot.models.phase4 import (
+from copilot.models.engagement import (
     AdjustmentProposal,
     BadgeAward,
     Baseline,

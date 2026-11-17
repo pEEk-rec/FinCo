@@ -9,8 +9,8 @@ Verifies:
 - All numbers in why_text strictly come from components
 """
 
-from copilot.config.phase2 import AlertsConfig
-from copilot.core.alerts import (
+from copilot.config.money import AlertsConfig
+from copilot.domain.alerts import (
     build_why_text,
     compute_anomaly_signal,
     compute_confidence_damping,
@@ -217,27 +217,53 @@ def test_tier_threshold_boundaries():
 
 
 def test_why_text_numbers_strictly_grounded():
-    """All numbers in why_text must come from components."""
+    """Every number in why_text comes from the components, and it never shows a percentage."""
+    import re
+
     components = {
         "category_id": "dining",
+        "category_name": "Dining",
         "spent_pct": 91,
         "spent_rupees": 4550,
         "limit_rupees": 5000,
         "days_left": 11,
         "exceed_rupees": 1200,
+        "over_rupees": 0,
         "current_day": 19,
         "usual_rupees": 3800,
     }
 
     text = build_why_text(components)
-    # Check that each formatted number exists in the text
-    assert "91%" in text
-    assert "₹4550" in text
-    assert "₹5000" in text
-    assert "11 days" in text
-    assert "₹1200" in text
-    assert "day 19" in text
-    assert "₹3800" in text
+    assert "%" not in text
+    allowed = {str(v) for k, v in components.items() if isinstance(v, int) and k != "spent_pct"}
+    numbers = {n.replace(",", "") for n in re.findall(r"\d[\d,]*", text)}
+    assert numbers <= allowed, f"numbers not from components: {numbers - allowed}"
+    assert "Dining" in text and "₹5,000" in text and "₹1,200" in text and "11 days" in text
+
+
+def test_why_text_plain_wording_for_each_situation():
+    base = {"category_name": "Shopping", "limit_rupees": 2500, "usual_rupees": 1800}
+    ended_over = build_why_text({**base, "spent_rupees": 4042, "over_rupees": 1542, "days_left": 0})
+    assert ended_over == "Shopping finished the month ₹1,542 over its ₹2,500 budget."
+    in_month_over = build_why_text(
+        {**base, "spent_rupees": 2900, "over_rupees": 400, "days_left": 12}
+    )
+    assert "₹400 past your ₹2,500 Shopping budget" in in_month_over
+    on_track = build_why_text({**base, "spent_rupees": 900, "days_left": 1})
+    assert "with 1 day to go" in on_track
+
+
+def test_rupees_use_indian_digit_grouping():
+    from copilot.domain.alerts import _inr
+
+    assert [_inr(n) for n in (7, 999, 1000, 12500, 100000, 1234567)] == [
+        "7",
+        "999",
+        "1,000",
+        "12,500",
+        "1,00,000",
+        "12,34,567",
+    ]
 
 
 def test_quiet_by_default_on_ordinary_month():

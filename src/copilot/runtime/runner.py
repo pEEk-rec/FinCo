@@ -19,10 +19,11 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
 from copilot.audit.events import record_event
-from copilot.config.phase3 import RuntimeConfig, load_buckets_config, load_runtime_config
-from copilot.core.config import PROJECT_ROOT
-from copilot.core.timeutil import from_utc_iso, now_utc, to_utc_iso
-from copilot.db.repo_phase3 import (
+from copilot.common.settings import PROJECT_ROOT
+from copilot.common.timeutil import from_utc_iso, now_utc, to_utc_iso
+from copilot.config.agent_runtime import RuntimeConfig, load_runtime_config
+from copilot.config.money import load_buckets_config
+from copilot.db.repo_agent_runtime import (
     acquire_job_lease,
     get_scheduled_job,
     insert_job_run,
@@ -31,7 +32,7 @@ from copilot.db.repo_phase3 import (
     release_job_lease,
 )
 from copilot.governance.policy import load_policy
-from copilot.models.phase3 import JobRun
+from copilot.models.agent_runtime import JobRun
 from copilot.ops.tracing import span
 from copilot.runtime.scheduler import compute_next_run_at, init_scheduled_jobs
 from copilot.skills.runner import run_skill
@@ -47,7 +48,12 @@ def _get_period_key(job_kind: str, dt: datetime) -> str:
         return dt.strftime("%Y-%m")
     elif job_kind == "weekly_offers":
         return dt.strftime("%Y-W%W")
-    elif job_kind in ("evaluate_alerts", "capture_reconcile", "capture_expire_prompts"):
+    elif job_kind in (
+        "evaluate_alerts",
+        "capture_reconcile",
+        "capture_expire_prompts",
+        "weekly_checkin",
+    ):
         return dt.strftime("%Y-%m-%d-%H")
     else:
         # Daily jobs: refresh_memories, coverage_scan, suggest_commitments, expire_drafts,
@@ -201,11 +207,17 @@ def _execute_job_handler(
             revs = getattr(res.data, "reviews", [])
             return True, {"created_count": len(revs), "period": period_key}, None
 
-        elif job_kind in ("capture_reconcile", "capture_expire_prompts", "aa_fetch"):
+        elif job_kind in (
+            "capture_reconcile",
+            "capture_expire_prompts",
+            "aa_fetch",
+            "weekly_checkin",
+        ):
             tool = {
                 "capture_reconcile": "reconcile_payment_events",
                 "capture_expire_prompts": "expire_capture_prompts",
                 "aa_fetch": "run_aa_cycle",
+                "weekly_checkin": "run_checkin",
             }[job_kind]
             res = execute_tool(ctx, tool, {})
             if not res.ok:

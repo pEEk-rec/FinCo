@@ -9,8 +9,8 @@ import json
 from typing import TYPE_CHECKING, Literal
 
 from copilot.audit.events import record_event
-from copilot.core.errors import ErrorCode, ToolFailure
-from copilot.core.timeutil import now_utc, to_utc_iso
+from copilot.common.errors import ErrorCode, ToolFailure
+from copilot.common.timeutil import now_utc, to_utc_iso
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
 from copilot.tools.registry import get as get_tool
 from copilot.tools.registry import register

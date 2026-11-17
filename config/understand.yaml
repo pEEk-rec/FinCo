@@ -1,0 +1,45 @@
+# Thresholds for understanding transactions (PLAN_AGENTIC_V2). Confidence is in basis points.
+engine: cascade             # cascade | legacy (the old pipeline, kept for one release)
+ask_level: balanced          # more_questions | balanced | fewer_questions
+levels:                      # the calibrated probability a stage must reach before it may apply a label
+  more_questions: 9900
+  balanced: 9700
+  fewer_questions: 8000
+neighbours:
+  k: 3
+  min_similarity_bp: 6000    # a labelled shop must be at least this alike to count as a neighbour
+  examples: 5                # similar shops shown to the model as examples
+entities:
+  exact_vpa_bp: 9500
+  exact_name_bp: 9000
+  squash_equal_bp: 9000
+  prefix_bp: 8500            # a truncated name that is the start of a longer one
+  merge_at_bp: 8000
+  min_prefix_chars: 10       # a shorter fragment is too common to trust
+model:
+  confidence_cap_bp: 8500
+  max_calls_per_run: 40
+calibration:
+  bins: 10
+  prior_strength: 4          # pretend observations that say "the score means what it says"
+audit:
+  every: 20                  # ask the user to confirm one in this many automatic S2 to S4 labels
+learning:
+  rule_after: 3              # distinct shops with the same first word and the same answer
+  unsteady_bp: 6000          # an entity whose last two answers disagree is trusted this much
+  mcc_map:                   # card merchant category codes (public ISO 18245 groups)
+    "5812": food
+    "5814": food
+    "5411": groceries
+    "5499": groceries
+    "4121": travel
+    "4111": travel
+    "4112": travel
+    "5311": shopping
+    "5651": shopping
+    "5732": shopping
+    "4814": bills
+    "4900": bills
+    "7832": entertainment
+    "5815": subscriptions
+    "8220": education

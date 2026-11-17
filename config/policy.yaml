@@ -108,6 +108,32 @@ tools:
   remove_push_subscription:    {agent: deny, user: allow}
   capture_coverage:            {decision: allow}
   aa_status:                   {decision: allow}
+  profile_get:                 {decision: allow}
+  profile_set:                 {agent: deny, user: allow}
+  profile_confirm:             {agent: deny, user: allow}
+  profile_delete:              {agent: deny, user: allow}
+  profile_infer:               {agent: allow, user: allow, decision: allow}
+  budget_propose:              {decision: allow}
+  budget_apply:                {agent: deny, user: allow}
+  budget_replan:               {decision: allow}
+  budget_move:                 {agent: deny, user: allow}
+  run_checkin:                 {agent: allow, user: allow, decision: allow}
+  respond_checkin:             {agent: deny, user: allow}
+  list_checkins:               {decision: allow}
+  create_split_group:          {agent: deny, user: allow}
+  add_split_expense:           {agent: deny, user: allow}
+  record_split_settlement:     {agent: deny, user: allow}
+  split_balances:              {decision: allow}
+  list_subscriptions:          {decision: allow}
+  mark_subscription:           {agent: deny, user: allow}
+  run_cascade:                 {agent: allow, user: allow}
+  entity_questions:            {decision: allow}
+  explain_decision:            {decision: allow}
+  answer_shop:                 {agent: deny, user: allow}
+  merge_entities:              {agent: deny, user: allow}
+  split_entity:                {agent: deny, user: allow}
+  undo_entity_merge:           {agent: deny, user: allow}
+  decide_rule_proposal:        {agent: deny, user: allow}
   create_aa_consent:           {agent: deny, user: allow}
   set_aa_consent_state:        {agent: deny, user: allow}
   fetch_aa_data:               {agent: deny, user: allow, decision: allow}

@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 
 import { api, ApiError, type AdviceExplanation } from '../api/client';
-import { useMonthlyReview, useSession } from '../api/hooks';
+import { useMonthlyReview } from '../api/hooks';
+import { useMonth } from '../state/month';
 import { Badge, Chip } from '../components/Badge';
 import { Button } from '../components/Button';
 import { Card, CardHeader, Stat } from '../components/Card';
@@ -17,11 +18,6 @@ import { formatINR } from '../format/money';
 import { viewPercent } from '../format/percent';
 
 const T = copy.monthly;
-
-function previousPeriod(period: string): string {
-  const [y, m] = period.split('-').map(Number) as [number, number];
-  return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
-}
 
 function Change({ pct }: { pct: number | null | undefined }) {
   const view = viewPercent(pct, true);
@@ -109,9 +105,9 @@ function Explain({ adviceId }: { adviceId: string }) {
 }
 
 export function MonthlyScreen() {
-  const session = useSession();
   const [params, setParams] = useSearchParams();
-  const period = params.get('period') ?? (session.data ? previousPeriod(session.data.period) : '');
+  const { month } = useMonth();
+  const period = params.get('period') ?? month ?? '';
   const version = params.get('v') ? Number(params.get('v')) : undefined;
   const query = useMonthlyReview(period || '2000-01', version);
   const queryClient = useQueryClient();
@@ -129,16 +125,7 @@ export function MonthlyScreen() {
     onError: (e) => toast({ message: e.message, tone: 'negative' }),
   });
 
-  const setPeriod = (p: string) => setParams({ period: p }, { replace: true });
   const review = query.data?.review ?? null;
-  const months = session.data
-    ? [
-        session.data.period,
-        previousPeriod(session.data.period),
-        previousPeriod(previousPeriod(session.data.period)),
-      ]
-    : [];
-
   return (
     <Page
       title={period ? formatPeriod(period) : T.title}
@@ -154,11 +141,6 @@ export function MonthlyScreen() {
       }
     >
       <div className="no-print mb-6 flex flex-wrap items-center gap-1.5">
-        {months.map((m) => (
-          <Chip key={m} selected={m === period} onClick={() => setPeriod(m)}>
-            {formatPeriod(m)}
-          </Chip>
-        ))}
         {query.data && query.data.versions.length > 1 ? (
           <span className="ml-3 flex items-center gap-1.5">
             {query.data.versions.map((v) => (

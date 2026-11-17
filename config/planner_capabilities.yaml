@@ -735,6 +735,188 @@ tools:
     short_description: "Runtime job: expire links, delete old copies, fetch what is due"
     intents: []
 
+  run_cascade:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Categorise what is unanswered: answers, rules, similar shops, brands, model, ask"
+    intents: []
+
+  entity_questions:
+    planner_selectable: false
+    tool_class: read
+    cost: cheap
+    short_description: "What to ask the user next, most useful first"
+    intents: []
+
+  explain_decision:
+    planner_selectable: false
+    tool_class: read
+    cost: cheap
+    short_description: "Why a payment has its category: stage, confidence, evidence"
+    intents: []
+
+  answer_shop:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Say what a shop or one payment was"
+    intents: []
+
+  merge_entities:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Say two spellings are the same shop"
+    intents: []
+
+  split_entity:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Separate spellings into their own shop"
+    intents: []
+
+  undo_entity_merge:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Undo a merge or split exactly"
+    intents: []
+
+  decide_rule_proposal:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Accept or dismiss a proposed rule"
+    intents: []
+
+  profile_get:
+    planner_selectable: false
+    tool_class: read
+    cost: cheap
+    short_description: "Your profile: confirmed values, suggestions, what is missing"
+    intents: []
+
+  profile_set:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "State a value for your profile"
+    intents: []
+
+  profile_confirm:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Accept a suggestion for your profile"
+    intents: []
+
+  profile_delete:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Remove a part of your profile"
+    intents: []
+
+  profile_infer:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Suggest profile values from your own money, unconfirmed"
+    intents: []
+
+  budget_propose:
+    planner_selectable: false
+    tool_class: read
+    cost: cheap
+    short_description: "A month's budget from income, commitments, goals and priorities"
+    intents: []
+
+  budget_apply:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Make the proposed budget this month's budgets"
+    intents: []
+
+  budget_replan:
+    planner_selectable: false
+    tool_class: read
+    cost: cheap
+    short_description: "Ways to rebalance categories heading over their limit"
+    intents: []
+
+  budget_move:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Move budget limit between categories"
+    intents: []
+
+  run_checkin:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Look for the one thing worth saying, verify it, say it or stay quiet"
+    intents: []
+
+  respond_checkin:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Answer a check-in"
+    intents: []
+
+  list_checkins:
+    planner_selectable: false
+    tool_class: read
+    cost: cheap
+    short_description: "Recent check-ins and how you like to be helped"
+    intents: []
+
+  create_split_group:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Start a sharing group"
+    intents: []
+
+  add_split_expense:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Record a shared expense"
+    intents: []
+
+  record_split_settlement:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Record that two people settled up"
+    intents: []
+
+  split_balances:
+    planner_selectable: false
+    tool_class: read
+    cost: cheap
+    short_description: "Who owes whom in a group"
+    intents: []
+
+  list_subscriptions:
+    planner_selectable: false
+    tool_class: read
+    cost: cheap
+    short_description: "Subscriptions and renewals"
+    intents: []
+
+  mark_subscription:
+    planner_selectable: false
+    tool_class: write_logical
+    cost: cheap
+    short_description: "Say whether you still use a subscription"
+    intents: []
+
   expire_capture_prompts:
     planner_selectable: false
     tool_class: write_logical

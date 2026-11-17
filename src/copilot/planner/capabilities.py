@@ -10,7 +10,7 @@ Enforces:
 
 from typing import Any
 
-from copilot.config.phase2 import PlannerCapabilitiesConfig, load_planner_capabilities
+from copilot.config.planning import PlannerCapabilitiesConfig, load_planner_capabilities
 from copilot.tools.contracts import ToolSpec
 from copilot.tools.registry import get as get_tool
 from copilot.tools.registry import list_specs

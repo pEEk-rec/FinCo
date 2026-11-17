@@ -16,21 +16,21 @@ from datetime import date, timedelta
 
 import pytest
 
-from copilot.bank.synth_v5 import generate_persona_data
-from copilot.core.baseline import generate_candidate_windows
-from copilot.core.challenges import evaluate_triggers, generate_challenge_offers
-from copilot.core.experiments import (
+from copilot.bank.personas import generate_persona_data
+from copilot.db.connection import get_connection, init_db
+from copilot.db.repo import insert_account, insert_category, insert_goal, insert_user
+from copilot.db.repo_engagement import list_experiment_checkins, list_offers, update_offer_status
+from copilot.engagement.baseline import generate_candidate_windows
+from copilot.engagement.challenges import evaluate_triggers, generate_challenge_offers
+from copilot.engagement.experiments import (
     create_checkins,
     create_due_reviews,
     design_experiment,
     start_experiment,
 )
-from copilot.core.learning_loop import record_experiment_outcome_memory
-from copilot.core.rewards import get_user_progress
-from copilot.db.connection import get_connection, init_db
-from copilot.db.repo import insert_account, insert_category, insert_goal, insert_user
-from copilot.db.repo_phase4 import list_experiment_checkins, list_offers, update_offer_status
-from copilot.eval.harness_phase4 import CATEGORIES, T0, USER, _clock, _insert_txn, _load, _new_db
+from copilot.engagement.rewards import get_user_progress
+from copilot.eval.engagement import CATEGORIES, T0, USER, _clock, _insert_txn, _load, _new_db
+from copilot.learning.experiment_loop import record_experiment_outcome_memory
 from copilot.models.agentic import Goal
 from copilot.models.domain import Account, Category, User
 from copilot.workflow.nodes import ensure_tools_registered
@@ -201,7 +201,7 @@ def test_two_runners_of_the_weekly_job_leave_exactly_one_set_of_offers(tmp_path)
 # --- what reaches the logs ------------------------------------------------------------------------
 def test_private_text_never_reaches_logs_spans_or_audit_metadata(caplog):
     """Run the real tool path and look at everything it leaves behind."""
-    from copilot.eval.harness_phase4 import _ctx
+    from copilot.eval.engagement import _ctx
     from copilot.tools.executor import execute_tool
 
     secret_merchant = "ZXQSECRETSHOP"

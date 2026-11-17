@@ -9,18 +9,19 @@ const VIEWPORTS = [
 ];
 const SCREENS = [
   { name: 'welcome', path: '/welcome' },
-  { name: 'dashboard', path: '/' },
+  { name: 'overview', path: '/?period=2024-03' },
   { name: 'transactions', path: '/transactions?period=2024-03' },
+  { name: 'transactions-by-category', path: '/transactions?period=2024-03&view=category' },
   { name: 'review', path: '/review' },
-  { name: 'monthly', path: '/monthly?period=2024-02' },
-  { name: 'today', path: '/today' },
-  { name: 'capture', path: '/capture' },
-  { name: 'goals', path: '/goals' },
-  { name: 'challenges', path: '/challenges' },
-  { name: 'progress', path: '/progress' },
-  { name: 'agent', path: '/agent' },
-  { name: 'connect', path: '/connect' },
-  { name: 'design', path: '/design' },
+  { name: 'plan-review', path: '/plan?tab=review&period=2024-02' },
+  { name: 'plan-budget', path: '/plan?tab=budget' },
+  { name: 'plan-goals', path: '/plan?tab=goals' },
+  { name: 'plan-bills', path: '/plan?tab=bills' },
+  { name: 'plan-challenges', path: '/plan?tab=challenges' },
+  { name: 'ask', path: '/ask' },
+  { name: 'settings', path: '/settings' },
+  { name: 'settings-connections', path: '/settings?tab=connections' },
+  { name: 'design', path: '/design?demo=1' },
 ];
 
 // Runs after the demo project, so the database already holds imported data.

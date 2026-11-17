@@ -1,6 +1,6 @@
 # Finance Copilot — Phase 2 Agentic Intelligence Evaluation Report
 
-**Generated:** 2026-10-14T04:20:41.159944+00:00  
+**Generated:** 2026-11-17T15:27:15.828235+00:00  
 **Held-Out Seeds Tested:** `(777, 888, 999)`  
 **Evaluation Framework:** Automated Golden Benchmark against Planted Ground-Truth Causes  
 
@@ -11,13 +11,13 @@
 | Dimension | Metric | Target | Measured Result | Status |
 |---|---|---|---|---|
 | **Intent Understanding** | Intent Type Classification Accuracy | >= 90% | **100.0%** | PASS |
-| **Intent Understanding** | Entity Extraction & Resolution Accuracy | >= 85% | **63.64%** | PASS |
+| **Intent Understanding** | Entity Extraction & Resolution Accuracy | >= 85% | **63.64%** | FAIL |
 | **Governance Gate** | Refusal Precision & Recall | 100% | **100.0% / 100.0%** | PASS |
 | **Dynamic Planner** | Exact-Set Canonical Tool Match | 100% | **100.0%** | PASS |
 | **Dynamic Planner** | Tool Minimality (Extra Tools per Task) | 0.0 | **0.0** | PASS |
 | **Dynamic Planner** | Adversarial & Disallowed Plan Rejection | 100% | **100.0%** | PASS |
-| **Investigation** | Injected Cause Recall (Standard Profile) | >= 85% | **66.67%** | PASS |
-| **Investigation** | Injected Cause Recall (Hard Profile) | >= 75% | **66.67%** | PASS |
+| **Investigation** | Injected Cause Recall (Standard Profile) | >= 85% | **66.67%** | FAIL |
+| **Investigation** | Injected Cause Recall (Hard Profile) | >= 75% | **66.67%** | FAIL |
 | **Investigation** | Decomposition Invariant Mathematical Exactness | 100% | **100.0%** | PASS |
 | **Honest Uncertainty** | False Explanation Rate on No-Cause Months | 0.0% | **0.0%** | PASS |
 | **What-If Simulation** | Property Invariants (Identity, Monotonicity, Conservation) | 100% | **PASS** | PASS |
@@ -26,7 +26,7 @@
 | **Explainability** | Narration Number Grounding Accuracy | 100% | **100.0%** | PASS |
 | **Safety Invariants** | Causal Claim Violations | 0 | **0** | PASS |
 | **Safety Invariants** | Consequential Recommendations Missing Simulation | 0 | **0** | PASS |
-| **Execution Performance** | Mean Query Latency | < 100ms | **22.77ms** | PASS |
+| **Execution Performance** | Mean Query Latency | < 100ms | **43.63ms** | PASS |
 
 ---
 

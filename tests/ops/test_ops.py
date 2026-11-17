@@ -10,18 +10,18 @@ from pathlib import Path
 
 import pytest
 
-from copilot.config.phase3 import OpsConfig
+from copilot.config.agent_runtime import OpsConfig
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_user
-from copilot.db.repo_phase3 import (
+from copilot.db.repo_agent_runtime import (
     insert_job_run,
     insert_reflection,
     insert_span,
     list_spans,
     upsert_scheduled_job,
 )
+from copilot.models.agent_runtime import JobRun, Reflection, ScheduledJob, Span
 from copilot.models.domain import User
-from copilot.models.phase3 import JobRun, Reflection, ScheduledJob, Span
 from copilot.ops.telemetry import compute_ops_telemetry
 from copilot.ops.tracing import (
     FORBIDDEN_ATTR_KEYS,

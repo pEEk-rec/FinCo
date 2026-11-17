@@ -6,12 +6,13 @@ system (the webhook or the simulator); labelling is the user's alone.
 
 from __future__ import annotations
 
+import dataclasses
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
 from pydantic import Field, StrictInt
 
-from copilot.core import capture as core
+from copilot.capture import events as core
 from copilot.models.capture import (
     CounterpartyPolicy,
     CounterpartyProfile,
@@ -139,8 +140,8 @@ class SimulatePaymentOutput(RecordPaymentEventOutput):
 
 
 def simulate_payment_handler(ctx: ExecutionContext, **kwargs) -> SimulatePaymentOutput:
-    from copilot.core.capture_sim import simulate_alert
-    from copilot.core.timeutil import now_utc
+    from copilot.capture.simulator import simulate_alert
+    from copilot.common.timeutil import now_utc, to_utc_iso
 
     p = SimulatePaymentInput.model_validate(kwargs)
     needs_name = p.kind not in ("atm", "reversal")
@@ -157,6 +158,8 @@ def simulate_payment_handler(ctx: ExecutionContext, **kwargs) -> SimulatePayment
         utr=p.utr,
         account_last4=p.account_last4,
     )
+    # A simulated payment happens now; the alert text only carries a date.
+    parsed = dataclasses.replace(parsed, occurred_at=to_utc_iso(when))
     rec = core.record_payment_event(
         ctx.conn,
         ctx.user_id,
@@ -241,7 +244,7 @@ class ReconcileOutput(ToolOutput):
 
 
 def reconcile_handler(ctx: ExecutionContext, **kwargs) -> ReconcileOutput:
-    from copilot.core.capture_reconcile import reconcile_events
+    from copilot.capture.reconcile import reconcile_events
 
     ReconcileInput.model_validate(kwargs)
     r = reconcile_events(
@@ -278,8 +281,8 @@ class CoverageOutput(ToolOutput):
 
 
 def coverage_handler(ctx: ExecutionContext, **kwargs) -> CoverageOutput:
-    from copilot.core.capture_reconcile import combined_spend, coverage_health
-    from copilot.core.timeutil import IST, month_bounds, now_utc
+    from copilot.capture.reconcile import combined_spend, coverage_health
+    from copilot.common.timeutil import IST, month_bounds, now_utc
 
     p = CoverageInput.model_validate(kwargs)
     now = now_utc(_clock(ctx))
@@ -306,7 +309,7 @@ class SetAccountLast4Output(ToolOutput):
 
 
 def set_account_last4_handler(ctx: ExecutionContext, **kwargs) -> SetAccountLast4Output:
-    from copilot.core.capture_reconcile import set_account_last4
+    from copilot.capture.reconcile import set_account_last4
 
     p = SetAccountLast4Input.model_validate(kwargs)
     set_account_last4(
@@ -327,7 +330,7 @@ class RegisterPushOutput(ToolOutput):
 
 
 def register_push_handler(ctx: ExecutionContext, **kwargs) -> RegisterPushOutput:
-    from copilot.core import capture_push
+    from copilot.capture import push as capture_push
 
     p = RegisterPushInput.model_validate(kwargs)
     sid = capture_push.subscribe(
@@ -352,7 +355,7 @@ class RemovePushOutput(ToolOutput):
 
 
 def remove_push_handler(ctx: ExecutionContext, **kwargs) -> RemovePushOutput:
-    from copilot.core import capture_push
+    from copilot.capture import push as capture_push
 
     p = RemovePushInput.model_validate(kwargs)
     return RemovePushOutput(

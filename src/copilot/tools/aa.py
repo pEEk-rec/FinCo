@@ -8,9 +8,10 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
-from copilot.core import aa_consent, aa_fetch
-from copilot.core.aa_source import SandboxAASource
-from copilot.core.errors import ErrorCode, ToolFailure
+from copilot.banklink import consent as aa_consent
+from copilot.banklink import fetch as aa_fetch
+from copilot.banklink.sources import SandboxAASource
+from copilot.common.errors import ErrorCode, ToolFailure
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
 from copilot.tools.registry import register
 

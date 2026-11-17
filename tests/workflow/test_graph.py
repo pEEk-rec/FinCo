@@ -261,7 +261,7 @@ def test_categorize_failure_routes_to_error_with_audit(conn, exec_ctx):
     }
 
     with patch(
-        "copilot.workflow.nodes.run_categorization_pipeline",
+        "copilot.workflow.nodes.run_categorisation",
         side_effect=RuntimeError("Categorization model failed permanently"),
     ):
         result = graph.invoke(state, config=config)

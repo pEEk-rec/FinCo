@@ -29,7 +29,7 @@ const field =
   'h-10 w-full rounded-control border border-input-border bg-surface px-3 text-[14px] text-ink placeholder:text-ink-3';
 
 /** Keys 1, 2 and 3 pick the first payment's guesses, unless you are typing somewhere. */
-function useGuessShortcuts(inbox: CaptureInbox | undefined) {
+export function useGuessShortcuts(inbox: CaptureInbox | undefined) {
   const tag = useTagPayment();
   const first = inbox?.prompts[0];
   useEffect(() => {
@@ -55,7 +55,7 @@ function useGuessShortcuts(inbox: CaptureInbox | undefined) {
   }, [first, tag]);
 }
 
-function SimulatorPanel({ inbox }: { inbox: CaptureInbox }) {
+export function SimulatorPanel({ inbox }: { inbox: CaptureInbox }) {
   const writes = useCaptureWrites();
   const toast = useToast();
   const [bank, setBank] = useState(inbox.banks[0]?.code ?? 'hdfc');
@@ -175,7 +175,7 @@ function SimulatorPanel({ inbox }: { inbox: CaptureInbox }) {
   );
 }
 
-function BridgeCard() {
+export function BridgeCard() {
   const health = useBridgeHealth();
   if (!health.data) return null;
   const h = health.data;
@@ -221,7 +221,7 @@ function BridgeCard() {
   );
 }
 
-function NotificationsCard() {
+export function NotificationsCard() {
   const push = usePush();
   const status = usePushStatus();
   const devices = status.data?.devices ?? [];

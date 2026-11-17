@@ -11,6 +11,8 @@ export default defineConfig({
   server: {
     port: Number(process.env.FINCO_WEB_PORT ?? 5173),
     strictPort: true,
+    // Tailscale's HTTPS address (https://<laptop>.<tailnet>.ts.net) reaches this server by name.
+    allowedHosts: ['.ts.net'],
     proxy: { '/api': { target: API_TARGET, changeOrigin: false } },
   },
   test: {

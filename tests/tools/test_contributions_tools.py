@@ -14,10 +14,7 @@ import pytest
 
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_category, insert_transaction, insert_user
-from copilot.db.repo_phase3 import (
-    get_latest_contribution_plan,
-    get_latest_tradeoff_analysis,
-)
+from copilot.db.repo_money import get_latest_contribution_plan, get_latest_tradeoff_analysis
 from copilot.governance.policy import PolicySettings
 from copilot.models.domain import Account, Category, Transaction, User
 from copilot.tools.contributions import register_contributions_tools

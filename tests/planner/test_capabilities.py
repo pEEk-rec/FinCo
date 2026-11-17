@@ -4,7 +4,7 @@ Tests for Planner Capabilities and Tool Catalogue Projection (PLAN_PHASE2 Sectio
 
 import pytest
 
-from copilot.config.phase2 import ToolCapability
+from copilot.config.planning import ToolCapability
 from copilot.planner.capabilities import (
     get_selectable_tools,
     is_planner_selectable,

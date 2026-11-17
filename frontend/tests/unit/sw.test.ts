@@ -131,7 +131,7 @@ describe('the service worker', () => {
       action: '',
     });
     expect(sw.fetchMock).not.toHaveBeenCalled();
-    expect(sw.opened).toEqual(['/capture?prompt=prm_1']);
+    expect(sw.opened).toEqual(['/review?prompt=prm_1']);
   });
 
   it('opens the app instead when the button cannot be answered', async () => {
@@ -141,7 +141,7 @@ describe('the service worker', () => {
       notification: { data: sw.shown[0]!.options.data, close: vi.fn() },
       action: 'label:food',
     });
-    expect(sw.opened).toEqual(['/capture?prompt=prm_1']);
+    expect(sw.opened).toEqual(['/review?prompt=prm_1']);
   });
 
   it('uses an open window rather than a new one', async () => {
@@ -151,7 +151,7 @@ describe('the service worker', () => {
       notification: { data: sw.shown[0]!.options.data, close: vi.fn() },
       action: '',
     });
-    expect(sw.navigated).toEqual(['/capture?prompt=prm_1']);
+    expect(sw.navigated).toEqual(['/review?prompt=prm_1']);
     expect(sw.opened).toEqual([]);
   });
 

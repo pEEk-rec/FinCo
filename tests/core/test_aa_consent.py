@@ -8,16 +8,17 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from copilot.core import aa_consent, aa_fetch
-from copilot.core import capture as cap
-from copilot.core.aa_source import (
+from copilot.banklink import consent as aa_consent
+from copilot.banklink import fetch as aa_fetch
+from copilot.banklink.sources import (
     AAFetchResult,
     MockAASource,
     bank_side_feed,
     rebit_deposit_payload,
 )
-from copilot.core.errors import ToolFailure
-from copilot.core.timeutil import IST, to_utc_iso
+from copilot.capture import events as cap
+from copilot.common.errors import ToolFailure
+from copilot.common.timeutil import IST, to_utc_iso
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_category, insert_user
 from copilot.live.aa import parse_fi_data

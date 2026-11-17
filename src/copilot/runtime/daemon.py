@@ -13,10 +13,10 @@ import time
 from collections.abc import Callable
 from datetime import datetime
 
-from copilot.config.phase3 import load_runtime_config
-from copilot.core.config import PROJECT_ROOT
-from copilot.core.timeutil import now_utc
-from copilot.models.phase3 import JobRun
+from copilot.common.settings import PROJECT_ROOT
+from copilot.common.timeutil import now_utc
+from copilot.config.agent_runtime import load_runtime_config
+from copilot.models.agent_runtime import JobRun
 from copilot.runtime.runner import run_due_jobs
 
 logger = logging.getLogger(__name__)

@@ -4,9 +4,9 @@ from datetime import datetime
 
 import pytest
 
-from copilot.core.capture_sim import KINDS, SENDERS, render_sms, simulate_alert
-from copilot.core.errors import ToolFailure
-from copilot.core.timeutil import IST, to_utc_iso
+from copilot.capture.simulator import KINDS, SENDERS, render_sms, simulate_alert
+from copilot.common.errors import ToolFailure
+from copilot.common.timeutil import IST, to_utc_iso
 
 WHEN = datetime(2026, 10, 18, 10, 45, 12, tzinfo=IST)
 BANKS = sorted(SENDERS)

@@ -152,7 +152,7 @@ def test_categorize_node_failure(exec_ctx):
         "trace": [],
     }
     with patch(
-        "copilot.workflow.nodes.run_categorization_pipeline",
+        "copilot.workflow.nodes.run_categorisation",
         side_effect=RuntimeError("pipeline exploded"),
     ):
         out = categorize_node(state, config={"configurable": {"exec_ctx": exec_ctx}})

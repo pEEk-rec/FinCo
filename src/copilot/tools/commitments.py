@@ -20,20 +20,18 @@ from typing import TYPE_CHECKING, Any
 from pydantic import Field, StrictInt
 
 from copilot.audit.events import record_event
-from copilot.core.commitments import expand_occurrences, match_occurrences
-from copilot.core.errors import ErrorCode, ToolFailure
-from copilot.core.timeutil import now_utc, to_utc_iso
-from copilot.db.repo_phase3 import (
+from copilot.common.errors import ErrorCode, ToolFailure
+from copilot.common.timeutil import now_utc, to_utc_iso
+from copilot.db.repo_money import (
     get_commitment,
     insert_commitment,
     list_recurring_series,
     update_commitment,
     update_commitment_status,
 )
-from copilot.db.repo_phase3 import (
-    list_commitments as repo_list_commitments,
-)
-from copilot.models.phase3 import (
+from copilot.db.repo_money import list_commitments as repo_list_commitments
+from copilot.domain.commitments import expand_occurrences, match_occurrences
+from copilot.models.money import (
     Commitment,
     CommitmentCertainty,
     CommitmentDirection,

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from copilot.core.errors import ErrorCode, ToolFailure
+from copilot.common.errors import ErrorCode, ToolFailure
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     get_transaction,

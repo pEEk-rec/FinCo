@@ -15,7 +15,7 @@ from datetime import datetime
 
 import pytest
 
-from copilot.core.config import PROJECT_ROOT
+from copilot.common.settings import PROJECT_ROOT
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     insert_account,
@@ -24,14 +24,12 @@ from copilot.db.repo import (
     insert_transaction,
     insert_user,
 )
-from copilot.db.repo_phase3 import (
-    insert_bucket,
-    insert_commitment,
-    insert_memory_item,
-)
+from copilot.db.repo_memory import insert_memory_item
+from copilot.db.repo_money import insert_bucket, insert_commitment
 from copilot.governance.policy import load_policy
+from copilot.models.agent_runtime import MemoryItem
 from copilot.models.domain import Account, Category, Transaction, User
-from copilot.models.phase3 import Bucket, Commitment, MemoryItem
+from copilot.models.money import Bucket, Commitment
 from copilot.skills.runner import run_skill
 from copilot.tools.executor import ExecutionContext
 from copilot.workflow.nodes import ensure_tools_registered

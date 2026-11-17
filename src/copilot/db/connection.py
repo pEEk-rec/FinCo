@@ -85,7 +85,16 @@ def savepoint(conn: sqlite3.Connection) -> Iterator[None]:
 
     Outside any transaction the block is committed on exit. Inside a caller's transaction it
     nests: the caller's own commit or rollback decides the final outcome.
+
+    Outside a transaction the write lock is taken up front (`BEGIN IMMEDIATE`). Without it a block
+    that first reads and then writes (every tool call: a policy check, then an audit row) tries to
+    upgrade its lock later, and SQLite refuses to wait for that when another connection is writing:
+    concurrent requests then fail with "database is locked". Taking the lock first lets the busy
+    timeout queue them instead.
     """
+    own = not conn.in_transaction
+    if own:
+        conn.execute("BEGIN IMMEDIATE")
     name = f"sp_{uuid.uuid4().hex}"
     conn.execute(f"SAVEPOINT {name}")
     try:
@@ -93,5 +102,9 @@ def savepoint(conn: sqlite3.Connection) -> Iterator[None]:
     except BaseException:
         conn.execute(f"ROLLBACK TO {name}")
         conn.execute(f"RELEASE {name}")
+        if own:
+            conn.execute("ROLLBACK")
         raise
     conn.execute(f"RELEASE {name}")
+    if own:
+        conn.execute("COMMIT")

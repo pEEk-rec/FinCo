@@ -12,7 +12,7 @@ from typing import Any
 from copilot.bank.ingest import set_connector
 from copilot.bank.mock_bank import MockAAConnector
 from copilot.bank.synth import generate_transactions
-from copilot.core.config import PROJECT_ROOT, load_settings
+from copilot.common.settings import PROJECT_ROOT, load_settings
 from copilot.db.connection import get_connection, init_db
 from copilot.governance.policy import PolicySettings, load_policy
 from copilot.models.domain import Transaction

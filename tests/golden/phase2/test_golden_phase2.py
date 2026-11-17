@@ -28,20 +28,16 @@ from datetime import UTC, datetime
 import pytest
 
 from copilot.bank.synth import generate_transactions_v3
-from copilot.config.phase2 import load_investigation_config
-from copilot.core.advice import validate_advice
-from copilot.core.alerts import evaluate_category_alert_signals
-from copilot.core.intent import (
+from copilot.config.planning import load_investigation_config
+from copilot.conversation.advice import validate_advice
+from copilot.conversation.intent import (
     check_input_gate,
     classify_intent,
     parse_amount_paise,
     parse_period,
     resolve_entities,
 )
-from copilot.core.investigation import run_investigation_suite
-from copilot.core.recommendations import build_recommendation
-from copilot.core.simulation import FinancialSnapshot, simulate
-from copilot.core.timeline import build_timeline
+from copilot.conversation.investigation import run_investigation_suite
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     get_monthly_review,
@@ -52,6 +48,9 @@ from copilot.db.repo import (
     insert_transaction,
     insert_user,
 )
+from copilot.domain.alerts import evaluate_category_alert_signals
+from copilot.domain.whatif import FinancialSnapshot, simulate
+from copilot.engagement.recommendations import build_recommendation
 from copilot.models.agentic import (
     Goal,
     Intent,
@@ -62,6 +61,7 @@ from copilot.models.agentic import (
 )
 from copilot.models.domain import Account, Budget, Category, Transaction, User
 from copilot.models.findings import AdviceDraft, Finding, FindingNumber
+from copilot.ops.timeline import build_timeline
 from copilot.planner.validator import PlanValidator
 from copilot.review.builder import build_monthly_review
 from copilot.tools.executor import ExecutionContext, execute_tool
@@ -322,7 +322,7 @@ def test_zero_amount_whatif_equals_baseline_exactly():
 # 7. Ordinary month raises no alert above info
 # -------------------------------------------------------------------------------------------------
 def test_ordinary_month_raises_no_alert_above_info():
-    from copilot.config.phase2 import load_alerts_config
+    from copilot.config.money import load_alerts_config
 
     cfg = load_alerts_config()
     alert = evaluate_category_alert_signals(
@@ -349,7 +349,7 @@ def test_ordinary_month_raises_no_alert_above_info():
 # 8. Muted category is suppressed and audited
 # -------------------------------------------------------------------------------------------------
 def test_muted_category_is_suppressed_and_audited(memory_db):
-    from copilot.core.config import PROJECT_ROOT
+    from copilot.common.settings import PROJECT_ROOT
     from copilot.governance.policy import load_policy
 
     insert_budget(
@@ -600,7 +600,7 @@ def test_phase1_graph_still_produces_same_monthly_review(memory_db):
 # 16. User-set category untouched by any Phase 2 tool
 # -------------------------------------------------------------------------------------------------
 def test_user_set_category_untouched_by_phase2_tools(memory_db):
-    from copilot.core.config import PROJECT_ROOT
+    from copilot.common.settings import PROJECT_ROOT
     from copilot.governance.policy import load_policy
 
     policy = load_policy(PROJECT_ROOT / "config" / "policy.yaml")

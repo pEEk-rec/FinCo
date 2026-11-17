@@ -14,14 +14,8 @@ from typing import TYPE_CHECKING, Any, Literal
 from pydantic import Field, StrictInt
 
 from copilot.audit.events import record_event
-from copilot.core.errors import ErrorCode, ToolFailure
-from copilot.core.goals import (
-    GoalImpactResult,
-    goal_impact,
-    goal_progress,
-    monthly_surplus_estimate,
-)
-from copilot.core.timeutil import now_utc, to_utc_iso
+from copilot.common.errors import ErrorCode, ToolFailure
+from copilot.common.timeutil import now_utc, to_utc_iso
 from copilot.db.repo import (
     get_goal,
     insert_goal,
@@ -32,9 +26,15 @@ from copilot.db.repo import (
 from copilot.db.repo import (
     update_goal as repo_update_goal,
 )
-from copilot.db.repo_phase3 import insert_goal_contribution
+from copilot.db.repo_money import insert_goal_contribution
+from copilot.domain.goals import (
+    GoalImpactResult,
+    goal_impact,
+    goal_progress,
+    monthly_surplus_estimate,
+)
 from copilot.models.agentic import Goal, GoalKind, GoalStatus
-from copilot.models.phase3 import GoalProgress
+from copilot.models.money import GoalProgress
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
 from copilot.tools.registry import register
 

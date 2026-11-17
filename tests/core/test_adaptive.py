@@ -16,7 +16,16 @@ from datetime import datetime
 
 import pytest
 
-from copilot.core.adaptive import (
+from copilot.common.timeutil import IST
+from copilot.db.connection import get_connection, init_db
+from copilot.db.repo import insert_account, insert_category, insert_user
+from copilot.db.repo_engagement import (
+    get_experiment,
+    insert_experiment_checkin,
+    list_adjustment_proposals,
+    update_experiment_status,
+)
+from copilot.engagement.adaptive import (
     accept_adjustment,
     detect_ahead_at_midpoint,
     detect_consecutive_behind,
@@ -26,17 +35,8 @@ from copilot.core.adaptive import (
     reject_adjustment,
     run_adaptive_detectors,
 )
-from copilot.core.timeutil import IST
-from copilot.db.connection import get_connection, init_db
-from copilot.db.repo import insert_account, insert_category, insert_user
-from copilot.db.repo_phase4 import (
-    get_experiment,
-    insert_experiment_checkin,
-    list_adjustment_proposals,
-    update_experiment_status,
-)
 from copilot.models.domain import Account, Category, User
-from copilot.models.phase4 import Experiment, ExperimentCheckin
+from copilot.models.engagement import Experiment, ExperimentCheckin
 
 T0 = "2026-01-01T00:00:00Z"
 # Experiment window: 2026-09-01 to 2026-09-14 (14 days)

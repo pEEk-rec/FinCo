@@ -3,8 +3,8 @@ from datetime import datetime
 import pytest
 
 from copilot.audit.events import list_events
-from copilot.core.errors import ErrorCode, ToolFailure
-from copilot.core.timeutil import IST
+from copilot.common.errors import ErrorCode, ToolFailure
+from copilot.common.timeutil import IST
 from copilot.db.connection import get_connection, init_db
 from copilot.governance.policy import PolicySettings
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec

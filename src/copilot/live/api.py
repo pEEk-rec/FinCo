@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 from copilot.api.errors import ApiError, ApiException
 from copilot.api.state import ApiState
-from copilot.core.timeutil import now_utc
+from copilot.common.timeutil import now_utc
 from copilot.live import service
 from copilot.live.aa import AAClient, AAConfig, AAError
 from copilot.live.statement import NotAStatement, parse_statement

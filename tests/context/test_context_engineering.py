@@ -20,20 +20,17 @@ from pathlib import Path
 
 import pytest
 
-from copilot.config.phase3 import ContextConfig
+from copilot.common.timeutil import to_utc_iso
+from copilot.config.agent_runtime import ContextConfig
 from copilot.context.builder import ContextBuilder
 from copilot.context.retrieval import retrieve_relevant_memories
-from copilot.core.timeutil import to_utc_iso
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_user
-from copilot.db.repo_phase3 import (
-    get_context_manifest,
-    insert_memory_evidence,
-    insert_memory_item,
-)
+from copilot.db.repo_agent_runtime import get_context_manifest
+from copilot.db.repo_memory import insert_memory_evidence, insert_memory_item
+from copilot.models.agent_runtime import MemoryEvidence, MemoryItem
 from copilot.models.agentic import Intent
 from copilot.models.domain import User
-from copilot.models.phase3 import MemoryEvidence, MemoryItem
 
 
 @pytest.fixture
@@ -466,7 +463,7 @@ def test_architecture_llm_prompts_use_context_builder():
         src_root / "planner" / "llm_planner.py",
         src_root / "workflow" / "decomposition.py",
         src_root / "workflow" / "reviewer.py",
-        src_root / "core" / "intent.py",
+        src_root / "conversation" / "intent.py",
     ]
 
     for target in target_files:

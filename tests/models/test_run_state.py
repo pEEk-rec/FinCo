@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from copilot.core.errors import ErrorCode, ToolError
+from copilot.common.errors import ErrorCode, ToolError
 from copilot.models.run_state import (
     PendingAction,
     RunState,

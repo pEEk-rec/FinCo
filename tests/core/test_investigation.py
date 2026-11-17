@@ -13,8 +13,8 @@ Verifies:
 import random
 
 from copilot.bank.synth import DEV_SEEDS, generate_transactions_v3
-from copilot.config.phase2 import InvestigationConfig
-from copilot.core.investigation import (
+from copilot.config.planning import InvestigationConfig
+from copilot.conversation.investigation import (
     decompose_spend_change,
     run_investigation_suite,
 )

@@ -1,3 +1,5 @@
+import { CaretRight, CheckCircle } from '@phosphor-icons/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { Link } from 'react-router';
 
 import { ApiError, type Dashboard } from '../api/client';
@@ -14,6 +16,8 @@ import { formatDayShort } from '../format/date';
 import { formatINR } from '../format/money';
 import { LiquidVessel } from '../motion/Liquid';
 import { NumberTicker } from '../motion/NumberTicker';
+import { useMonth } from '../state/month';
+import { CheckinCard } from './ForYou';
 
 const T = copy.dashboard;
 
@@ -125,46 +129,66 @@ function PaceCard({ data }: { data: Dashboard }) {
   );
 }
 
-function ReviewCard({ data }: { data: Dashboard }) {
-  return (
-    <Card labelledBy="review-title">
-      <CardHeader
-        id="review-title"
-        label={T.review}
-        action={{ to: '/review', text: copy.common.viewAll }}
-      />
-      <div className="p-6">
-        {data.review_count === 0 ? (
-          <EmptyState message={T.reviewZero} />
-        ) : (
-          <div className="flex flex-col gap-4">
-            <p className="serif-light text-[28px] leading-none tabular">{data.review_count}</p>
-            <ul className="flex flex-col divide-y divide-hairline">
-              {data.review_preview.map((item) => (
-                <li key={item.id} className="flex items-center justify-between gap-3 py-2.5">
-                  <span className="min-w-0">
-                    <span className="block truncate text-[14px] capitalize">{item.merchant}</span>
-                    <span className="text-small text-ink-3">
-                      {formatDayShort(item.occurred_at)}
-                    </span>
-                  </span>
-                  <span className="tabular text-cell">
-                    {formatINR(item.amount_paise, { paise: 'never' })}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <Link to="/review">
-              <Button variant="primary">{T.reviewCta}</Button>
-            </Link>
-          </div>
-        )}
+/**
+ * The one call to action on Overview: everything waiting for you (statements and phone alerts)
+ * counted once, opening the single Review queue.
+ */
+function NeedsYouBanner({
+  count,
+  preview,
+}: {
+  count: number;
+  preview: Dashboard['review_preview'];
+}) {
+  const reduce = useReducedMotion();
+  if (count === 0) {
+    return (
+      <div className="flex items-center gap-3 rounded-card bg-positive-tint px-5 py-4 text-[15px] font-semibold text-positive">
+        <CheckCircle size={22} weight="fill" aria-hidden />
+        {T.reviewZero}
       </div>
-    </Card>
+    );
+  }
+  const names = preview
+    .slice(0, 3)
+    .map((p) => p.merchant)
+    .join(', ');
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+    >
+      <Link
+        to="/review"
+        aria-label={`${T.review}: ${T.needsYou(String(count))}`}
+        className="group flex items-center gap-4 rounded-card border border-brand/20 bg-brand-tint px-5 py-4 transition-[transform,box-shadow] duration-fast hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-18px_rgba(186,58,37,0.45)]"
+      >
+        <span className="tabular flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-brand text-[18px] font-bold text-brand-ink">
+          {count}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[16px] font-semibold text-ink">{T.review}</span>
+          <span className="block truncate text-small text-ink-2">
+            {T.needsYou(String(count))}
+            {names ? <span className="capitalize">{` · ${names}`}</span> : null}
+          </span>
+        </span>
+        <span className="hidden items-center gap-1 text-[14px] font-semibold text-brand sm:flex">
+          {T.reviewCta}
+          <CaretRight
+            size={16}
+            weight="bold"
+            aria-hidden
+            className="transition-transform duration-fast group-hover:translate-x-0.5"
+          />
+        </span>
+      </Link>
+    </motion.div>
   );
 }
 
-function UpcomingCard({ data }: { data: Dashboard }) {
+export function UpcomingCard({ data }: { data: Dashboard }) {
   return (
     <Card labelledBy="upcoming-title">
       <CardHeader id="upcoming-title" label={T.upcoming} />
@@ -203,6 +227,7 @@ function CategoriesCard({ data }: { data: Dashboard }) {
     name: c.name,
     spentPaise: c.spent_paise,
     limitPaise: c.limit_paise,
+    overPaise: c.over_paise,
     pctUsed: c.pct_used,
     status: c.status === 'projected_exceed' ? 'warning' : c.status,
   }));
@@ -211,14 +236,21 @@ function CategoriesCard({ data }: { data: Dashboard }) {
       <CardHeader
         id="cats-title"
         label={T.topCategories}
-        action={{ to: '/transactions', text: copy.common.viewAll }}
+        action={{ to: '/transactions?view=category', text: copy.common.viewAll }}
       />
       {rows.length === 0 ? (
         <div className="p-6">
           <EmptyState message={T.topEmpty} />
         </div>
       ) : (
-        <BarList rows={rows} ofLabel={(limit) => `/ ${limit}`} />
+        <BarList
+          rows={rows}
+          ofLabel={T.budgetOf}
+          overLabel={T.budgetOver}
+          hrefFor={(row) =>
+            `/transactions?view=category&category=${encodeURIComponent(row.categoryId ?? 'none')}`
+          }
+        />
       )}
     </Card>
   );
@@ -234,11 +266,7 @@ const SEVERITY_TONE = {
 function AlertsCard({ data }: { data: Dashboard }) {
   return (
     <Card labelledBy="alerts-title">
-      <CardHeader
-        id="alerts-title"
-        label={T.alerts}
-        action={{ to: '/agent#alerts', text: copy.common.viewAll }}
-      />
+      <CardHeader id="alerts-title" label={T.alerts} />
       {data.alerts.length === 0 ? (
         <div className="p-6">
           <EmptyState message={T.alertsEmpty} />
@@ -250,7 +278,7 @@ function AlertsCard({ data }: { data: Dashboard }) {
               key={a.id}
               className="flex flex-col gap-1.5 border-b border-hairline px-6 py-4 last:border-b-0"
             >
-              <Badge tone={SEVERITY_TONE[a.severity]}>{a.severity}</Badge>
+              <Badge tone={SEVERITY_TONE[a.severity]}>{T.severity[a.severity]}</Badge>
               <p className="text-[14px] text-ink">{a.why_text}</p>
             </li>
           ))}
@@ -280,22 +308,13 @@ function Loading() {
 }
 
 export function DashboardScreen() {
-  const query = useDashboard();
+  const { month } = useMonth();
+  const query = useDashboard(month);
   const inbox = useCaptureInbox();
   const data = query.data;
-  const waiting = inbox.data?.pending_count ?? 0;
+  const waiting = (data?.review_count ?? 0) + (inbox.data?.pending_count ?? 0);
   return (
-    <Page
-      title={data ? <Headline data={data} /> : T.title}
-      wide
-      actions={
-        <Link to="/today">
-          <Button variant={waiting > 0 ? 'primary' : 'secondary'}>
-            {waiting > 0 ? `Review today: ${waiting} to tag` : 'Review today'}
-          </Button>
-        </Link>
-      }
-    >
+    <Page title={data ? <Headline data={data} /> : T.title} wide>
       {query.isPending ? (
         <Loading />
       ) : query.error ? (
@@ -311,21 +330,24 @@ export function DashboardScreen() {
           <EmptyState
             message={T.noData}
             action={
-              <Link to="/connect">
+              <Link to="/settings?tab=connections">
                 <Button variant="primary">{T.connectCta}</Button>
               </Link>
             }
           />
         </Card>
       ) : (
-        <div className="grid items-start gap-5 lg:grid-cols-3">
-          <PaceCard data={data} />
-          <div className="flex flex-col gap-5">
-            <ReviewCard data={data} />
-            <AlertsCard data={data} />
+        <div className="flex flex-col gap-5">
+          <NeedsYouBanner count={waiting} preview={data.review_preview} />
+          <div className="grid items-start gap-5 lg:grid-cols-3">
+            <PaceCard data={data} />
+            <div className="flex flex-col gap-5">
+              <CheckinCard />
+              <AlertsCard data={data} />
+            </div>
+            <CategoriesCard data={data} />
+            <UpcomingCard data={data} />
           </div>
-          <CategoriesCard data={data} />
-          <UpcomingCard data={data} />
         </div>
       )}
     </Page>

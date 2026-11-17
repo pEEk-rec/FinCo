@@ -21,7 +21,7 @@ from typer.testing import CliRunner
 from copilot.cli.main import app
 from copilot.db.connection import get_connection
 from copilot.db.repo import insert_goal
-from copilot.db.repo_phase4 import (
+from copilot.db.repo_engagement import (
     insert_adjustment_proposal,
     insert_experiment,
     insert_experiment_review,
@@ -29,12 +29,7 @@ from copilot.db.repo_phase4 import (
     update_experiment_status,
 )
 from copilot.models.agentic import Goal
-from copilot.models.phase4 import (
-    AdjustmentProposal,
-    Experiment,
-    ExperimentReview,
-    Offer,
-)
+from copilot.models.engagement import AdjustmentProposal, Experiment, ExperimentReview, Offer
 
 runner = CliRunner()
 
@@ -497,7 +492,7 @@ def test_cli_learning_challenge_template(cli_db: str):
 
 
 # =================================================================================================
-# 7. Demo Script End-to-End Test (docs/demo_script_phase4.md)
+# 7. Demo script end-to-end test
 # =================================================================================================
 def test_phase4_demo_script_e2e(cli_db: str):
     """

@@ -13,18 +13,18 @@ from datetime import UTC, datetime
 
 import pytest
 
-from copilot.core.errors import ErrorCode
+from copilot.common.errors import ErrorCode
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_category, insert_user
-from copilot.db.repo_phase3 import (
+from copilot.db.repo_memory import (
     get_memory_item,
     insert_memory_evidence,
     insert_memory_item,
     list_memory_evidence,
 )
 from copilot.governance.policy import PolicySettings
+from copilot.models.agent_runtime import MemoryEvidence, MemoryItem
 from copilot.models.domain import Account, Category, User
-from copilot.models.phase3 import MemoryEvidence, MemoryItem
 from copilot.tools.executor import ExecutionContext, execute_tool
 from copilot.tools.memory import register_memory_tools
 from copilot.tools.registry import clear_registry

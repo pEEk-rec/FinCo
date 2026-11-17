@@ -10,7 +10,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from copilot.config.phase2 import load_planner_capabilities  # noqa: E402
+from copilot.config.planning import load_planner_capabilities  # noqa: E402
 
 
 def generate_matrix() -> str:
@@ -69,7 +69,7 @@ def generate_matrix() -> str:
             "",
             "- **Money Movement:** Initiating payments, bank transfers, UPI transactions, charges.",
             "- **Trading / Execution:** Executing stock, mutual fund, crypto, or commodity orders.",
-            "- **Credential Ingestion:** Requesting or caching OTPs, PINs, passwords, or card numbers.",
+            "- **Credential Ingestion:** Asking for or caching OTPs, PINs or card numbers.",
             "- **External Mutations:** Modifying third-party bank records or external APIs.",
             "",
             "---",

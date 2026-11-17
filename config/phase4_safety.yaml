@@ -50,7 +50,7 @@ essential_categories:
 # "starts with"; otherwise the whole word must match (so "emi" does not catch "emirates").
 # Product categories use ids such as housing (named Rent) and bills (named Utilities), and users
 # can create their own, so ids alone are not enough. Travel counts as essential because it covers
-# commuting; the conservative choice is recorded in docs/open_questions.md.
+# commuting; the conservative choice is kept.
 essential_keywords:
   - "rent"
   - "rental"

@@ -1,5 +1,5 @@
 from copilot.bank.synth import generate_transactions
-from copilot.core.anomalies import detect_anomalies
+from copilot.domain.anomalies import detect_anomalies
 
 
 def test_detect_anomalies_ground_truth():

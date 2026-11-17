@@ -22,8 +22,8 @@ from datetime import datetime
 from typing import Any
 from urllib.parse import urlparse
 
-from copilot.core.money import rupees_to_paise
-from copilot.core.timeutil import IST, to_utc_iso
+from copilot.common.money import rupees_to_paise
+from copilot.common.timeutil import IST, to_utc_iso
 from copilot.live.statement import StatementRow
 
 # (method, url, headers, body or None) -> (status, parsed json or None)

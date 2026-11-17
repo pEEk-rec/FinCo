@@ -18,8 +18,7 @@ import sqlite3
 
 import pytest
 
-from copilot.core.advice import _FORBIDDEN
-from copilot.core.contributions import compare_tradeoffs, plan_contributions
+from copilot.conversation.advice import _FORBIDDEN
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     insert_account,
@@ -28,10 +27,11 @@ from copilot.db.repo import (
     insert_transaction,
     insert_user,
 )
-from copilot.db.repo_phase3 import insert_commitment
+from copilot.db.repo_money import insert_commitment
+from copilot.domain.contributions import compare_tradeoffs, plan_contributions
 from copilot.models.agentic import Goal
 from copilot.models.domain import Account, Category, Transaction, User
-from copilot.models.phase3 import Commitment
+from copilot.models.money import Commitment
 
 
 @pytest.fixture

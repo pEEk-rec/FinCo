@@ -9,6 +9,7 @@ instead of silently changing how payments are asked about or parsed.
 
 from __future__ import annotations
 
+import os
 import re
 from functools import lru_cache
 from pathlib import Path
@@ -17,7 +18,7 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from copilot.core.config import PROJECT_ROOT
+from copilot.common.settings import PROJECT_ROOT
 
 CONFIG_DIR = PROJECT_ROOT / "config"
 
@@ -159,6 +160,7 @@ class SmsConfig(_Strict):
     drift_window_days: int = Field(ge=1, le=90)
     drift_min_messages: int = Field(ge=1, le=1000)
     drift_alert_bp: int = Field(ge=0, le=10000)
+    accept_any_sender: bool = False
 
 
 class PushConfig(_Strict):
@@ -344,7 +346,12 @@ class AaConfig(_Strict):
 # ---------------------------------------------------------------------------------------------
 @lru_cache(maxsize=4)
 def load_capture_config(path: Path | None = None) -> CaptureConfig:
-    return CaptureConfig.model_validate(_read(path or CONFIG_DIR / "capture.yaml"))
+    raw = _read(path or CONFIG_DIR / "capture.yaml")
+    # For a demo, `FINCO_MIN_ASK_PAISE=100` asks about every payment of Rs 1 or more.
+    override = os.environ.get("FINCO_MIN_ASK_PAISE")
+    if override and override.isdigit():
+        raw["ask"]["min_ask_amount_paise"] = int(override)
+    return CaptureConfig.model_validate(raw)
 
 
 @lru_cache(maxsize=4)

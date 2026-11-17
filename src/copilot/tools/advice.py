@@ -14,9 +14,9 @@ from typing import TYPE_CHECKING, Literal
 from pydantic import Field
 
 from copilot.audit.events import record_event
-from copilot.core.advice import load_templates, render_template, validate_advice
-from copilot.core.errors import ErrorCode, ToolFailure
-from copilot.core.timeutil import to_utc_iso
+from copilot.common.errors import ErrorCode, ToolFailure
+from copilot.common.timeutil import to_utc_iso
+from copilot.conversation.advice import load_templates, render_template, validate_advice
 from copilot.llm.client import StructuredOutputError, structured_call
 from copilot.models.findings import AdviceDraft, AdviceDraftBatch, Finding
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
@@ -69,7 +69,7 @@ def draft_advice_handler(ctx: "ExecutionContext", findings: list[Finding]) -> Dr
         return DraftAdviceOutput(advice_items=[])
 
     try:
-        from copilot.core.config import PROJECT_ROOT
+        from copilot.common.settings import PROJECT_ROOT
 
         templates = load_templates(PROJECT_ROOT / _TEMPLATES_PATH)
     except Exception as exc:
@@ -154,7 +154,7 @@ def draft_advice_handler(ctx: "ExecutionContext", findings: list[Finding]) -> Dr
                 }
             )
 
-    from copilot.core.learning import order_advice_by_utility
+    from copilot.learning.feedback import order_advice_by_utility
 
     ordered_items = order_advice_by_utility(ctx.conn, ctx.user_id, items)
     return DraftAdviceOutput(advice_items=ordered_items)
@@ -222,7 +222,7 @@ def decide_advice_handler(
 
     # Record bounded feedback learning signal (PLAN_PHASE3 Section 5.16)
     try:
-        from copilot.core.learning import record_feedback
+        from copilot.learning.feedback import record_feedback
 
         evidence = {}
         if row[1]:

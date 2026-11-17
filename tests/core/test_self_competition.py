@@ -15,7 +15,16 @@ from datetime import date, datetime, timedelta
 
 import pytest
 
-from copilot.core.self_competition import (
+from copilot.common.timeutil import IST
+from copilot.db.connection import get_connection, init_db
+from copilot.db.repo import insert_account, insert_category, insert_user
+from copilot.db.repo_engagement import (
+    insert_experiment,
+    insert_experiment_checkin,
+    insert_experiment_review,
+    insert_streak_freeze,
+)
+from copilot.engagement.self_competition import (
     FORBIDDEN_SHAME_TERMS,
     FORBIDDEN_SOCIAL_COMPARISON_TERMS,
     assert_no_social_comparison,
@@ -27,17 +36,8 @@ from copilot.core.self_competition import (
     format_self_comparison,
     get_streak_freeze_dates,
 )
-from copilot.core.timeutil import IST
-from copilot.db.connection import get_connection, init_db
-from copilot.db.repo import insert_account, insert_category, insert_user
-from copilot.db.repo_phase4 import (
-    insert_experiment,
-    insert_experiment_checkin,
-    insert_experiment_review,
-    insert_streak_freeze,
-)
 from copilot.models.domain import Account, Category, User
-from copilot.models.phase4 import (
+from copilot.models.engagement import (
     Experiment,
     ExperimentCheckin,
     ExperimentReview,

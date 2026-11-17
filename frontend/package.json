@@ -15,6 +15,7 @@
     "e2e": "playwright test",
     "live": "node scripts/live.mjs",
     "shots": "playwright test --project=shots",
+    "screenshots": "node scripts/screenshots.mjs",
     "check:figures": "node scripts/check_no_literal_figures.mjs",
     "check:contrast": "node scripts/check_contrast.mjs",
     "check:glyphs": "node scripts/check_glyphs.mjs",

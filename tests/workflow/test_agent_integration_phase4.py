@@ -21,18 +21,17 @@ from pathlib import Path
 import pytest
 import yaml
 
-from copilot.config.phase2 import load_intent_patterns, load_plan_templates
-from copilot.core.intent import (
+from copilot.config.planning import load_intent_patterns, load_plan_templates
+from copilot.conversation.intent import (
     check_input_gate,
     classify_intent,
     parse_amount_paise,
     parse_period,
     resolve_entities,
 )
-from copilot.core.timeline import build_timeline
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_goal, insert_user
-from copilot.db.repo_phase4 import (
+from copilot.db.repo_engagement import (
     insert_adjustment_proposal,
     insert_badge_award,
     insert_experiment,
@@ -42,10 +41,10 @@ from copilot.db.repo_phase4 import (
     insert_xp_event,
 )
 from copilot.governance.policy import decide, load_policy
+from copilot.models.agent_runtime import SubQuestion
 from copilot.models.agentic import Goal
 from copilot.models.domain import Account, User
-from copilot.models.phase3 import SubQuestion
-from copilot.models.phase4 import (
+from copilot.models.engagement import (
     AdjustmentProposal,
     BadgeAward,
     Baseline,
@@ -57,6 +56,7 @@ from copilot.models.phase4 import (
     Offer,
     XpEvent,
 )
+from copilot.ops.timeline import build_timeline
 from copilot.runtime.runner import run_job
 from copilot.tools.executor import ExecutionContext
 from copilot.tools.registry import get as get_tool

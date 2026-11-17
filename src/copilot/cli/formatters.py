@@ -11,7 +11,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from copilot.core.advice import format_inr
+from copilot.conversation.advice import format_inr
 
 console = Console()
 error_console = Console(stderr=True)

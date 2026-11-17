@@ -51,7 +51,7 @@ async function onPush(event) {
       token: data.token,
       credit: data.credit,
       ranks: data.ranks,
-      url: '/capture?prompt=' + encodeURIComponent(data.prompt_id),
+      url: '/review?prompt=' + encodeURIComponent(data.prompt_id),
     },
     actions: (data.actions || []).map((a) => ({ action: a.action, title: a.title })),
   });
@@ -92,7 +92,7 @@ async function onClick(event) {
       // offline or refused: fall through and open the app on this payment instead
     }
   }
-  await openApp(d.url || '/capture');
+  await openApp(d.url || '/review');
 }
 
 self.addEventListener('notificationclick', (event) => event.waitUntil(onClick(event)));

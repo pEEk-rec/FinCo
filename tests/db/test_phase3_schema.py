@@ -8,44 +8,40 @@ from pathlib import Path
 import pytest
 
 from copilot.db.connection import get_connection, init_db
-from copilot.db.repo_phase3 import (
-    forget_memory_item,
-    get_bucket_for_category,
-    get_commitment,
+from copilot.db.repo_agent_runtime import (
     get_feedback_stat,
-    get_memory_item,
-    get_reallocation_draft,
-    get_user_preference,
-    insert_bucket,
-    insert_bucket_allocation,
-    insert_commitment,
-    insert_memory_evidence,
-    insert_memory_item,
-    insert_reallocation_draft,
     insert_trace_span,
-    list_bucket_allocations,
-    list_commitments,
-    list_memory_evidence,
-    list_memory_items,
     list_scheduled_jobs,
     list_trace_spans,
-    map_bucket_category,
-    set_user_preference,
-    update_commitment_status,
-    update_reallocation_draft_status,
     upsert_feedback_stat,
     upsert_scheduled_job,
 )
-from copilot.models.phase3 import (
-    Bucket,
-    BucketAllocation,
-    Commitment,
-    MemoryEvidence,
-    MemoryItem,
-    ReallocationDraft,
-    ScheduledJob,
-    Span,
+from copilot.db.repo_memory import (
+    forget_memory_item,
+    get_memory_item,
+    get_user_preference,
+    insert_memory_evidence,
+    insert_memory_item,
+    list_memory_evidence,
+    list_memory_items,
+    set_user_preference,
 )
+from copilot.db.repo_money import (
+    get_bucket_for_category,
+    get_commitment,
+    get_reallocation_draft,
+    insert_bucket,
+    insert_bucket_allocation,
+    insert_commitment,
+    insert_reallocation_draft,
+    list_bucket_allocations,
+    list_commitments,
+    map_bucket_category,
+    update_commitment_status,
+    update_reallocation_draft_status,
+)
+from copilot.models.agent_runtime import MemoryEvidence, MemoryItem, ScheduledJob, Span
+from copilot.models.money import Bucket, BucketAllocation, Commitment, ReallocationDraft
 
 MIGRATIONS_DIR = Path(__file__).resolve().parents[2] / "src" / "copilot" / "db" / "migrations"
 

@@ -1,0 +1,12 @@
+# The check-in agent (PLAN_AGENTIC_V2, A11). It speaks rarely, only after checking its own claim.
+weekly_budget: 2             # at most this many check-ins in any 7 days
+windows:                     # when each timing arm may speak, local time (24h)
+  morning: [7, 11]
+  evening: [18, 22]
+  weekend: [9, 21]           # on Saturday and Sunday
+subscription_lead_days: 3    # warn this long before a renewal
+min_overrun_paise: 10000     # a category projected under Rs 100 over is not worth a message
+shortfall_horizon_days: 14
+min_history_months: 2        # a cash-flow forecast needs this much history, else it says so
+unusual_days: 7              # an unusual payment is mentioned for this long
+priority_boost_pct: 150      # a signal about a priority category counts this much more

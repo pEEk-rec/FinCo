@@ -9,7 +9,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from copilot.core.errors import ErrorCode, ToolFailure
+from copilot.common.errors import ErrorCode, ToolFailure
 from copilot.llm.client import LLMClient
 
 

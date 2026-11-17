@@ -15,11 +15,11 @@ import sqlite3
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from copilot.config.phase3 import RuntimeConfig, load_runtime_config
-from copilot.core.config import PROJECT_ROOT
-from copilot.core.timeutil import now_utc, to_utc_iso
-from copilot.db.repo_phase3 import get_scheduled_job, upsert_scheduled_job
-from copilot.models.phase3 import ScheduledJob
+from copilot.common.settings import PROJECT_ROOT
+from copilot.common.timeutil import now_utc, to_utc_iso
+from copilot.config.agent_runtime import RuntimeConfig, load_runtime_config
+from copilot.db.repo_agent_runtime import get_scheduled_job, upsert_scheduled_job
+from copilot.models.agent_runtime import ScheduledJob
 
 
 def compute_next_run_at(schedule: str, from_dt: datetime) -> datetime:

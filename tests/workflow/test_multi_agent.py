@@ -29,9 +29,9 @@ from copilot.audit.events import record_event
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_goal, insert_user
 from copilot.llm.client import FakeLLMClient
+from copilot.models.agent_runtime import Reflection, SpecialistReport, SubQuestion
 from copilot.models.agentic import Goal
 from copilot.models.domain import Account, User
-from copilot.models.phase3 import Reflection, SpecialistReport, SubQuestion
 from copilot.ops.failures import export_failures
 from copilot.tools.executor import ExecutionContext
 from copilot.workflow.agent_graph import build_planner_agent_graph
@@ -84,7 +84,7 @@ def conn():
     return c
 
 
-from copilot.core.config import PROJECT_ROOT
+from copilot.common.settings import PROJECT_ROOT
 from copilot.governance.policy import load_policy
 
 POLICY = load_policy(PROJECT_ROOT / "config" / "policy.yaml")

@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from copilot.core.config import PROJECT_ROOT
+from copilot.common.settings import PROJECT_ROOT
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     insert_account,
@@ -558,7 +558,7 @@ def generate_orchestration_paradigms_document(
 
     content = f"""# Orchestration Paradigms: Comparative Evaluation and Architectural Analysis
 
-> **Stage 3.16 Deliverable** (`docs/PLAN_PHASE3.md` Section 5.13 & Section 7)  
+> **Orchestration comparison** (measured on the synthetic benchmark)  
 > Generated from empirical measurements on the standardized Phase 3 benchmark battery across single-domain and multi-domain financial tasks.
 
 ---

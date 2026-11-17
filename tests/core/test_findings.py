@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from copilot.core.advice import (
+from copilot.conversation.advice import (
     extract_numbers,
     matches,
     validate_advice,

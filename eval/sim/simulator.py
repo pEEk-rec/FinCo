@@ -13,16 +13,16 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 
-from copilot.config.phase4 import OffersConfig, load_offers_config
-from copilot.core.challenges import CandidateOffer
-from copilot.core.learning_loop import update_template_posterior
-from copilot.core.policy import select_challenge_offers
-from copilot.core.timeutil import IST, to_utc_iso
+from copilot.common.timeutil import IST, to_utc_iso
+from copilot.config.engagement import OffersConfig, load_offers_config
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_category, insert_user
-from copilot.db.repo_phase4 import insert_experiment, insert_experiment_review, insert_offer
+from copilot.db.repo_engagement import insert_experiment, insert_experiment_review, insert_offer
+from copilot.engagement.challenges import CandidateOffer
+from copilot.learning.experiment_loop import update_template_posterior
+from copilot.learning.offers import select_challenge_offers
 from copilot.models.domain import Account, Category, User
-from copilot.models.phase4 import Experiment, ExperimentReview, Offer
+from copilot.models.engagement import Experiment, ExperimentReview, Offer
 from eval.sim.personas import Persona
 
 

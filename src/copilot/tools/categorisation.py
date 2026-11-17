@@ -6,7 +6,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from copilot.audit.events import record_event
-from copilot.core.config import load_settings
+from copilot.common.settings import load_settings
 from copilot.db.repo import get_transaction
 from copilot.tools.contracts import ToolInput, ToolOutput
 

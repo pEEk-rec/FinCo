@@ -19,13 +19,9 @@ from copilot.api.app import create_app
 from copilot.api.services import DEMO_CLOCK, ensure_demo
 from copilot.api.state import ApiState
 from copilot.db.repo import insert_goal
-from copilot.db.repo_phase4 import insert_adjustment_proposal, insert_experiment, insert_offer
+from copilot.db.repo_engagement import insert_adjustment_proposal, insert_experiment, insert_offer
 from copilot.models.agentic import Goal
-from copilot.models.phase4 import (
-    AdjustmentProposal,
-    Experiment,
-    Offer,
-)
+from copilot.models.engagement import AdjustmentProposal, Experiment, Offer
 from copilot.tools.registry import clear_registry
 
 AUTH = {"Authorization": "Bearer test-token"}

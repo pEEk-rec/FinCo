@@ -24,7 +24,7 @@ from typing import Any
 from pydantic import BaseModel, ValidationError
 
 from copilot.audit.events import Actor, record_event
-from copilot.core.errors import ErrorCode, ToolError, ToolFailure
+from copilot.common.errors import ErrorCode, ToolError, ToolFailure
 from copilot.db.connection import savepoint
 from copilot.governance.policy import Decision, PolicySettings, decide
 from copilot.ops.tracing import span

@@ -26,9 +26,15 @@ import pytest
 from typer.testing import CliRunner
 
 from copilot.cli.main import app
-from copilot.config.phase2 import AlertsConfig
-from copilot.config.phase3 import LearningConfig
-from copilot.core.learning import (
+from copilot.config.agent_runtime import LearningConfig
+from copilot.config.money import AlertsConfig
+from copilot.db.connection import get_connection, init_db
+from copilot.db.repo import insert_alert, insert_user
+from copilot.db.repo_agent_runtime import get_feedback_stat
+from copilot.db.repo_memory import list_memory_items
+from copilot.db.repo_money import insert_bucket, insert_reallocation_draft
+from copilot.governance.policy import PolicySettings, load_policy
+from copilot.learning.feedback import (
     apply_learning_to_alert,
     compute_sensitivity_multiplier,
     get_learned_multiplier,
@@ -37,18 +43,9 @@ from copilot.core.learning import (
     record_feedback,
     reset_learning,
 )
-from copilot.db.connection import get_connection, init_db
-from copilot.db.repo import insert_alert, insert_user
-from copilot.db.repo_phase3 import (
-    get_feedback_stat,
-    insert_bucket,
-    insert_reallocation_draft,
-    list_memory_items,
-)
-from copilot.governance.policy import PolicySettings, load_policy
 from copilot.models.agentic import Alert
 from copilot.models.domain import User
-from copilot.models.phase3 import Bucket, ReallocationDraft
+from copilot.models.money import Bucket, ReallocationDraft
 from copilot.tools.executor import ExecutionContext, execute_tool
 from copilot.workflow.nodes import ensure_tools_registered
 

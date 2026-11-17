@@ -98,7 +98,7 @@ def test_side_effect_has_no_money_movement_class():
 
 
 def test_tool_result_ok_and_error_are_exclusive():
-    from copilot.core.errors import ErrorCode, ToolError
+    from copilot.common.errors import ErrorCode, ToolError
 
     with pytest.raises(ValueError):
         ToolResult(ok=True, error=ToolError(code=ErrorCode.INTERNAL, message="x"))

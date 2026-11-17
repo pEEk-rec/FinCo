@@ -16,8 +16,24 @@ from datetime import UTC, datetime
 
 import pytest
 
-from copilot.core.errors import ErrorCode, ToolFailure
-from copilot.core.memory import (
+from copilot.common.errors import ErrorCode, ToolFailure
+from copilot.db.connection import get_connection, init_db
+from copilot.db.repo import (
+    insert_account,
+    insert_category,
+    insert_transaction,
+    insert_user,
+)
+from copilot.db.repo_memory import (
+    get_memory_item,
+    insert_memory_evidence,
+    insert_memory_item,
+    list_memory_evidence,
+    list_memory_items,
+    set_user_preference,
+)
+from copilot.llm.client import FakeLLMClient
+from copilot.memory.store import (
     compute_memory_confidence,
     determine_memory_status,
     edit_memory_statement_bounded,
@@ -31,24 +47,8 @@ from copilot.core.memory import (
     record_contextual_exception,
     refresh_memories,
 )
-from copilot.db.connection import get_connection, init_db
-from copilot.db.repo import (
-    insert_account,
-    insert_category,
-    insert_transaction,
-    insert_user,
-)
-from copilot.db.repo_phase3 import (
-    get_memory_item,
-    insert_memory_evidence,
-    insert_memory_item,
-    list_memory_evidence,
-    list_memory_items,
-    set_user_preference,
-)
-from copilot.llm.client import FakeLLMClient
+from copilot.models.agent_runtime import MemoryEvidence, MemoryItem
 from copilot.models.domain import Account, Category, Transaction, User
-from copilot.models.phase3 import MemoryEvidence, MemoryItem
 
 
 @pytest.fixture

@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from copilot.core.errors import ErrorCode, ToolFailure
+from copilot.common.errors import ErrorCode, ToolFailure
 from copilot.llm.client import LLMClient
 from copilot.llm.redactor import RedactingLLMClient
 from copilot.llm.routing import LLMRouter

@@ -5,6 +5,7 @@ import { Link, useLocation } from 'react-router';
 import { openCaptureStream, type AutoTagged, type StreamEvent } from '../../api/captureStream';
 import type { PromptView } from '../../api/client';
 import { useCaptureInbox } from '../../api/hooks';
+import { displayName } from '../../format/name';
 import { formatINR } from '../../format/money';
 import { PaymentPrompt, useTagPayment } from './PaymentPrompt';
 
@@ -36,8 +37,7 @@ function writeLater(ids: Set<string>): void {
 export function CaptureOverlay() {
   const location = useLocation();
   // the pages that already list what is waiting do not need a second copy floating over them
-  const onInbox =
-    location.pathname.startsWith('/capture') || location.pathname.startsWith('/today');
+  const onInbox = location.pathname.startsWith('/review');
   const inbox = useCaptureInbox();
   const tag = useTagPayment();
   const [live, setLive] = useState<PromptView[]>([]);
@@ -106,10 +106,10 @@ export function CaptureOverlay() {
   const waiting = inbox.data?.pending_count ?? 0;
 
   return (
-    <div className="no-print pointer-events-none fixed right-4 top-4 z-30 flex w-[min(26rem,calc(100vw-2rem))] flex-col items-end gap-3">
+    <div className="no-print pointer-events-none fixed inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-50 flex max-h-[calc(100dvh-9rem)] flex-col-reverse items-stretch gap-3 overflow-y-auto lg:inset-x-auto lg:bottom-auto lg:right-4 lg:top-20 lg:w-[26rem] lg:flex-col lg:items-end">
       <div role="status" aria-live="polite" className="sr-only">
         {current
-          ? `${current.event.direction === 'credit' ? 'Received' : 'Paid'} ${formatINR(current.event.amount_paise, { paise: 'auto' })} ${current.event.direction === 'credit' ? 'from' : 'to'} ${current.event.display_name}. What was it?`
+          ? `${current.event.direction === 'credit' ? 'Received' : 'Paid'} ${formatINR(current.event.amount_paise, { paise: 'auto' })} ${current.event.direction === 'credit' ? 'from' : 'to'} ${displayName(current.event.display_name)}. What was it?`
           : ''}
       </div>
       <AnimatePresence initial={false}>
@@ -117,9 +117,9 @@ export function CaptureOverlay() {
           <motion.div
             key={current.prompt_id}
             className="pointer-events-auto w-full"
-            initial={{ opacity: 0, y: -16, scale: 0.97 }}
+            initial={{ opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8 }}
+            exit={{ opacity: 0, y: 12 }}
           >
             <ul className="m-0 p-0">
               <PaymentPrompt
@@ -134,7 +134,7 @@ export function CaptureOverlay() {
             </ul>
             {visible.length > 1 || waiting > 1 ? (
               <Link
-                to="/capture"
+                to="/review"
                 className="mt-2 block text-right text-small text-brand underline-offset-2 hover:underline"
               >
                 {Math.max(visible.length, waiting)} payments to tag
@@ -150,8 +150,8 @@ export function CaptureOverlay() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0 }}
           >
-            Tagged {c.name} · {c.event.display_name}{' '}
-            <Link to="/capture" className="text-brand underline-offset-2 hover:underline">
+            Tagged {c.name} · {displayName(c.event.display_name)}{' '}
+            <Link to="/review" className="text-brand underline-offset-2 hover:underline">
               Change
             </Link>
           </motion.div>

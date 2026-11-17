@@ -140,7 +140,7 @@ export const landingCopy = {
     links: [
       { label: 'Dashboard', href: '/' },
       { label: 'Review queue', href: '/review' },
-      { label: 'Import data', href: '/connect' },
+      { label: 'Import data', href: '/settings?tab=connections' },
       { label: 'Design system', href: '/design' },
     ],
   },

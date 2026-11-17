@@ -12,9 +12,9 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import Field
 
-from copilot.core.contributions import compare_tradeoffs, plan_contributions
-from copilot.core.timeutil import IST, now_utc
-from copilot.models.phase3 import ContributionPlan, TradeoffResult
+from copilot.common.timeutil import IST, now_utc
+from copilot.domain.contributions import compare_tradeoffs, plan_contributions
+from copilot.models.money import ContributionPlan, TradeoffResult
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
 from copilot.tools.registry import register
 

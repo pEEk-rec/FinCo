@@ -25,9 +25,9 @@ from datetime import timedelta
 from fastapi import Request
 
 from copilot.api.state import ApiState
+from copilot.capture import events as core
+from copilot.common.timeutil import now_utc, to_utc_iso
 from copilot.config.capture import load_capture_config
-from copilot.core import capture as core
-from copilot.core.timeutil import now_utc, to_utc_iso
 
 KEEPALIVE_SECONDS = 15.0
 AUTO_TAG_WINDOW_SECONDS = 20

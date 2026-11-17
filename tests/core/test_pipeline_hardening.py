@@ -1,12 +1,12 @@
 """Hardening tests for the categorization pipeline, batch tool and undo."""
 
-from copilot.core.categorisation import CategorizationRule, load_aliases, load_rules
-from copilot.core.config import PROJECT_ROOT
-from copilot.core.pipeline import run_categorization_pipeline
+from copilot.common.settings import PROJECT_ROOT
 from copilot.db.repo import get_transaction
 from copilot.llm.client import FakeLLMClient
 from copilot.tools.categorisation import CategorizeUpdate
 from copilot.tools.executor import execute_tool
+from copilot.understand.legacy_pipeline import run_categorization_pipeline
+from copilot.understand.rules import CategorizationRule, load_aliases, load_rules
 from tests.tools.test_categorisation_tools import T0, ctx  # noqa: F401
 
 

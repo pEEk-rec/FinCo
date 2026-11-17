@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from copilot.core.money import paise_to_rupees_str, rupees_to_paise, safe_percent
+from copilot.common.money import paise_to_rupees_str, rupees_to_paise, safe_percent
 
 
 def test_rupees_to_paise():

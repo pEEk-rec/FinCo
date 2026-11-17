@@ -4,10 +4,10 @@ import os
 
 from typer.testing import CliRunner
 
+from copilot.capture import secret as capture_secret
+from copilot.capture.bridge import adb_command, bridge_instructions, bridge_url
 from copilot.cli.main import app
 from copilot.config.capture import SmsSendersConfig, load_sms_senders
-from copilot.core import capture_secret
-from copilot.core.capture_bridge import adb_command, bridge_instructions, bridge_url
 
 runner = CliRunner()
 

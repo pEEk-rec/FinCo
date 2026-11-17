@@ -15,32 +15,22 @@ Validates graceful degradation and error handling for:
 11. Log sanitisation invariant (no sensitive text in logs/spans).
 """
 
+from copilot.common.timeutil import now_utc, to_utc_iso
 from copilot.context.retrieval import retrieve_relevant_memories
-from copilot.core.calendar import build_calendar
-from copilot.core.contributions import plan_contributions
-from copilot.core.readiness import assess_readiness
-from copilot.core.timeutil import now_utc, to_utc_iso
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     insert_category,
     insert_user,
 )
-from copilot.db.repo_phase3 import (
-    acquire_job_lease,
-    insert_bucket,
-    insert_memory_item,
-    map_bucket_category,
-    release_job_lease,
-    upsert_scheduled_job,
-)
+from copilot.db.repo_agent_runtime import acquire_job_lease, release_job_lease, upsert_scheduled_job
+from copilot.db.repo_memory import insert_memory_item
+from copilot.db.repo_money import insert_bucket, map_bucket_category
+from copilot.domain.calendar import build_calendar
+from copilot.domain.contributions import plan_contributions
+from copilot.domain.readiness import assess_readiness
+from copilot.models.agent_runtime import MemoryItem, ScheduledJob, SpecialistReport, SubQuestion
 from copilot.models.domain import Category, User
-from copilot.models.phase3 import (
-    Bucket,
-    MemoryItem,
-    ScheduledJob,
-    SpecialistReport,
-    SubQuestion,
-)
+from copilot.models.money import Bucket
 from copilot.workflow.multi_agent import merge_specialist_reports
 from copilot.workflow.reviewer import deterministic_review
 

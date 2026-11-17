@@ -8,9 +8,9 @@ from datetime import datetime
 import pytest
 import yaml
 
-from copilot.config.phase2 import load_intent_patterns
-from copilot.core.config import PROJECT_ROOT
-from copilot.core.intent import (
+from copilot.common.settings import PROJECT_ROOT
+from copilot.config.planning import load_intent_patterns
+from copilot.conversation.intent import (
     check_input_gate,
     classify_intent,
     parse_amount_paise,

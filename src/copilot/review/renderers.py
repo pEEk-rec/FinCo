@@ -12,7 +12,7 @@ from typing import Any
 
 from jinja2 import Environment, select_autoescape
 
-from copilot.core.advice import format_inr
+from copilot.conversation.advice import format_inr
 from copilot.review.models import MonthlyReviewData
 
 _NUMBER_RE = re.compile(

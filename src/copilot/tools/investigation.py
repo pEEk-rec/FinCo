@@ -13,10 +13,10 @@ from typing import TYPE_CHECKING
 from pydantic import Field
 
 from copilot.audit.events import record_event
-from copilot.config.phase2 import load_investigation_config
-from copilot.core.errors import ErrorCode, ToolFailure
-from copilot.core.investigation import decompose_spend_change, run_investigation_suite
-from copilot.core.timeutil import IST, month_bounds, now_utc
+from copilot.common.errors import ErrorCode, ToolFailure
+from copilot.common.timeutil import IST, month_bounds, now_utc
+from copilot.config.planning import load_investigation_config
+from copilot.conversation.investigation import decompose_spend_change, run_investigation_suite
 from copilot.db import repo
 from copilot.models.agentic import Investigation
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec

@@ -1,6 +1,6 @@
 """
 The Phase 4 demo journey through the real CLI on a seeded database, nothing pre-inserted
-(docs/demo_script_phase4.md). Each test guards a defect the demo run found.
+(the Phase 4 demo script). Each test guards a defect the demo run found.
 """
 
 from __future__ import annotations

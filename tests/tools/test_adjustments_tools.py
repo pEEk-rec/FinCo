@@ -13,18 +13,15 @@ from datetime import datetime
 
 import pytest
 
-from copilot.core.errors import ErrorCode
-from copilot.core.experiments import design_experiment, start_experiment
-from copilot.core.timeutil import IST
+from copilot.common.errors import ErrorCode
+from copilot.common.timeutil import IST
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_category, insert_user
-from copilot.db.repo_phase4 import (
-    get_experiment,
-    insert_experiment_checkin,
-)
+from copilot.db.repo_engagement import get_experiment, insert_experiment_checkin
+from copilot.engagement.experiments import design_experiment, start_experiment
 from copilot.governance.policy import load_policy
 from copilot.models.domain import Account, Category, User
-from copilot.models.phase4 import ExperimentCheckin
+from copilot.models.engagement import ExperimentCheckin
 from copilot.tools.adjustments import register_adjustment_tools
 from copilot.tools.executor import ExecutionContext, execute_tool
 from copilot.tools.experiments import register_experiment_tools

@@ -11,10 +11,10 @@ from fastapi.testclient import TestClient
 from copilot.api.app import create_app
 from copilot.api.services import DEMO_CLOCK, ensure_demo
 from copilot.api.state import ApiState
+from copilot.capture import events as core
+from copilot.capture import push as capture_push
+from copilot.capture.push import PushFailed, PushGone
 from copilot.config.capture import load_capture_config
-from copilot.core import capture as core
-from copilot.core import capture_push
-from copilot.core.capture_push import PushFailed, PushGone
 from copilot.models.capture import PromptView
 from copilot.tools.registry import clear_registry
 

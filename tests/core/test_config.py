@@ -3,8 +3,8 @@ import inspect
 import pytest
 from pydantic import ValidationError
 
-from copilot.core.config import DEFAULT_SETTINGS_PATH, PROJECT_ROOT, load_settings
-from copilot.core.timeutil import IST
+from copilot.common.settings import DEFAULT_SETTINGS_PATH, PROJECT_ROOT, load_settings
+from copilot.common.timeutil import IST
 from copilot.governance.policy import load_policy
 from copilot.llm.client import structured_call
 from copilot.tools.financial import forecast_category_spend_handler

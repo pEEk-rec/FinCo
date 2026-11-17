@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { ApiError, type PromptView } from '../../api/client';
 import { useCaptureWrites, useCategories, useUndo } from '../../api/hooks';
 import { formatDay, formatTime } from '../../format/date';
+import { displayName } from '../../format/name';
 import { formatINR } from '../../format/money';
 import { motion as tokens } from '../../tokens/tokens';
 import { Badge } from '../Badge';
@@ -105,7 +106,7 @@ export function PaymentPrompt({
       className="list-none"
     >
       <article
-        aria-label={`${credit ? 'Received' : 'Paid'} ${formatINR(event.amount_paise, { paise: 'auto' })} ${credit ? 'from' : 'to'} ${event.display_name}`}
+        aria-label={`${credit ? 'Received' : 'Paid'} ${formatINR(event.amount_paise, { paise: 'auto' })} ${credit ? 'from' : 'to'} ${displayName(event.display_name)}`}
         className="rounded-card border-2 border-ink bg-surface p-5 shadow-[5px_5px_0_var(--color-ink)]"
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -117,7 +118,7 @@ export function PaymentPrompt({
               {credit ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
             </span>
             <div className="min-w-0">
-              <p className="truncate text-[17px] font-bold">{event.display_name}</p>
+              <p className="truncate text-[17px] font-bold">{displayName(event.display_name)}</p>
               <p className="text-small text-ink-3">
                 {[
                   event.bank ? event.bank.toUpperCase() : null,
@@ -230,8 +231,8 @@ export function QuickSheet({
           toast({
             message:
               policy === 'always_ask'
-                ? `I will always ask about ${event.display_name}`
-                : `${event.display_name} will always be tagged the same`,
+                ? `I will always ask about ${displayName(event.display_name)}`
+                : `${displayName(event.display_name)} will always be tagged the same`,
           }),
         onError: (e) => toast({ message: (e as Error).message, tone: 'negative' }),
       },
@@ -245,7 +246,7 @@ export function QuickSheet({
           <Dialog.Title className="serif-light text-[24px]">What was this?</Dialog.Title>
           <Dialog.Description className="text-small text-ink-3">
             {formatINR(event.amount_paise, { paise: 'auto' })} {credit ? 'from' : 'to'}{' '}
-            {event.display_name}
+            {displayName(event.display_name)}
           </Dialog.Description>
           <label className="mt-4 flex h-10 items-center gap-2 rounded-control border border-input-border bg-surface px-3">
             <MagnifyingGlass size={16} aria-hidden className="text-ink-3" />
@@ -288,7 +289,7 @@ export function QuickSheet({
           </label>
           {event.counterparty_kind === 'person' ? (
             <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-hairline pt-4">
-              <span className="text-small text-ink-3">For {event.display_name}:</span>
+              <span className="text-small text-ink-3">For {displayName(event.display_name)}:</span>
               <Button size="sm" variant="text" onClick={() => setPolicy('always_ask')}>
                 Always ask me
               </Button>

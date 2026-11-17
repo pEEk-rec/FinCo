@@ -19,8 +19,8 @@ from pydantic import BaseModel, Field
 
 from copilot.api.errors import ApiError, ApiException
 from copilot.api.state import ApiState, connection_scope
-from copilot.core.advice import format_inr
-from copilot.core.timeutil import now_utc, to_utc_iso
+from copilot.common.timeutil import now_utc, to_utc_iso
+from copilot.conversation.advice import format_inr
 from copilot.rails import demo
 from copilot.rails import engine as eng
 from copilot.rails.receipts import rails_config

@@ -12,15 +12,15 @@ Verifies:
 - Strict user isolation in existing-memory lookup
 """
 
-from copilot.core.advice import AdviceDraft, validate_advice
-from copilot.core.recommendations import (
+from copilot.common.timeutil import now_utc, to_utc_iso
+from copilot.conversation.advice import AdviceDraft, validate_advice
+from copilot.db.connection import get_connection, init_db
+from copilot.db.repo import insert_recommendation, insert_user
+from copilot.engagement.recommendations import (
     build_recommendation,
     find_relevant_memories,
     format_recommendation_explanation,
 )
-from copilot.core.timeutil import now_utc, to_utc_iso
-from copilot.db.connection import get_connection, init_db
-from copilot.db.repo import insert_recommendation, insert_user
 from copilot.models.agentic import CalcStep, Recommendation
 from copilot.models.domain import User
 from copilot.models.findings import Finding, FindingNumber

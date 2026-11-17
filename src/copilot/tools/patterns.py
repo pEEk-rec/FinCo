@@ -6,10 +6,10 @@ import uuid
 from typing import Any
 
 from copilot.audit.events import record_event
-from copilot.core.config import load_settings
-from copilot.core.patterns import detect_recurring, detect_transfers
+from copilot.common.settings import load_settings
 from copilot.db.connection import savepoint
 from copilot.db.repo import list_transactions
+from copilot.domain.patterns import detect_recurring, detect_transfers
 from copilot.tools.contracts import ToolInput, ToolOutput
 
 

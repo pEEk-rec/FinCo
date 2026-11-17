@@ -13,10 +13,10 @@ from datetime import datetime
 
 import pytest
 
-from copilot.core.baseline import generate_candidate_windows
-from copilot.core.errors import ErrorCode
+from copilot.common.errors import ErrorCode
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_category, insert_user
+from copilot.engagement.baseline import generate_candidate_windows
 from copilot.governance.policy import load_policy
 from copilot.models.domain import Account, Category, User
 from copilot.tools.executor import ExecutionContext, execute_tool

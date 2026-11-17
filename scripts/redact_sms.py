@@ -134,9 +134,9 @@ def _load(path: Path) -> list[dict[str, str]]:
 
 def _expected(sender: str, text: str) -> object:
     """What the current templates make of the (redacted) message, for the owner to review."""
+    from copilot.capture.sms_parser import Dropped, ParsedPayment, parse_sms
+    from copilot.common.timeutil import IST
     from copilot.config.capture import SmsSendersConfig, load_sms_senders, load_sms_templates
-    from copilot.core.sms_parser import Dropped, ParsedPayment, parse_sms
-    from copilot.core.timeutil import IST
 
     raw = load_sms_senders().model_dump()
     for bank in raw["banks"].values():

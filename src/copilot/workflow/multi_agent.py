@@ -10,9 +10,9 @@ import uuid
 from typing import Any
 
 from copilot.audit.events import record_event
-from copilot.core.timeutil import now_utc, to_utc_iso
-from copilot.db.repo_phase3 import insert_specialist_report
-from copilot.models.phase3 import SpecialistReport, SubQuestion
+from copilot.common.timeutil import now_utc, to_utc_iso
+from copilot.db.repo_agent_runtime import insert_specialist_report
+from copilot.models.agent_runtime import SpecialistReport, SubQuestion
 from copilot.ops.tracing import span
 from copilot.tools.executor import ExecutionContext
 from copilot.workflow.specialists import DOMAIN_TO_ROLE, run_specialist

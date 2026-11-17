@@ -20,19 +20,20 @@ from fastapi.testclient import TestClient
 from copilot.api.app import create_app
 from copilot.api.services import DEMO_CLOCK, ensure_demo
 from copilot.api.state import ApiState
+from copilot.banklink import consent as aa_consent
+from copilot.banklink import fetch as aa_fetch
+from copilot.banklink.sources import AAFetchResult, MockAASource
+from copilot.capture import events as cap
+from copilot.capture import reconcile as rec
+from copilot.capture.sms_parser import Dropped, ParsedPayment, parse_sms
+from copilot.common.errors import ToolFailure
+from copilot.common.timeutil import IST, to_utc_iso
 from copilot.config.capture import (
     SmsSendersConfig,
     load_capture_config,
     load_sms_senders,
     load_sms_templates,
 )
-from copilot.core import aa_consent, aa_fetch
-from copilot.core import capture as cap
-from copilot.core import capture_reconcile as rec
-from copilot.core.aa_source import AAFetchResult, MockAASource
-from copilot.core.errors import ToolFailure
-from copilot.core.sms_parser import Dropped, ParsedPayment, parse_sms
-from copilot.core.timeutil import IST, to_utc_iso
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_category, insert_transaction, insert_user
 from copilot.llm.client import FakeLLMClient
@@ -57,8 +58,8 @@ def _all_banks_on() -> SmsSendersConfig:
 @pytest.fixture
 def state(tmp_path, monkeypatch):
     monkeypatch.delenv("CAPTURE_WEBHOOK_SECRET", raising=False)
-    monkeypatch.setattr("copilot.core.capture_secret.SECRET_FILE", tmp_path / "no_secret")
-    monkeypatch.setattr("copilot.core.capture_push.VAPID_FILE", tmp_path / "v.json")
+    monkeypatch.setattr("copilot.capture.secret.SECRET_FILE", tmp_path / "no_secret")
+    monkeypatch.setattr("copilot.capture.push.VAPID_FILE", tmp_path / "v.json")
     clear_registry()
     st = ApiState(
         db_path=tmp_path / "s.db", clock=DEMO_CLOCK, token="test-token", llm=None,
@@ -117,7 +118,7 @@ def test_rule1_holds(client, state):
 
 
 def test_rule1_fails_when_the_guard_is_removed(client, state, monkeypatch):
-    from copilot.core import sms_parser
+    from copilot.capture import sms_parser
 
     real_allowed = SmsSendersConfig.allowed_senders
     monkeypatch.setattr(
@@ -167,7 +168,7 @@ def test_rule2_fails_when_text_is_logged(client, state, caplog, monkeypatch):
         logging.getLogger("copilot.leak").warning("sms: %s", text)
         return real(sender, text, *a, **k)
 
-    monkeypatch.setattr("copilot.core.sms_parser.parse_sms", leaky)
+    monkeypatch.setattr("copilot.capture.sms_parser.parse_sms", leaky)
     with pytest.raises(AssertionError):
         check_rule2(client, state, caplog)
 

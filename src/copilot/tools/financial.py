@@ -20,8 +20,8 @@ from typing import TYPE_CHECKING, Literal
 from pydantic import Field, model_validator
 
 from copilot.audit.events import record_event
-from copilot.core.errors import ErrorCode, ToolFailure
-from copilot.core.timeutil import IST, month_bounds, now_utc, to_utc_iso
+from copilot.common.errors import ErrorCode, ToolFailure
+from copilot.common.timeutil import IST, month_bounds, now_utc, to_utc_iso
 from copilot.db.repo import (
     get_account,
     get_category,

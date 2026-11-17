@@ -19,7 +19,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-from copilot.core.errors import ErrorCode, ToolFailure
+from copilot.common.errors import ErrorCode, ToolFailure
 from copilot.llm.client import LLMClient
 from copilot.llm.gemini import RateLimiter
 

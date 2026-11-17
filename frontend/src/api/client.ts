@@ -98,6 +98,77 @@ export type PushStatus = S['PushStatusOut'];
 export type TodayView = S['TodayView'];
 export type BankLink = S['BankLinkView'];
 export type BankLinkFetch = S['FetchOut'];
+/** The personal-model payloads. The API wraps most of them as { data }. */
+export interface ForYouCheckin {
+  id: string;
+  signal: string;
+  headline: string;
+  body: string;
+  options: string[];
+  status: 'sent' | 'acted' | 'dismissed' | 'not_useful';
+  timing: string | null;
+  tone: string | null;
+  created_at: string;
+}
+export interface CheckinsData {
+  checkins: ForYouCheckin[];
+  verification: { sent: number; dropped: number; pass_rate: number | null };
+}
+export interface CheckinRun {
+  sent: boolean;
+  reason: string;
+  checkin: ForYouCheckin | null;
+}
+export interface ProfileData {
+  values: Record<string, unknown>;
+  suggestions: Record<string, unknown>;
+  missing: string[];
+  interview: { field: string; question: string }[];
+}
+export interface BudgetLine {
+  category_id: string;
+  limit_paise: number;
+  fixed_paise: number;
+  usual_paise: number;
+  reason: string;
+}
+export interface BudgetProposal {
+  status: 'ok' | 'needs_profile' | 'shortfall' | 'essentials_exceed';
+  period: string;
+  income_paise: number;
+  fixed_paise: number;
+  goals_paise: number;
+  savings_paise: number;
+  lines: BudgetLine[];
+  unallocated_paise: number;
+  shortfall_paise: number;
+  note: string;
+}
+export interface ReplanOption {
+  id: string;
+  kind: 'move' | 'trim' | 'goal_delay';
+  category_id: string;
+  text: string;
+  amount_paise: number;
+  from_category: string | null;
+  applies_by_itself: boolean;
+}
+export interface Replan {
+  category_id: string;
+  overrun_paise: number;
+  projected_paise: number;
+  limit_paise: number;
+  options: ReplanOption[];
+}
+export interface SubscriptionRow {
+  series_id: string;
+  name: string;
+  amount_paise: number;
+  monthly_paise: number;
+  days_until_renewal: number;
+  price_change_bp: number;
+  note: string | null;
+}
 export type BankLinkAction = 'approve' | 'pause' | 'resume' | 'revoke';
 export type TodayItem = S['TodayItem'];
 export type PushSubscribeIn = S['PushSubscribeIn'];
@@ -228,6 +299,14 @@ export const api = {
   imports: () => get<ImportBatchView[]>('/imports'),
   approveConsent: (id: string) => post<S['ConsentDecisionOut']>(`/consents/${id}/approve`),
   revokeConsent: (id: string) => post<S['ConsentDecisionOut']>(`/consents/${id}/revoke`),
+  demoLivePayment: () =>
+    post<{
+      counterparty: string;
+      amount_paise: number;
+      note: string;
+      position: number;
+      total: number;
+    }>('/demo/live-payment'),
   runImport: (id: string) => post<ImportResult>(`/consents/${id}/import`),
   monthlyReview: (period: string, version?: number) =>
     get<MonthlyReviewOut>(`/monthly-reviews/${period}${qs({ version })}`),
@@ -265,6 +344,23 @@ export const api = {
   captureInbox: () => get<CaptureInbox>('/capture/inbox'),
   captureBridge: () => get<BridgeHealth>('/capture/bridge'),
   pushStatus: () => get<PushStatus>('/capture/push/status'),
+  checkins: () => get<{ data: CheckinsData }>('/checkins'),
+  runCheckin: () => post<CheckinRun>('/checkins/run'),
+  respondCheckin: (id: string, response: 'acted' | 'dismissed' | 'not_useful') =>
+    post<{ data: unknown }>(`/checkins/${id}/respond`, { response }),
+  profile: () => get<{ data: ProfileData }>('/profile'),
+  setProfile: (field: string, value: unknown) =>
+    post<{ data: unknown }>(`/profile/${field}`, { value }),
+  confirmProfile: (field: string) => post<{ data: unknown }>(`/profile/${field}/confirm`),
+  suggestProfile: () => post<{ data: { suggested: string[] } }>('/profile/suggest'),
+  budgetProposal: () => get<{ data: BudgetProposal }>('/budget/proposal'),
+  applyBudget: () => post<{ data: { lines: number } }>('/budget/apply'),
+  replan: () => get<{ data: Replan[] }>('/budget/replan'),
+  moveBudget: (b: { from_category: string; to_category: string; amount_paise: number }) =>
+    post<{ data: unknown }>('/budget/move', b),
+  subscriptions: () => get<{ data: SubscriptionRow[] }>('/subscriptions'),
+  markSubscription: (id: string, note: 'unused' | 'keep') =>
+    post<{ data: unknown }>(`/subscriptions/${id}/mark`, { note }),
   bankLink: () => get<S['ConsentOut']>('/aa/consent'),
   createBankLink: () => post<S['ConsentOut']>('/aa/consent'),
   bankLinkAction: (id: string, action: BankLinkAction) =>

@@ -36,6 +36,9 @@ jobs:
   capture_reconcile:
     schedule: "every_60_minutes"
     enabled: true
+  weekly_checkin:
+    schedule: "every_60_minutes"
+    enabled: true
   aa_fetch:
     schedule: "daily@06:30"
     enabled: true

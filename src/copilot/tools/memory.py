@@ -21,8 +21,15 @@ from typing import TYPE_CHECKING, Any, Literal
 from pydantic import ConfigDict, Field, model_validator
 
 from copilot.audit.events import record_event
-from copilot.core.errors import ErrorCode, ToolFailure
-from copilot.core.memory import (
+from copilot.common.errors import ErrorCode, ToolFailure
+from copilot.common.timeutil import now_utc, to_utc_iso
+from copilot.db.repo_memory import (
+    get_memory_item,
+    list_memory_evidence,
+    list_memory_items,
+    update_memory_status,
+)
+from copilot.memory.store import (
     compute_memory_confidence,
     edit_memory_statement_bounded,
     forget_memory,
@@ -30,14 +37,7 @@ from copilot.core.memory import (
     record_contextual_exception,
     refresh_memories,
 )
-from copilot.core.timeutil import now_utc, to_utc_iso
-from copilot.db.repo_phase3 import (
-    get_memory_item,
-    list_memory_evidence,
-    list_memory_items,
-    update_memory_status,
-)
-from copilot.models.phase3 import MemoryItem
+from copilot.models.agent_runtime import MemoryItem
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
 from copilot.tools.registry import register
 

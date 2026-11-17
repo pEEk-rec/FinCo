@@ -17,9 +17,9 @@ from datetime import datetime
 
 import pytest
 
-from copilot.core.config import PROJECT_ROOT
-from copilot.core.errors import ErrorCode
-from copilot.core.timeutil import IST, to_utc_iso
+from copilot.common.errors import ErrorCode
+from copilot.common.settings import PROJECT_ROOT
+from copilot.common.timeutil import IST, to_utc_iso
 from copilot.db import repo
 from copilot.db.connection import get_connection, init_db
 from copilot.governance.policy import load_policy

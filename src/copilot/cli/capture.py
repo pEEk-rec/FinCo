@@ -19,7 +19,7 @@ from rich.table import Table
 
 from copilot.cli.formatters import console, format_inr, print_error, print_json, print_success
 from copilot.cli.storage import get_db_path, make_exec_ctx, open_db
-from copilot.core.intent import parse_amount_paise
+from copilot.conversation.intent import parse_amount_paise
 from copilot.tools.executor import execute_tool
 from copilot.workflow.nodes import ensure_tools_registered
 
@@ -53,9 +53,9 @@ def bridge_setup_cmd(
     """Print the exact rule to create on your phone, and create the webhook secret if needed."""
     import socket
 
+    from copilot.capture.bridge import bridge_instructions
+    from copilot.capture.secret import ensure_capture_secret
     from copilot.config.capture import load_capture_config, load_sms_senders
-    from copilot.core.capture_bridge import bridge_instructions
-    from copilot.core.capture_secret import ensure_capture_secret
 
     secret, created = ensure_capture_secret()
     lan_host = None
@@ -75,6 +75,7 @@ def bridge_setup_cmd(
             secret=secret,
             secret_header=load_capture_config().webhook.secret_header,
             lan_host=lan_host,
+            any_bank=load_capture_config().sms.accept_any_sender,
         ),
         markup=False,
         highlight=False,

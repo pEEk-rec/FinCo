@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StrictInt, model_validator
 
-from copilot.core.timeutil import normalize_utc_iso
+from copilot.common.timeutil import normalize_utc_iso
 
 # Non-empty identifier (UUID4 strings in practice).
 Id = Annotated[str, Field(min_length=1)]

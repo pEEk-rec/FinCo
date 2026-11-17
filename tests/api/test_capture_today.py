@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from copilot.api.app import create_app
 from copilot.api.services import DEMO_CLOCK, ensure_demo
 from copilot.api.state import ApiState
-from copilot.core.capture_reconcile import reconcile_events
+from copilot.capture.reconcile import reconcile_events
 from copilot.tools.registry import clear_registry
 
 AUTH = {"Authorization": "Bearer test-token"}
@@ -28,7 +28,7 @@ class Sender:
 
 @pytest.fixture(autouse=True)
 def _vapid(tmp_path, monkeypatch):
-    monkeypatch.setattr("copilot.core.capture_push.VAPID_FILE", tmp_path / "v.json")
+    monkeypatch.setattr("copilot.capture.push.VAPID_FILE", tmp_path / "v.json")
 
 
 @pytest.fixture
@@ -148,7 +148,7 @@ def test_tagging_from_today_closes_notifications_and_updates_the_inbox(client, s
 
 
 def test_own_transfers_and_both_sides_of_a_reversal_are_not_in_the_totals(client, state):
-    from copilot.core import capture as cap
+    from copilot.capture import events as cap
 
     sim(client, "Self transfer to savings", amount=500000)
     kept = sim(client, "Kept Traders Yard", amount=11100)["event"]

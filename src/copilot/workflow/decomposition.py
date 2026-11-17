@@ -12,11 +12,11 @@ import yaml
 from pydantic import BaseModel, Field
 
 from copilot.audit.events import record_event
+from copilot.common.settings import PROJECT_ROOT
 from copilot.context.builder import ContextBuilder
-from copilot.core.config import PROJECT_ROOT
 from copilot.llm.client import LLMClient, extract_json
+from copilot.models.agent_runtime import SubQuestion
 from copilot.models.agentic import Intent
-from copilot.models.phase3 import SubQuestion
 
 logger = logging.getLogger(__name__)
 

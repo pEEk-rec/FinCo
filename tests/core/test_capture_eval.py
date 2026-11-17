@@ -1,6 +1,6 @@
 """`copilot eval --capture`: deterministic, honest about what it does not measure."""
 
-from copilot.eval.harness_capture import (
+from copilot.eval.capture import (
     aggregate,
     evaluate_corpus,
     evaluate_simulated,

@@ -12,7 +12,6 @@ Verifies:
 
 import pytest
 
-from copilot.core.timeline import build_timeline
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     insert_agent_task,
@@ -29,6 +28,7 @@ from copilot.models.agentic import (
     Timeline,
 )
 from copilot.models.domain import User
+from copilot.ops.timeline import build_timeline
 
 
 @pytest.fixture

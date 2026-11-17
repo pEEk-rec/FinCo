@@ -15,7 +15,7 @@ Enforces:
 import json
 from typing import Any
 
-from copilot.core.timeutil import now_utc, to_utc_iso
+from copilot.common.timeutil import now_utc, to_utc_iso
 from copilot.db.repo import update_plan_step_status
 from copilot.models.agentic import Observation, PlanStep
 from copilot.tools.executor import ExecutionContext, execute_tool

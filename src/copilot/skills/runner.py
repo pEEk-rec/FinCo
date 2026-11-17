@@ -17,10 +17,10 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from copilot.core.config import PROJECT_ROOT
-from copilot.core.timeutil import now_utc, to_utc_iso
-from copilot.db.repo_phase3 import insert_skill_run, update_skill_run
-from copilot.models.phase3 import SkillManifest, SkillRun
+from copilot.common.settings import PROJECT_ROOT
+from copilot.common.timeutil import now_utc, to_utc_iso
+from copilot.db.repo_agent_runtime import insert_skill_run, update_skill_run
+from copilot.models.agent_runtime import SkillManifest, SkillRun
 from copilot.ops.tracing import span
 from copilot.skills.manifest import load_skill_manifest
 from copilot.tools.executor import ExecutionContext, execute_tool

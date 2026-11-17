@@ -13,10 +13,10 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from copilot.core.timeutil import to_utc_iso
+from copilot.common.timeutil import to_utc_iso
 from copilot.db.repo import get_agent_task, update_agent_task_status
 from copilot.llm.client import LLMClient
-from copilot.models.phase3 import SpecialistReport, SubQuestion
+from copilot.models.agent_runtime import SpecialistReport, SubQuestion
 from copilot.tools.executor import ExecutionContext
 from copilot.workflow.decomposition import decompose_intent
 from copilot.workflow.multi_agent import merge_specialist_reports, run_specialists_fanout

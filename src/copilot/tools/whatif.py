@@ -15,14 +15,14 @@ from typing import TYPE_CHECKING
 from pydantic import Field, StrictInt
 
 from copilot.audit.events import record_event
-from copilot.core.simulation import (
+from copilot.common.timeutil import IST, now_utc, to_utc_iso
+from copilot.db.repo import insert_simulation
+from copilot.domain.whatif import (
     ScenarioComparison,
     build_snapshot,
     compare_scenarios,
     simulate,
 )
-from copilot.core.timeutil import IST, now_utc, to_utc_iso
-from copilot.db.repo import insert_simulation
 from copilot.models.agentic import Projection, Scenario, ScenarioKind
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
 from copilot.tools.registry import register

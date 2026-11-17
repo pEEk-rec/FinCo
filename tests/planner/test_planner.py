@@ -26,7 +26,7 @@ def conn():
 
 from datetime import datetime
 
-from copilot.core.config import PROJECT_ROOT
+from copilot.common.settings import PROJECT_ROOT
 from copilot.governance.policy import load_policy
 
 

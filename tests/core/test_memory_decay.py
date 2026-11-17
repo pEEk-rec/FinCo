@@ -19,19 +19,10 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from copilot.config.phase2 import AlertsConfig, load_investigation_config
-from copilot.core.alerts import build_why_text, evaluate_category_alert_signals
-from copilot.core.investigation import run_investigation_suite
-from copilot.core.memory import (
-    check_advice_suppression,
-    compute_memory_confidence,
-    determine_memory_status,
-    get_active_contextual_exception,
-    load_memory_config,
-    record_contextual_exception,
-)
-from copilot.core.recommendations import build_recommendation, find_relevant_memories
-from copilot.core.timeutil import to_utc_iso
+from copilot.common.timeutil import to_utc_iso
+from copilot.config.money import AlertsConfig
+from copilot.config.planning import load_investigation_config
+from copilot.conversation.investigation import run_investigation_suite
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     insert_account,
@@ -39,9 +30,19 @@ from copilot.db.repo import (
     insert_recommendation,
     insert_user,
 )
-from copilot.db.repo_phase3 import insert_memory_evidence, insert_memory_item
+from copilot.db.repo_memory import insert_memory_evidence, insert_memory_item
+from copilot.domain.alerts import build_why_text, evaluate_category_alert_signals
+from copilot.engagement.recommendations import build_recommendation, find_relevant_memories
+from copilot.memory.store import (
+    check_advice_suppression,
+    compute_memory_confidence,
+    determine_memory_status,
+    get_active_contextual_exception,
+    load_memory_config,
+    record_contextual_exception,
+)
+from copilot.models.agent_runtime import MemoryEvidence, MemoryItem
 from copilot.models.domain import Account, Category, Transaction, User
-from copilot.models.phase3 import MemoryEvidence, MemoryItem
 
 
 @pytest.fixture

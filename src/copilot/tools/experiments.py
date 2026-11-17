@@ -20,51 +20,43 @@ from typing import TYPE_CHECKING, Literal
 from pydantic import Field
 
 from copilot.audit.events import record_event
-from copilot.core.experiments import (
+from copilot.db.repo_engagement import get_experiment as repo_get_experiment
+from copilot.db.repo_engagement import get_experiment_review as repo_get_experiment_review
+from copilot.db.repo_engagement import get_experiment_review_by_id as repo_get_review_by_id
+from copilot.db.repo_engagement import list_experiments as repo_list_experiments
+from copilot.engagement.experiments import (
     abandon_experiment as core_abandon,
 )
-from copilot.core.experiments import (
+from copilot.engagement.experiments import (
     answer_checkin as core_answer_checkin,
 )
-from copilot.core.experiments import (
+from copilot.engagement.experiments import (
     create_checkins as core_create_checkins,
 )
-from copilot.core.experiments import (
+from copilot.engagement.experiments import (
     create_due_reviews as core_create_due_reviews,
 )
-from copilot.core.experiments import (
+from copilot.engagement.experiments import (
     design_experiment as core_design,
 )
-from copilot.core.experiments import (
+from copilot.engagement.experiments import (
     get_experiment_progress as core_get_progress,
 )
-from copilot.core.experiments import (
+from copilot.engagement.experiments import (
     pause_experiment as core_pause,
 )
-from copilot.core.experiments import (
+from copilot.engagement.experiments import (
     resume_experiment as core_resume,
 )
-from copilot.core.experiments import (
+from copilot.engagement.experiments import (
     start_experiment as core_start,
 )
-from copilot.core.experiments import (
+from copilot.engagement.experiments import (
     submit_review_feedback as core_submit_feedback,
 )
-from copilot.core.learning_loop import process_post_review_learning, update_template_posterior
-from copilot.core.rewards import confirm_review_integrity as core_confirm_integrity
-from copilot.db.repo_phase4 import (
-    get_experiment as repo_get_experiment,
-)
-from copilot.db.repo_phase4 import (
-    get_experiment_review as repo_get_experiment_review,
-)
-from copilot.db.repo_phase4 import (
-    get_experiment_review_by_id as repo_get_review_by_id,
-)
-from copilot.db.repo_phase4 import (
-    list_experiments as repo_list_experiments,
-)
-from copilot.models.phase4 import (
+from copilot.engagement.rewards import confirm_review_integrity as core_confirm_integrity
+from copilot.learning.experiment_loop import process_post_review_learning, update_template_posterior
+from copilot.models.engagement import (
     CheckinUserResponse,
     Experiment,
     ExperimentCheckin,

@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 
 from copilot.audit.events import list_events
-from copilot.core.errors import ErrorCode
-from copilot.core.timeutil import IST
+from copilot.common.errors import ErrorCode
+from copilot.common.timeutil import IST
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     get_transaction,

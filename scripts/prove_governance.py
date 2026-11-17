@@ -18,8 +18,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from copilot.api.services import register_all_tools  # noqa: E402
-from copilot.core.config import load_settings  # noqa: E402
-from copilot.core.money import rupees_to_paise  # noqa: E402
+from copilot.common.money import rupees_to_paise  # noqa: E402
+from copilot.common.settings import load_settings  # noqa: E402
 from copilot.db.connection import get_connection, init_db  # noqa: E402
 from copilot.governance.policy import load_policy  # noqa: E402
 from copilot.models.domain import Transaction  # noqa: E402
@@ -61,20 +61,31 @@ def main() -> int:
     reads = [s.name for s in specs if s.side_effect is SideEffect.READ]
     writes = [s.name for s in specs if s.side_effect is SideEffect.WRITE_LOGICAL]
     print(f"  {len(specs)} tools registered: {len(reads)} read-only, {len(writes)} change data")
-    print(f"  The planner may choose from {len(selectable)} tools, all read-only.")
+    # Two planner-selectable tools write, but only FinCo's own bookkeeping (refresh memory
+    # candidates, roll unspent bucket balances over). They are audited and reach nothing outside.
+    bookkeeping = {"refresh_memories", "rollover_buckets"}
+    planner_writes = selectable & set(writes)
+    read_only = len(selectable - planner_writes)
+    named = ", ".join(sorted(planner_writes))
     print(
-        f"  Tools that change data and are available to the planner: {len(selectable & set(writes))}"  # noqa: E501
+        f"  The planner may choose from {len(selectable)} tools: {read_only} read-only and "
+        f"{len(planner_writes)} internal bookkeeping ({named})."
     )
-    ok = not (selectable & set(writes)) and selectable <= set(reads)
+    ok = planner_writes <= bookkeeping and all(
+        s.side_effect is not SideEffect.EXTERNAL for s in specs if s.name in selectable
+    )
     failures += not ok
-    line(ok, "no data-changing tool is ever offered to the planner")
-    money_words = ("transfer", "pay", "trade", "withdraw", "deposit", "send", "wire")
+    line(
+        ok, "the planner is offered no tool that reaches outside FinCo, and only bookkeeping writes"
+    )
+    money_words = {"transfer", "transfers", "pay", "trade", "withdraw", "deposit", "send", "wire"}
+    # Whole words only: record_payment_event stores an alert, compare_tradeoffs compares options.
     # detect_transfers only labels moves between the user's own accounts so they are not
     # counted as spending; it cannot move anything (the repository's own test allows it too).
     movers = [
         s.name
         for s in specs
-        if any(w in s.name for w in money_words) and s.name != "detect_transfers"
+        if money_words & set(s.name.split("_")) and s.name != "detect_transfers"
     ]
     failures += bool(movers)
     line(
@@ -83,7 +94,11 @@ def main() -> int:
     )
 
     heading("2. Trying to rewrite history")
-    audit_id = conn.execute("SELECT id FROM audit_events LIMIT 1").fetchone()[0]
+    first_audit = conn.execute("SELECT id FROM audit_events LIMIT 1").fetchone()
+    if first_audit is None:
+        print("This database has no audit rows yet. Connect a bank and import first.")
+        return 2
+    audit_id = first_audit[0]
     attempts = {
         "UPDATE an audit row": f"UPDATE audit_events SET reason = 'edited' WHERE id = '{audit_id}'",
         "DELETE an audit row": f"DELETE FROM audit_events WHERE id = '{audit_id}'",

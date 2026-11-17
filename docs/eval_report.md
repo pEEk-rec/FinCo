@@ -1,6 +1,6 @@
 # Finance Copilot — Evaluation & Benchmarking Report
 
-**Generated:** 2026-10-18T10:04:13.305971+00:00  
+**Generated:** 2026-11-17T15:41:56.823970+00:00  
 **Seeds Tested:** `[42, 123, 999]`  
 **Evaluation Framework:** Automated Golden Benchmark against Ground-Truth labels  
 
@@ -9,22 +9,22 @@
 | Metric | Target | Measured Mean | Status |
 |---|---|---|---|
 | **Categorization Accuracy** | >= 90% | **100.0%** | PASS |
-| **Categorization Coverage** | >= 80% | **96.04%** | PASS |
+| **Categorization Coverage** | >= 80% | **97.53%** | PASS |
 | **High-Confidence Precision (>=0.85)** | >= 95% | **100.0%** | PASS |
 | **Transfer Detection F1** | >= 0.85 | **1.0** | PASS |
 | **Recurring Subscription F1** | >= 0.80 | **1.0** | PASS |
-| **Anomaly Detection F1** | >= 0.70 | **0.05** | PASS |
+| **Anomaly Detection F1** | >= 0.70 | **0.05** | FAIL |
 | **Ingestion Idempotency** | 100% | **100% (0 duplicates)** | PASS |
 | **Advice Validator Grounding** | 100% | **100% (0 hallucinations)** | PASS |
-| **Mean Pipeline Latency** | < 500ms | **134.6ms** | PASS |
+| **Mean Pipeline Latency** | < 500ms | **77.05ms** | PASS |
 
 ## 2. Multi-Seed Granular Results
 
 | Seed | Transactions | Auto-Categorized | Review Queue | Coverage | Accuracy | High-Conf Acc | Transfer F1 | Recurring F1 | Latency |
 |---|---|---|---|---|---|---|---|---|---|
-| `42` | 137 | 131 | 6 | 95.62% | 100.0% | 100.0% | 1.0 | 1.0 | 145.31ms |
-| `123` | 134 | 130 | 4 | 97.01% | 100.0% | 100.0% | 1.0 | 1.0 | 127.69ms |
-| `999` | 133 | 127 | 6 | 95.49% | 100.0% | 100.0% | 1.0 | 1.0 | 130.79ms |
+| `42` | 137 | 133 | 4 | 97.08% | 100.0% | 100.0% | 1.0 | 1.0 | 79.67ms |
+| `123` | 134 | 132 | 2 | 98.51% | 100.0% | 100.0% | 1.0 | 1.0 | 75.74ms |
+| `999` | 133 | 129 | 4 | 96.99% | 100.0% | 100.0% | 1.0 | 1.0 | 75.73ms |
 
 ## 3. Categorization Source Distribution
 
@@ -37,9 +37,9 @@ Categorization follows strict hierarchical precedence:
 
 ### Per-Seed Source Breakdown:
 
-- **Seed 42:** {"rule": 131, "override": 0, "cache": 0, "llm": 0, "none": 6}
-- **Seed 123:** {"rule": 130, "override": 0, "cache": 0, "llm": 0, "none": 4}
-- **Seed 999:** {"rule": 127, "override": 0, "cache": 0, "llm": 0, "none": 6}
+- **Seed 42:** {"rule": 133, "override": 0, "cache": 0, "llm": 0, "none": 4}
+- **Seed 123:** {"rule": 132, "override": 0, "cache": 0, "llm": 0, "none": 2}
+- **Seed 999:** {"rule": 129, "override": 0, "cache": 0, "llm": 0, "none": 4}
 
 ## 4. Safety Invariants & Boundary Verifications
 

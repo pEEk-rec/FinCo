@@ -1,0 +1,24 @@
+# How bank narrations are laid out (PLAN_AGENTIC_V2, A1). First match wins.
+# Named groups: ref, name, vpa, card, city, bank. Anything a group does not capture stays empty.
+formats:
+  - {name: upi_slash,  rail: upi,  pattern: '^UPI/(?P<ref>\d{9,14})/(?P<name>[^/]+?)/(?P<vpa>[\w.\-]+@[A-Za-z]+)(?:/(?P<bank>[^/]*))?'}
+  - {name: upi_dash,   rail: upi,  pattern: '^UPI-(?P<name>[^-]+?)-(?P<vpa>[\w.\-]+@[A-Za-z]+)-(?P<ref>\d{9,14})'}
+  - {name: upi_ref,    rail: upi,  pattern: '^UPI[/-](?P<ref>\d{9,14})[/-](?P<name>[^/]+)'}
+  - {name: upi_vpa_only, rail: upi, pattern: '^(?:UPI[/-])?(?P<vpa>[\w.\-]+@[A-Za-z]+)'}
+  - {name: pos_card,   rail: card, pattern: '^POS[\s/-]+(?:(?P<card>\d{4})\s+)?(?P<name>.+?)(?:\s+(?P<city>BANGALORE|BENGALURU|MUMBAI|DELHI|NEW DELHI|PUNE|CHENNAI|HYDERABAD|KOLKATA|GURGAON|GURUGRAM|NOIDA|JAIPUR|AHMEDABAD))?(?:\s+IN)?$'}
+  - {name: ecom_card,  rail: card, pattern: '^(?:ECOM|ECOMM|EComm)[\s/-]+(?P<name>.+?)(?:\s+IN)?$'}
+  - {name: imps,       rail: imps, pattern: '^IMPS[/-](?P<ref>\d{9,14})[/-](?P<name>[^/]+)'}
+  - {name: neft,       rail: neft, pattern: '^NEFT[/-](?P<ref>[A-Za-z0-9]{8,16})[/-](?P<name>[^/]+)'}
+  - {name: rtgs,       rail: neft, pattern: '^RTGS[/-](?P<ref>[A-Za-z0-9]{8,16})[/-](?P<name>[^/]+)'}
+  - {name: mandate,    rail: mandate, pattern: '^(?:ACH|NACH)[\s/-]*(?:D|C)?[\s/-]*(?P<name>.+?)(?:[/-](?P<ref>\d{6,}))?$'}
+  - {name: atm,        rail: atm,  pattern: '^(?:ATM|NWD|CDM)[\s/-]*(?P<name>.*)$'}
+  - {name: bank_item,  rail: bank, pattern: '^(?P<name>(?:INT\.?\s?PD|INTEREST|CHARGES|CHRG|SMS CHG|GST)[^/]*)'}
+
+# Words that mean a business, so "Ramesh Stores" is not taken for a person.
+business_words: [store, stores, mart, shop, traders, trading, cafe, restaurant, hotel, bakery, pharmacy,
+                 medical, clinic, enterprises, foods, services, ltd, pvt, llp, canteen, juice, tea,
+                 stationers, supermarket, kirana, dairy, salon, laundry, petrol, fuel, travels, cabs,
+                 electronics, mobiles, fashion, garments, studio, gym, academy, school, college, online,
+                 india, retail, mess, bakers, sweets]
+# A VPA whose local part is a phone number is a person; so is a 1 to 3 word name on a person-to-person rail.
+person_rails: [upi, imps, neft]

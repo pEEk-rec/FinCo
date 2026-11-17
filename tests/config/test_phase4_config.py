@@ -5,7 +5,7 @@ Tests for Stage 4.0: Configuration validation and boundary tests (PLAN_PHASE4 St
 import pytest
 from pydantic import ValidationError
 
-from copilot.config.phase4 import (
+from copilot.config.engagement import (
     BaselineConfig,
     ChallengeTemplate,
     DifficultyConfig,

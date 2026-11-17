@@ -7,17 +7,19 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from copilot.config.phase2 import (
+from copilot.config.money import (
     AlertsConfig,
-    PlannerCapabilitiesConfig,
     load_alerts_config,
-    load_explanation_templates,
     load_goals_config,
+    load_whatif_config,
+)
+from copilot.config.planning import (
+    PlannerCapabilitiesConfig,
+    load_explanation_templates,
     load_intent_patterns,
     load_investigation_config,
     load_plan_templates,
     load_planner_capabilities,
-    load_whatif_config,
 )
 
 CONFIG_DIR = Path(__file__).resolve().parents[2] / "config"

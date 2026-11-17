@@ -17,7 +17,6 @@ from datetime import datetime
 
 import pytest
 
-from copilot.core.calendar import CalendarScenario, build_calendar
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     insert_account,
@@ -25,9 +24,10 @@ from copilot.db.repo import (
     insert_transaction,
     insert_user,
 )
-from copilot.db.repo_phase3 import insert_commitment
+from copilot.db.repo_money import insert_commitment
+from copilot.domain.calendar import CalendarScenario, build_calendar
 from copilot.models.domain import Account, Category, Transaction, User
-from copilot.models.phase3 import Commitment
+from copilot.models.money import Commitment
 
 T0 = "2026-10-01T00:00:00Z"
 DT0 = datetime.fromisoformat("2026-10-01T00:00:00+00:00")

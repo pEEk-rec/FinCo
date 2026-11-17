@@ -15,13 +15,13 @@ spec.loader.exec_module(redact)
 
 from datetime import datetime  # noqa: E402
 
+from copilot.capture.sms_parser import ParsedPayment, parse_sms  # noqa: E402
+from copilot.common.timeutil import IST  # noqa: E402
 from copilot.config.capture import (  # noqa: E402
     SmsSendersConfig,
     load_sms_senders,
     load_sms_templates,
 )
-from copilot.core.sms_parser import ParsedPayment, parse_sms  # noqa: E402
-from copilot.core.timeutil import IST  # noqa: E402
 
 REAL = [
     (

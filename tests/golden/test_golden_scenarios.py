@@ -26,8 +26,8 @@ import pytest
 from copilot.bank.ingest import set_connector
 from copilot.bank.mock_bank import MockAAConnector
 from copilot.bank.synth import generate_transactions
-from copilot.core.advice import validate_advice
-from copilot.core.errors import ErrorCode
+from copilot.common.errors import ErrorCode
+from copilot.conversation.advice import validate_advice
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     get_monthly_review,

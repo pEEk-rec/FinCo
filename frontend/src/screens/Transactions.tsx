@@ -1,4 +1,5 @@
-import { MagnifyingGlass } from '@phosphor-icons/react';
+import { CaretDown, MagnifyingGlass } from '@phosphor-icons/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
@@ -9,7 +10,6 @@ import {
   useTransaction,
   useTransactions,
   useCreateCategory,
-  useSession,
   useUndo,
 } from '../api/hooks';
 import { Badge, CategoryPill, Chip, SourceBadge } from '../components/Badge';
@@ -19,58 +19,146 @@ import { cx } from '../components/cx';
 import { DetailPanel } from '../components/DetailPanel';
 import { EmptyState, ErrorState, SkeletonBlock } from '../components/States';
 import { useToast } from '../components/Toast';
+import { Segmented, type TabDef } from '../components/Tabs';
 import { Toggle } from '../components/Toggle';
 import { copy } from '../copy/en';
-import { formatDay, formatDayHeader, formatTime, istDayKey } from '../format/date';
+import { formatDay, formatDayHeader, formatDayShort, formatTime, istDayKey } from '../format/date';
 import { formatINR } from '../format/money';
 import { NumberTicker } from '../motion/NumberTicker';
+import { useMonth } from '../state/month';
 
 const T = copy.transactions;
 const PAGE = 60;
-/** The current month and the two before it, from the session (demo: the fixed demo month). */
-function recentPeriods(current: string | undefined): string[] {
-  const match = /^(\d{4})-(\d{2})$/.exec(current ?? '');
-  if (!match) return [];
-  let year = Number(match[1]);
-  let month = Number(match[2]);
-  const out: string[] = [];
-  for (let i = 0; i < 3; i += 1) {
-    out.push(`${year}-${String(month).padStart(2, '0')}`);
-    month -= 1;
-    if (month === 0) {
-      month = 12;
-      year -= 1;
-    }
-  }
-  return out;
+/** By category needs the whole month at once to total each group honestly. */
+const WHOLE_MONTH = 200;
+
+type View = 'date' | 'category';
+const VIEWS: TabDef<View>[] = [
+  { id: 'date', label: 'By date' },
+  { id: 'category', label: 'By category' },
+];
+
+interface Group {
+  key: string;
+  categoryId: string | null;
+  name: string | null;
+  spentPaise: number;
+  rows: TransactionRow[];
 }
 
-function periodLabel(period: string): string {
-  const names = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  return `${names[Number(period.slice(5)) - 1]} ${period.slice(0, 4)}`;
+/** Spending grouped by category, biggest first. Credits are listed but not added to spend. */
+function byCategory(rows: TransactionRow[]): Group[] {
+  const groups = new Map<string, Group>();
+  for (const tx of rows) {
+    const key = tx.category_id ?? 'none';
+    const g = groups.get(key) ?? {
+      key,
+      categoryId: tx.category_id ?? null,
+      name: tx.category_name ?? null,
+      spentPaise: 0,
+      rows: [],
+    };
+    if (tx.direction !== 'credit') g.spentPaise += Math.abs(tx.amount_paise);
+    g.rows.push(tx);
+    groups.set(key, g);
+  }
+  return [...groups.values()].sort((a, b) => b.spentPaise - a.spentPaise);
+}
+
+function CategoryGroups({
+  groups,
+  selected,
+  onSelect,
+  focus,
+}: {
+  groups: Group[];
+  selected: string | null;
+  onSelect: (id: string) => void;
+  focus: string;
+}) {
+  const [closed, setClosed] = useState<Set<string>>(
+    () => new Set(groups.filter((g) => focus && g.key !== focus).map((g) => g.key)),
+  );
+  const toggle = (key: string) =>
+    setClosed((s) => {
+      const n = new Set(s);
+      if (n.has(key)) n.delete(key);
+      else n.add(key);
+      return n;
+    });
+  return (
+    <div className="flex flex-col gap-3 p-4 sm:p-5">
+      {groups.map((g) => {
+        const open = !closed.has(g.key);
+        return (
+          <section
+            key={g.key}
+            className="overflow-hidden rounded-card border border-hairline bg-surface"
+            aria-labelledby={`grp-${g.key}`}
+          >
+            <button
+              type="button"
+              onClick={() => toggle(g.key)}
+              aria-expanded={open}
+              className="flex w-full items-center gap-3 px-5 py-3.5 text-left transition-colors duration-fast hover:bg-surface-hover"
+            >
+              <span id={`grp-${g.key}`} className="min-w-0 flex-1">
+                <CategoryPill categoryId={g.categoryId} name={g.name} />
+              </span>
+              <span className="tabular text-small text-ink-3">
+                {T.count(String(g.rows.length))}
+              </span>
+              <span className="tabular w-24 text-right text-cell font-semibold">
+                {formatINR(g.spentPaise, { paise: 'never' })}
+              </span>
+              <CaretDown
+                size={15}
+                weight="bold"
+                aria-hidden
+                className={cx(
+                  'text-ink-3 transition-transform duration-fast',
+                  open && 'rotate-180',
+                )}
+              />
+            </button>
+            <AnimatePresence initial={false}>
+              {open ? (
+                <motion.ul
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
+                  className="overflow-hidden border-t border-hairline"
+                >
+                  {g.rows.map((tx) => (
+                    <Row
+                      key={tx.id}
+                      tx={tx}
+                      selected={tx.id === selected}
+                      onSelect={() => onSelect(tx.id)}
+                      showDay
+                    />
+                  ))}
+                </motion.ul>
+              ) : null}
+            </AnimatePresence>
+          </section>
+        );
+      })}
+    </div>
+  );
 }
 
 function Row({
   tx,
   selected,
   onSelect,
+  showDay = false,
 }: {
   tx: TransactionRow;
   selected: boolean;
   onSelect: () => void;
+  showDay?: boolean;
 }) {
   return (
     <li>
@@ -87,6 +175,7 @@ function Row({
         <span className="min-w-0">
           <span className="block truncate text-[14px] capitalize">{tx.merchant}</span>
           <span className="block truncate text-small text-ink-3">
+            {showDay ? `${formatDayShort(tx.occurred_at)} · ` : ''}
             {tx.account_name} · {formatTime(tx.occurred_at)}
           </span>
         </span>
@@ -299,26 +388,32 @@ function Detail({ id }: { id: string }) {
 }
 
 export function TransactionsScreen() {
-  const periods = recentPeriods(useSession().data?.period);
+  const { month } = useMonth();
   const [params, setParams] = useSearchParams();
-  const period = params.get('period') ?? '';
   const category = params.get('category') ?? '';
-  const reviewOnly = params.get('review') === '1';
+  const view: View = params.get('view') === 'category' ? 'category' : 'date';
   const selected = params.get('tx');
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(PAGE);
   const categories = useCategories();
 
   const filters = {
-    period: period || undefined,
+    period: month,
     category_id: category && category !== 'none' ? category : undefined,
     uncategorised: category === 'none' || undefined,
-    needs_review: reviewOnly || undefined,
     q: query.trim() || undefined,
     offset: 0,
-    limit,
+    limit: view === 'category' ? WHOLE_MONTH : limit,
   };
   const list = useTransactions(filters);
+  const groupsByCategory = useMemo(() => byCategory(list.data?.items ?? []), [list.data]);
+  const spent = useMemo(
+    () =>
+      (list.data?.items ?? [])
+        .filter((t) => t.direction !== 'credit')
+        .reduce((sum, t) => sum + Math.abs(t.amount_paise), 0),
+    [list.data],
+  );
 
   const set = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
@@ -338,43 +433,45 @@ export function TransactionsScreen() {
   }, [list.data]);
 
   return (
-    <div className="grid h-[calc(100vh-3.5rem)] min-h-[32rem] grid-cols-1 lg:h-screen lg:grid-cols-[minmax(0,1fr)_26rem]">
+    <div className="grid h-[calc(100vh-4rem)] min-h-[32rem] grid-cols-1 lg:grid-cols-[minmax(0,1fr)_26rem]">
       <section aria-labelledby="tx-title" className="flex min-h-0 min-w-0 flex-col">
-        <div className="border-b border-hairline px-5 py-4 sm:px-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 id="tx-title" className="serif-light text-[28px] leading-none">
-              {T.title}
-            </h1>
-            <label className="flex h-9 w-full max-w-xs items-center gap-2 rounded-control border border-input-border bg-surface px-3 sm:w-64">
-              <MagnifyingGlass size={15} aria-hidden className="text-ink-3" />
+        <div className="border-b border-hairline px-5 py-5 sm:px-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h1 id="tx-title" className="serif-light text-[32px] leading-none tracking-[-0.01em]">
+                {T.title}
+              </h1>
+              {list.data ? (
+                <p className="tabular mt-2 text-small text-ink-2">
+                  {T.summary(String(list.data.total), formatINR(spent, { paise: 'never' }))}
+                </p>
+              ) : null}
+            </div>
+            <Segmented
+              id="tx-view"
+              label="Group payments"
+              options={VIEWS}
+              value={view}
+              onChange={(v) => set('view', v === 'date' ? null : v)}
+            />
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-control border border-input-border bg-surface px-3 sm:max-w-sm">
+              <MagnifyingGlass size={16} aria-hidden className="text-ink-3" />
               <input
                 aria-label={T.search}
                 placeholder={T.search}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full bg-transparent text-small outline-none placeholder:text-ink-3"
+                className="w-full bg-transparent text-[14px] outline-none placeholder:text-ink-3"
               />
             </label>
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <Chip selected={period === ''} onClick={() => set('period', null)}>
-              {T.allTime}
-            </Chip>
-            {periods.map((p) => (
-              <Chip key={p} selected={period === p} onClick={() => set('period', p)}>
-                {periodLabel(p)}
-              </Chip>
-            ))}
-            <span aria-hidden className="mx-1 h-4 w-px bg-hairline" />
-            <Chip selected={reviewOnly} onClick={() => set('review', reviewOnly ? null : '1')}>
-              {T.needsReview}
-            </Chip>
-            <label className="ml-1">
+            <label>
               <span className="sr-only">{T.category}</span>
               <select
                 value={category}
                 onChange={(e) => set('category', e.target.value || null)}
-                className="h-7 rounded-chip border border-hairline-strong bg-surface px-3 text-small text-ink-2"
+                className="h-10 rounded-control border border-hairline-strong bg-surface px-3 text-[14px] text-ink-2"
               >
                 <option value="">{T.allCategories}</option>
                 <option value="none">{copy.common.uncategorised}</option>
@@ -385,10 +482,24 @@ export function TransactionsScreen() {
                 ))}
               </select>
             </label>
+            {category ? (
+              <Chip selected onClick={() => set('category', null)}>
+                {T.clearFilter}
+              </Chip>
+            ) : null}
           </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
+          {view === 'category' && list.data && groupsByCategory.length > 0 ? (
+            <CategoryGroups
+              key={`${month}-${category}`}
+              groups={groupsByCategory}
+              selected={selected}
+              onSelect={(id) => set('tx', id)}
+              focus={category}
+            />
+          ) : null}
           {list.isPending ? (
             <SkeletonBlock className="p-6" lines={8} />
           ) : list.error ? (
@@ -401,11 +512,9 @@ export function TransactionsScreen() {
             </div>
           ) : groups.length === 0 ? (
             <div className="p-6">
-              <EmptyState
-                message={period || category || reviewOnly || query ? T.empty : T.emptyAll}
-              />
+              <EmptyState message={category || query ? T.empty : T.emptyMonth} />
             </div>
-          ) : (
+          ) : view === 'date' ? (
             <>
               {groups.map(([day, rows]) => (
                 <div key={day}>
@@ -430,7 +539,11 @@ export function TransactionsScreen() {
                 </div>
               ) : null}
             </>
-          )}
+          ) : list.data && list.data.items.length < list.data.total ? (
+            <p className="px-6 pb-6 text-small text-ink-3">
+              {T.partial(String(list.data.items.length), String(list.data.total))}
+            </p>
+          ) : null}
         </div>
       </section>
 

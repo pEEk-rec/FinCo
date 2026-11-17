@@ -11,16 +11,21 @@ from datetime import datetime
 
 import pytest
 
-from copilot.core.baseline import generate_candidate_windows
-from copilot.core.challenges import generate_challenge_offers
-from copilot.core.policy import is_in_dismissal_quiet_period
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_category, insert_user
-from copilot.db.repo_phase4 import insert_experiment, insert_offer, list_offers, update_offer_status
+from copilot.db.repo_engagement import (
+    insert_experiment,
+    insert_offer,
+    list_offers,
+    update_offer_status,
+)
+from copilot.engagement.baseline import generate_candidate_windows
+from copilot.engagement.challenges import generate_challenge_offers
 from copilot.governance.policy import load_policy
+from copilot.learning.offers import is_in_dismissal_quiet_period
 from copilot.llm.client import FakeLLMClient
 from copilot.models.domain import Account, Category, User
-from copilot.models.phase4 import Experiment, Offer
+from copilot.models.engagement import Experiment, Offer
 from copilot.tools.executor import ExecutionContext, execute_tool
 from copilot.workflow.nodes import ensure_tools_registered
 
@@ -123,7 +128,7 @@ def test_offers_come_from_the_policy_with_logged_propensities(conn):
 
 def test_each_offer_carries_the_selection_probability_the_policy_computed(conn, monkeypatch):
     """The stored propensity is whatever the policy returned, not a constant."""
-    import copilot.core.challenges as challenges
+    import copilot.engagement.challenges as challenges
 
     real = challenges.select_challenge_offers
 

@@ -69,3 +69,43 @@
   is_regex: true
   category_id: groceries
   confidence: 0.8
+- match: "apollo|medplus|pharmac|chemist|1mg|practo|cult.?fit"
+  is_regex: true
+  category_id: health
+  confidence: 0.92
+- match: "urban ?company|salon|naturals|barber"
+  is_regex: true
+  category_id: personal
+  confidence: 0.90
+- match: "dominos|starbucks|mcdonald|cafe coffee|ccd"
+  is_regex: true
+  category_id: food
+  confidence: 0.9
+- match: "zepto|bigbasket|dmart|reliance fresh"
+  is_regex: true
+  category_id: groceries
+  confidence: 0.92
+- match: "flipkart|myntra|nykaa|ajio|meesho|decathlon|croma"
+  is_regex: true
+  category_id: shopping
+  confidence: 0.9
+- match: "delhi metro|dmrc|redbus|makemytrip|indigo"
+  is_regex: true
+  category_id: travel
+  confidence: 0.9
+- match: "youtube|hotstar|google one|prime video|apple services"
+  is_regex: true
+  category_id: subscriptions
+  confidence: 0.9
+- match: "bookmyshow|pvr|inox|steam"
+  is_regex: true
+  category_id: entertainment
+  confidence: 0.9
+- match: "unacademy|coursera|udemy|byjus"
+  is_regex: true
+  category_id: education
+  confidence: 0.92
+- match: "bescom|airtel|tata power|act fibernet|bsnl"
+  is_regex: true
+  category_id: bills
+  confidence: 0.9

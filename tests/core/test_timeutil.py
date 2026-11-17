@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from copilot.core.timeutil import (
+from copilot.common.timeutil import (
     IST,
     from_utc_iso,
     month_bounds,

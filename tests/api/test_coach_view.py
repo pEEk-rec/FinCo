@@ -10,7 +10,7 @@ from typer.testing import CliRunner
 from copilot.api.app import create_app
 from copilot.api.state import ApiState
 from copilot.cli.main import app as cli
-from copilot.core.labels import format_metric, metric_label, metric_unit
+from copilot.engagement.labels import format_metric, metric_label, metric_unit
 from copilot.tools.registry import clear_registry
 
 runner = CliRunner()
@@ -40,7 +40,7 @@ def journey(tmp_path):
 
 
 def _client(db, clock):
-    from copilot.core.timeutil import from_utc_iso
+    from copilot.common.timeutil import from_utc_iso
 
     st = ApiState(
         db_path=__import__("pathlib").Path(db), clock=from_utc_iso(clock), token="t", llm=None

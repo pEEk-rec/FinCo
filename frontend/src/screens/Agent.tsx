@@ -56,7 +56,7 @@ function AgentMark({ working = false }: { working?: boolean }) {
 // Ask
 // ------------------------------------------------------------------------------------------
 
-function ObservationData({
+export function ObservationData({
   name,
   data,
   names,
@@ -395,7 +395,7 @@ const KIND_LABEL: Record<string, string> = {
   large_transaction: 'Large payment',
 };
 
-function InvestigationView({ out }: { out: InvestigationOut }) {
+export function InvestigationView({ out }: { out: InvestigationOut }) {
   const inv = out.investigation;
   const tested = inv.hypotheses.filter(
     (h) => h.status === 'supported' || h.status === 'contradicted',
@@ -933,7 +933,7 @@ function RouterCard() {
   );
 }
 
-function ActivityPanel() {
+export function ActivityPanel() {
   const timeline = useTimeline();
   if (timeline.isPending)
     return (

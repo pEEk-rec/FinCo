@@ -11,8 +11,8 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 
-from copilot.core.money import rupees_to_paise
-from copilot.core.timeutil import IST, to_utc_iso
+from copilot.common.money import rupees_to_paise
+from copilot.common.timeutil import IST, to_utc_iso
 
 _MONTHS = {
     m: i
@@ -75,7 +75,8 @@ def _paise(text: str) -> int:
 
 def _first_amount(text: str) -> int:
     for m in _AMOUNT.finditer(text):
-        before = text[max(0, m.start() - 24) : m.start()].lower()
+        # Only the sentence the amount is in: "Avl bal Rs 9,000. Rs 40 debited" is a 40 debit.
+        before = re.split(r"[.;]\s", text[: m.start()])[-1][-24:].lower()
         if "bal" in before or "limit" in before or "avl" in before:
             continue
         return _paise(m.group(1))
@@ -159,7 +160,9 @@ def parse_sms(text: str, received_at: datetime) -> ParsedSms:
     ref = _REF.search(body) or _ANY_REF.search(body)
     merchant = _merchant(body, direction)
     lower = body.lower()
-    bank = next((name for key, name in _BANKS.items() if key in lower), None)
+    # The payee's handle (chaistall@okaxis) names the payee's bank app, not the bank you paid from.
+    own = re.sub(r"\S+@\S+", " ", lower)
+    bank = next((name for key, name in _BANKS.items() if key in own), None)
     p2p = bool(re.search(r"upi/p2a/|\bp2p\b", lower)) or (
         "@" in merchant and not re.search(r"[a-z]{4,}\d*@", merchant.lower().split("@")[0] + "@")
     )

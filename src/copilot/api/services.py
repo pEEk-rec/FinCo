@@ -18,10 +18,8 @@ from copilot.api.state import ApiState
 from copilot.bank.ingest import set_connector
 from copilot.bank.mock_bank import MockAAConnector
 from copilot.bank.synth import generate_transactions
-from copilot.core.categorisation import load_aliases, load_rules
-from copilot.core.config import load_settings
-from copilot.core.pipeline import run_categorization_pipeline
-from copilot.core.timeutil import IST, now_utc, to_utc_iso
+from copilot.common.settings import load_settings
+from copilot.common.timeutil import IST, now_utc, to_utc_iso
 from copilot.db.connection import savepoint
 from copilot.db.repo import (
     get_account,
@@ -36,7 +34,8 @@ from copilot.db.repo import (
 from copilot.llm.client import FakeLLMClient
 from copilot.models.domain import Account, Budget, Category, Transaction, User
 from copilot.tools.executor import execute_tool
-from copilot.workflow.nodes import ensure_tools_registered
+from copilot.understand.legacy_pipeline import run_categorization_pipeline
+from copilot.understand.rules import load_aliases, load_rules
 
 DEMO_SEED = 42
 DEMO_MONTHS = 3
@@ -48,24 +47,36 @@ T0 = "2024-01-01T00:00:00Z"
 DEMO_CATEGORIES = (
     ("food", "Dining"),
     ("groceries", "Groceries"),
-    ("travel", "Travel"),
+    ("travel", "Transport"),
     ("shopping", "Shopping"),
     ("bills", "Utilities"),
     ("subscriptions", "Subscriptions"),
     ("education", "Education"),
     ("entertainment", "Entertainment"),
+    ("health", "Health"),
+    ("personal", "Personal care"),
     ("housing", "Rent"),
     ("income", "Income"),
 )
-DEMO_BUDGETS = (("food", 700000), ("travel", 150000), ("shopping", 250000), ("groceries", 150000))
+DEMO_BUDGETS = (
+    ("food", 300000),
+    ("groceries", 110000),
+    ("travel", 150000),
+    ("shopping", 200000),
+    ("entertainment", 80000),
+    ("subscriptions", 30000),
+    ("health", 100000),
+    ("personal", 50000),
+    ("education", 70000),
+    ("bills", 80000),
+)
 
 
 def register_all_tools() -> None:
-    """Register every tool the API can reach (idempotent)."""
-    ensure_tools_registered()
-    from copilot.tools.consents import register_consent_tools
+    """Register every tool the API can reach, including the API-only families (idempotent)."""
+    from copilot.tools.catalog import register_all
 
-    register_consent_tools()
+    register_all(include_api_only=True)
 
 
 #: Local-shop UPI payments no categorisation rule recognises: they exercise the review queue.
@@ -106,12 +117,17 @@ def register_demo_connector(state: ApiState, conn: sqlite3.Connection) -> MockAA
     the mirrored expiry is the DB value only when it lies in the real future; otherwise the
     DB-level check in run_import (which uses the demo clock) is the one that applies.
     """
-    synth = generate_transactions(
-        seed=DEMO_SEED, months=DEMO_MONTHS, user_id=state.user_id, account_ids=[DEMO_ACCOUNT]
-    )
-    connector = MockAAConnector(
-        [*synth.transactions, *_local_shop_transactions(state.user_id, DEMO_ACCOUNT)]
-    )
+    if state.clock is None:
+        # Real clock: the bank's history is built from today, so this month is never empty.
+        from copilot.bank.demo_story import build_demo_story
+
+        history = build_demo_story(state.user_id, DEMO_ACCOUNT, datetime.now(tz=IST))
+    else:
+        synth = generate_transactions(
+            seed=DEMO_SEED, months=DEMO_MONTHS, user_id=state.user_id, account_ids=[DEMO_ACCOUNT]
+        )
+        history = [*synth.transactions, *_local_shop_transactions(state.user_id, DEMO_ACCOUNT)]
+    connector = MockAAConnector(history)
     real_now = to_utc_iso(datetime.now(tz=IST))
     for r in conn.execute("SELECT * FROM consents WHERE user_id = ?", (state.user_id,)):
         expires = r["expires_at"] if (r["expires_at"] or "") > real_now else "2999-01-01T00:00:00Z"
@@ -137,7 +153,7 @@ def seed_demo(
     mode 'imported': also approves the consent and runs the real import pipeline.
     """
     register_all_tools()
-    clock = state.clock or DEMO_CLOCK
+    clock = state.clock or datetime.now(tz=IST)  # no fixed clock means the real one
     consent_id = f"consent_demo_{state.user_id}"
     with savepoint(conn):
         if get_user(conn, state.user_id) is None:
@@ -182,7 +198,7 @@ def seed_demo(
                     consent_id,
                     state.user_id,
                     json.dumps([DEMO_ACCOUNT]),
-                    T0,
+                    T0 if state.clock is not None else to_utc_iso(clock - timedelta(days=100)),
                     to_utc_iso(clock),
                     to_utc_iso(clock + timedelta(days=180)),
                     to_utc_iso(clock - timedelta(minutes=5)),
@@ -200,7 +216,11 @@ def seed_demo(
                 "kind": "purchase",
                 "target_paise": 4500000,
                 "current_paise": 800000,
-                "deadline": "2024-09-30",
+                "deadline": (
+                    "2024-09-30"
+                    if state.clock is not None
+                    else (datetime.now(tz=IST) + timedelta(days=150)).date().isoformat()
+                ),
                 "priority": 1,
             },
         )

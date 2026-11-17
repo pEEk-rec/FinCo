@@ -7,7 +7,6 @@ All tool calls MUST pass strictly through `execute_tool(ctx, tool_name, params)`
 """
 
 import sqlite3
-import threading
 import time
 from datetime import datetime
 from typing import Any
@@ -17,124 +16,22 @@ from langgraph.errors import GraphInterrupt
 from langgraph.types import interrupt
 
 from copilot.audit.events import Actor, record_event
-from copilot.core.categorisation import load_aliases, load_rules
-from copilot.core.config import PROJECT_ROOT, load_settings
-from copilot.core.pipeline import run_categorization_pipeline
-from copilot.core.timeutil import now_utc
+from copilot.common.settings import PROJECT_ROOT, load_settings
+from copilot.common.timeutil import now_utc
 from copilot.governance.policy import PolicySettings, load_policy
 from copilot.llm.client import FakeLLMClient
 from copilot.models.findings import Finding
+from copilot.tools.catalog import register_all
 from copilot.tools.executor import ExecutionContext, execute_tool
-from copilot.tools.registry import get as get_tool
+from copilot.understand.ledger import run_categorisation
+from copilot.understand.rules import load_aliases, load_rules
 from copilot.workflow.findings import build_findings_from_analysis
 from copilot.workflow.state import AgentState, TraceEntry
 
-_REGISTRATION_LOCK = threading.RLock()
-
 
 def ensure_tools_registered() -> None:
-    """
-    Make sure every tool is registered, safely from several threads at once.
-
-    Parallel specialists each call this first. Without the lock two threads could both see a
-    tool missing and both register it, and one would fail with "already registered", which
-    silently dropped that specialist's findings.
-    """
-    with _REGISTRATION_LOCK:
-        _register_missing_tools()
-
-
-def _register_missing_tools() -> None:
-    """Ensure all tool specifications are registered in the global registry."""
-    if get_tool("get_financial_state") is None:
-        from copilot.tools.financial import register_financial_tools
-
-        register_financial_tools()
-
-    if get_tool("create_goal") is None:
-        from copilot.tools.goals import register_goals_tools
-
-        register_goals_tools()
-
-    if get_tool("run_whatif") is None:
-        from copilot.tools.whatif import register_whatif_tools
-
-        register_whatif_tools()
-
-    if get_tool("investigate_anomaly") is None:
-        from copilot.tools.investigation import register_investigation_tools
-
-        register_investigation_tools()
-
-    if get_tool("evaluate_alerts") is None:
-        from copilot.tools.alerts import register_alert_tools
-
-        register_alert_tools()
-
-    if get_tool("create_commitment") is None:
-        from copilot.tools.commitments import register_commitment_tools
-
-        register_commitment_tools()
-
-    if get_tool("create_bucket") is None:
-        from copilot.tools.buckets import register_bucket_tools
-
-        register_bucket_tools()
-
-    if get_tool("get_calendar") is None:
-        from copilot.tools.calendar import register_calendar_tools
-
-        register_calendar_tools()
-
-    if get_tool("assess_investment_readiness") is None:
-        from copilot.tools.readiness import register_readiness_tools
-
-        register_readiness_tools()
-
-    if get_tool("plan_contributions") is None:
-        from copilot.tools.contributions import register_contributions_tools
-
-        register_contributions_tools()
-
-    if get_tool("list_memories") is None:
-        from copilot.tools.memory import register_memory_tools
-
-        register_memory_tools()
-
-    if get_tool("affordability_check") is None:
-        from copilot.skills.tools import register_skill_tools
-
-        register_skill_tools()
-
-    if get_tool("design_experiment") is None:
-        from copilot.tools.experiments import register_experiment_tools
-
-        register_experiment_tools()
-
-    if get_tool("record_payment_event") is None:
-        from copilot.tools.capture import register_capture_tools
-
-        register_capture_tools()
-
-    if get_tool("aa_status") is None:
-        from copilot.tools.aa import register_aa_tools
-
-        register_aa_tools()
-
-    if get_tool("list_adjustments") is None:
-        from copilot.tools.adjustments import register_adjustment_tools
-
-        register_adjustment_tools()
-
-    if get_tool("list_offers") is None:
-        from copilot.tools.challenges import register_challenge_tools
-
-        register_challenge_tools()
-
-    if get_tool("get_user_progress") is None:
-        from copilot.tools.rewards import register_rewards_tools
-
-        register_rewards_tools()
+    """Every tool family registered once (see `copilot.tools.catalog`). Safe from many threads."""
+    register_all()
 
 
 def _get_exec_ctx(
@@ -327,7 +224,7 @@ def categorize_node(state: AgentState, config: RunnableConfig | None = None) -> 
         model_name = getattr(cfg_settings, "gemini_model", "gemini-1.5-flash")
         prompt_version = "v1"
 
-        report = run_categorization_pipeline(
+        report = run_categorisation(
             ctx=ctx,
             llm=llm,
             rules=rules,

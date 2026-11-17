@@ -23,26 +23,20 @@ from typing import TYPE_CHECKING, Literal
 from pydantic import Field
 
 from copilot.audit.events import record_event
-from copilot.config.phase4 import load_challenge_templates
-from copilot.core.challenges import generate_challenge_offers
-from copilot.core.experiments import (
+from copilot.common.timeutil import IST, from_utc_iso, now_utc, to_utc_iso
+from copilot.config.engagement import load_challenge_templates
+from copilot.db.repo_engagement import get_offer as repo_get_offer
+from copilot.db.repo_engagement import list_offers as repo_list_offers
+from copilot.db.repo_engagement import update_offer as repo_update_offer
+from copilot.engagement.challenges import generate_challenge_offers
+from copilot.engagement.experiments import (
     design_experiment,
 )
-from copilot.core.experiments import (
+from copilot.engagement.experiments import (
     start_experiment as core_start_experiment,
 )
-from copilot.core.learning_loop import update_template_posterior
-from copilot.core.timeutil import IST, from_utc_iso, now_utc, to_utc_iso
-from copilot.db.repo_phase4 import (
-    get_offer as repo_get_offer,
-)
-from copilot.db.repo_phase4 import (
-    list_offers as repo_list_offers,
-)
-from copilot.db.repo_phase4 import (
-    update_offer as repo_update_offer,
-)
-from copilot.models.phase4 import Offer
+from copilot.learning.experiment_loop import update_template_posterior
+from copilot.models.engagement import Offer
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
 from copilot.tools.registry import register
 

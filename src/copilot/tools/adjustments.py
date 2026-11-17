@@ -17,22 +17,20 @@ from typing import TYPE_CHECKING, Literal
 
 from pydantic import Field
 
-from copilot.core.adaptive import (
+from copilot.db.repo_engagement import list_adjustment_proposals as repo_list_adjustment_proposals
+from copilot.engagement.adaptive import (
     accept_adjustment as core_accept_adjustment,
 )
-from copilot.core.adaptive import (
+from copilot.engagement.adaptive import (
     expire_stale_proposals as core_expire_stale_proposals,
 )
-from copilot.core.adaptive import (
+from copilot.engagement.adaptive import (
     reject_adjustment as core_reject_adjustment,
 )
-from copilot.core.adaptive import (
+from copilot.engagement.adaptive import (
     run_adaptive_detectors as core_run_adaptive_detectors,
 )
-from copilot.db.repo_phase4 import (
-    list_adjustment_proposals as repo_list_adjustment_proposals,
-)
-from copilot.models.phase4 import AdjustmentProposal
+from copilot.models.engagement import AdjustmentProposal
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
 from copilot.tools.registry import register
 

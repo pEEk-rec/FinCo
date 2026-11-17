@@ -17,5 +17,5 @@
       "purpose": "maskable"
     }
   ],
-  "shortcuts": [{ "name": "Tag payments", "url": "/capture" }]
+  "shortcuts": [{ "name": "Review payments", "url": "/review" }]
 }

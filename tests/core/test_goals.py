@@ -17,15 +17,7 @@ Verifies hand-computed boundary conditions on both sides of every threshold:
 
 import pytest
 
-from copilot.config.phase2 import GoalsConfig
-from copilot.core.goals import (
-    SurplusEstimate,
-    goal_impact,
-    goal_status,
-    monthly_surplus_estimate,
-    months_remaining,
-    required_monthly_paise,
-)
+from copilot.config.money import GoalsConfig
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     insert_account,
@@ -33,6 +25,14 @@ from copilot.db.repo import (
     insert_goal,
     insert_transaction,
     insert_user,
+)
+from copilot.domain.goals import (
+    SurplusEstimate,
+    goal_impact,
+    goal_status,
+    monthly_surplus_estimate,
+    months_remaining,
+    required_monthly_paise,
 )
 from copilot.models.agentic import Goal
 from copilot.models.domain import Account, Category, Transaction, User
@@ -389,16 +389,13 @@ def test_goal_impact_spending_decision():
 # ---------------------------------------------------------------------------------------------
 # Phase 3 Tests: Progress Sources, Percent Boundaries, Projections, and Feasibility
 # ---------------------------------------------------------------------------------------------
-from copilot.core.goals import (
+from copilot.db.repo_money import insert_bucket, insert_goal_contribution
+from copilot.domain.goals import (
     goal_current_paise,
     goal_progress,
     projected_completion,
 )
-from copilot.db.repo_phase3 import (
-    insert_bucket,
-    insert_goal_contribution,
-)
-from copilot.models.phase3 import Bucket
+from copilot.models.money import Bucket
 
 
 def test_goal_progress_sources_and_isolation():

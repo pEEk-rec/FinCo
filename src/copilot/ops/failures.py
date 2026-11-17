@@ -13,7 +13,7 @@ from typing import Any
 
 import yaml
 
-from copilot.core.config import PROJECT_ROOT
+from copilot.common.settings import PROJECT_ROOT
 
 logger = logging.getLogger(__name__)
 

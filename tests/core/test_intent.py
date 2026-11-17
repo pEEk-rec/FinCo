@@ -20,7 +20,8 @@ from datetime import UTC, datetime
 
 import pytest
 
-from copilot.core.intent import (
+from copilot.common.timeutil import IST
+from copilot.conversation.intent import (
     check_input_gate,
     classify_intent,
     create_agent_task,
@@ -29,7 +30,6 @@ from copilot.core.intent import (
     parse_period,
     resolve_entities,
 )
-from copilot.core.timeutil import IST
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_category, insert_goal, insert_user
 from copilot.llm.client import FakeLLMClient

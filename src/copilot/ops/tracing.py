@@ -24,9 +24,9 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Literal
 
-from copilot.core.timeutil import now_utc, to_utc_iso
-from copilot.db.repo_phase3 import insert_span, list_spans
-from copilot.models.phase3 import Span
+from copilot.common.timeutil import now_utc, to_utc_iso
+from copilot.db.repo_agent_runtime import insert_span, list_spans
+from copilot.models.agent_runtime import Span
 
 logger = logging.getLogger(__name__)
 

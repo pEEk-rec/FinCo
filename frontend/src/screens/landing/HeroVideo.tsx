@@ -57,10 +57,7 @@ export function HeroVideo() {
   const fade = { transitionDuration: `${FADE_S * 1000}ms` };
 
   return (
-    <div
-      className="absolute inset-0 overflow-hidden [-webkit-mask-image:radial-gradient(ellipse_55%_62%_at_50%_60%,#000_30%,rgba(0,0,0,0.3)_100%)] [mask-image:radial-gradient(ellipse_55%_62%_at_50%_60%,#000_30%,rgba(0,0,0,0.3)_100%)]"
-      aria-hidden="true"
-    >
+    <div className="hero-feather absolute inset-0 overflow-hidden" aria-hidden="true">
       <img
         src={POSTER}
         alt=""

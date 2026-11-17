@@ -21,15 +21,15 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from copilot.config.phase3 import load_context_config
-from copilot.core.memory import (
+from copilot.common.timeutil import from_utc_iso, now_utc
+from copilot.config.agent_runtime import load_context_config
+from copilot.db.repo_memory import list_memory_evidence
+from copilot.memory.store import (
     compute_memory_confidence,
     determine_memory_status,
     load_memory_config,
 )
-from copilot.core.timeutil import from_utc_iso, now_utc
-from copilot.db.repo_phase3 import list_memory_evidence
-from copilot.models.phase3 import MemoryItem
+from copilot.models.agent_runtime import MemoryItem
 
 CONFIG_DIR = Path(__file__).resolve().parents[3] / "config"
 

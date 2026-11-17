@@ -4,30 +4,30 @@ Tests for Activity Timeline Phase 3 Additions and Forgotten Memory Privacy (Stag
 
 import pytest
 
-from copilot.core.timeline import build_timeline
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_user
-from copilot.db.repo_phase3 import (
+from copilot.db.repo_memory import insert_memory_item
+from copilot.db.repo_money import (
     insert_bucket,
     insert_commitment,
     insert_contribution_plan,
-    insert_memory_item,
     insert_readiness_assessment,
     insert_reallocation_draft,
     insert_tradeoff_analysis,
 )
+from copilot.models.agent_runtime import MemoryItem
 from copilot.models.domain import Account, User
-from copilot.models.phase3 import (
+from copilot.models.money import (
     Bucket,
     Commitment,
     ContributionPlan,
     ContributionPlanStep,
-    MemoryItem,
     Readiness,
     ReadinessCriterion,
     ReallocationDraft,
     TradeoffResult,
 )
+from copilot.ops.timeline import build_timeline
 
 
 @pytest.fixture

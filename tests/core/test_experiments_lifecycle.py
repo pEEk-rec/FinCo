@@ -16,8 +16,11 @@ from datetime import datetime
 
 import pytest
 
-from copilot.core.baseline import generate_candidate_windows
-from copilot.core.experiments import (
+from copilot.db.connection import get_connection, init_db
+from copilot.db.repo import insert_account, insert_category, insert_goal, insert_user
+from copilot.db.repo_engagement import get_experiment, list_adjustment_proposals
+from copilot.engagement.baseline import generate_candidate_windows
+from copilot.engagement.experiments import (
     abandon_experiment,
     answer_checkin,
     create_checkins,
@@ -29,9 +32,6 @@ from copilot.core.experiments import (
     start_experiment,
     submit_review_feedback,
 )
-from copilot.db.connection import get_connection, init_db
-from copilot.db.repo import insert_account, insert_category, insert_goal, insert_user
-from copilot.db.repo_phase4 import get_experiment, list_adjustment_proposals
 from copilot.models.agentic import Goal
 from copilot.models.domain import Account, Category, User
 

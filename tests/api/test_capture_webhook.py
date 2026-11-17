@@ -30,11 +30,11 @@ def _senders(enabled: bool = True) -> SmsSendersConfig:
 @pytest.fixture
 def state(tmp_path, monkeypatch):
     monkeypatch.delenv("CAPTURE_WEBHOOK_SECRET", raising=False)
-    monkeypatch.setattr("copilot.core.capture_secret.SECRET_FILE", tmp_path / "no_secret")
+    monkeypatch.setattr("copilot.capture.secret.SECRET_FILE", tmp_path / "no_secret")
     clear_registry()
     st = ApiState(
         db_path=tmp_path / "w.db", clock=DEMO_CLOCK, token="test-token", llm=None,
-        capture_secret=SECRET, capture_senders=_senders(),
+        capture_secret=SECRET, capture_senders=_senders(), capture_any_sender=False,
     )  # fmt: skip
     ensure_demo(st, "imported")
     yield st
@@ -222,3 +222,11 @@ def test_bridge_health_shows_each_bank_its_last_alert_and_drift(client):
 
 def test_bridge_health_needs_the_session_token(client):
     assert client.get("/api/capture/bridge").status_code == 401
+
+
+def test_an_unlisted_banks_alert_is_recorded_when_any_bank_is_allowed(state, client):
+    state.capture_any_sender = True
+    alert = "Rs 120.00 debited from A/c XX4321 on 17-11-26 to VPA chaistall@okaxis (UPI Ref no 612345678901)."
+    res = post(client, sender="VK-PNBSMS-S", text=alert)
+    assert res.status_code == 200 and res.json()["outcome"] == "recorded"
+    assert post(client, sender="+919812345678", text=alert).json()["reason"] == "sender_not_allowed"

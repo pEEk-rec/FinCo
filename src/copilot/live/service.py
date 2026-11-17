@@ -17,11 +17,9 @@ from pydantic import BaseModel
 from copilot.api.services import DEMO_CATEGORIES, T0, register_all_tools
 from copilot.api.state import ApiState
 from copilot.audit.events import record_event
-from copilot.core.categorisation import load_aliases, load_rules, normalize_merchant
-from copilot.core.config import load_settings
-from copilot.core.money import rupees_to_paise
-from copilot.core.pipeline import get_categories, get_overrides, run_categorization_pipeline
-from copilot.core.timeutil import now_utc, to_utc_iso
+from copilot.common.money import rupees_to_paise
+from copilot.common.settings import load_settings
+from copilot.common.timeutil import now_utc, to_utc_iso
 from copilot.db.repo import (
     get_account,
     get_category,
@@ -36,6 +34,9 @@ from copilot.db.repo import (
 from copilot.live.statement import ParsedStatement, StatementRow
 from copilot.models.domain import Account, Budget, Category, Transaction, User
 from copilot.rails.engine import categorize, ensure_schema, reconcile
+from copilot.understand.ledger import run_categorisation
+from copilot.understand.legacy_pipeline import get_categories, get_overrides
+from copilot.understand.rules import load_aliases, load_rules, normalize_merchant
 
 # Real life needs more than a student demo does. Users can add their own on top of these.
 LIVE_CATEGORIES = (
@@ -278,7 +279,7 @@ def ai_categorize(
     )
     before = _applied_by_ai(conn, state.user_id)
     try:
-        report = run_categorization_pipeline(
+        report = run_categorisation(
             state.context(conn, actor="agent"), llm, rules, aliases, "router", "v1", settings
         )
     except Exception:  # noqa: BLE001 - the import already succeeded; the model is optional

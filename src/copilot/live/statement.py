@@ -12,8 +12,8 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from copilot.core.money import rupees_to_paise
-from copilot.core.timeutil import IST, to_utc_iso
+from copilot.common.money import rupees_to_paise
+from copilot.common.timeutil import IST, to_utc_iso
 
 _DATE_COLS = ("date", "txn date", "transaction date", "value date", "tran date", "posting date")
 _TEXT_COLS = (

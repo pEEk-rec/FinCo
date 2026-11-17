@@ -2,7 +2,7 @@
 Phase 4 golden scenarios (PLAN_PHASE4 Stage 4.12).
 
 Each scenario is a short story run through the real code: the synthetic personas of
-`copilot.bank.synth_v5`, the executor with the real policy, and the real review wording. The
+`copilot.bank.personas`, the executor with the real policy, and the real review wording. The
 seeds are fixed fixtures (found once by scanning, then frozen), so every scenario is exact.
 
  1. Essential categories are never offered, designed or proposed
@@ -40,17 +40,26 @@ from pathlib import Path
 import pytest
 import yaml
 
-from copilot.bank.synth_v5 import generate_persona_data
-from copilot.core.adaptive import (
+from copilot.bank.personas import generate_persona_data
+from copilot.conversation.intent import check_input_gate
+from copilot.db.repo_engagement import (
+    get_experiment,
+    get_experiment_review,
+    insert_experiment,
+    insert_experiment_review,
+    list_offers,
+    list_xp_events,
+)
+from copilot.domain.essentials import essential_category_ids
+from copilot.engagement.adaptive import (
     accept_adjustment,
     detect_ahead_at_midpoint,
     detect_exception_overlap,
     reject_adjustment,
 )
-from copilot.core.baseline import generate_candidate_windows
-from copilot.core.challenges import generate_challenge_offers
-from copilot.core.essentials import essential_category_ids
-from copilot.core.experiments import (
+from copilot.engagement.baseline import generate_candidate_windows
+from copilot.engagement.challenges import generate_challenge_offers
+from copilot.engagement.experiments import (
     abandon_experiment,
     create_checkins,
     create_due_reviews,
@@ -59,29 +68,15 @@ from copilot.core.experiments import (
     start_experiment,
     submit_review_feedback,
 )
-from copilot.core.intent import check_input_gate
-from copilot.core.learning_loop import (
-    assert_no_causal_claims,
-    format_outcome_memory_advice_evidence,
-    record_experiment_outcome_memory,
-)
-from copilot.core.review_wording import describe_review
-from copilot.core.rewards import get_user_progress, scan_copy_safety
-from copilot.core.self_competition import (
+from copilot.engagement.review_wording import describe_review
+from copilot.engagement.rewards import get_user_progress, scan_copy_safety
+from copilot.engagement.self_competition import (
     FORBIDDEN_SHAME_TERMS,
     assert_no_social_comparison,
     calculate_streak_from_daily_series,
     compute_personal_bests,
 )
-from copilot.db.repo_phase4 import (
-    get_experiment,
-    get_experiment_review,
-    insert_experiment,
-    insert_experiment_review,
-    list_offers,
-    list_xp_events,
-)
-from copilot.eval.harness_phase4 import (
+from copilot.eval.engagement import (
     USER,
     _clock,
     _ctx,
@@ -91,8 +86,13 @@ from copilot.eval.harness_phase4 import (
     _new_db,
 )
 from copilot.governance.policy import decide, load_policy
+from copilot.learning.experiment_loop import (
+    assert_no_causal_claims,
+    format_outcome_memory_advice_evidence,
+    record_experiment_outcome_memory,
+)
 from copilot.llm.client import FakeLLMClient
-from copilot.models.phase4 import Experiment, ExperimentReview
+from copilot.models.engagement import Experiment, ExperimentReview
 from copilot.tools.executor import execute_tool
 from copilot.tools.registry import get as get_tool
 from copilot.workflow.nodes import ensure_tools_registered
@@ -622,7 +622,7 @@ def test_19_the_planner_cannot_reach_a_write_tool():
 def test_20_accepted_extensions_and_easings_change_the_experiment_and_never_tighten():
     conn, _data, exp = _run("null", SEED_NULL_WITHIN, difficulty="hard")
     start_target, start_end = exp.target_value, exp.window_end
-    from copilot.core.adaptive import _make_proposal
+    from copilot.engagement.adaptive import _make_proposal
 
     ease = _make_proposal(conn, USER, exp.id, "ease_target", "test", {}, _clock("2026-09-05"))
     extend = _make_proposal(

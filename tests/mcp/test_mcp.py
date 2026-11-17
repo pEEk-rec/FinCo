@@ -26,8 +26,8 @@ from typing import Any
 import pytest
 from mcp.server.mcpserver.exceptions import ToolError
 
-from copilot.config.phase2 import load_planner_capabilities
-from copilot.config.phase3 import MCPConfig
+from copilot.config.agent_runtime import MCPConfig
+from copilot.config.planning import load_planner_capabilities
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_transaction, insert_user
 from copilot.governance.policy import PolicySettings, load_policy

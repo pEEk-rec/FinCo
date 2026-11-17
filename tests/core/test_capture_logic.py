@@ -7,8 +7,7 @@ from datetime import datetime
 
 import pytest
 
-from copilot.config.capture import load_capture_config
-from copilot.core.capture_logic import (
+from copilot.capture.policy import (
     AskContext,
     EventFacts,
     HistoryRow,
@@ -17,7 +16,8 @@ from copilot.core.capture_logic import (
     in_quiet_hours,
     rank_guesses,
 )
-from copilot.core.timeutil import IST
+from copilot.common.timeutil import IST
+from copilot.config.capture import load_capture_config
 
 CFG = load_capture_config()
 NOON = datetime(2026, 10, 18, 12, 30, tzinfo=IST)

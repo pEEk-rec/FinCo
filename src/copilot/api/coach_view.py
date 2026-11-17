@@ -15,21 +15,21 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, Field
 
-from copilot.config.phase4 import load_offers_config
-from copilot.core.config import PROJECT_ROOT
-from copilot.core.experiments import get_experiment_progress
-from copilot.core.labels import Unit, metric_label, metric_unit
-from copilot.core.policy import is_in_dismissal_quiet_period, is_user_in_rest_weeks
-from copilot.core.review_wording import describe_review
-from copilot.core.rewards import get_user_progress
-from copilot.core.timeutil import IST, now_utc
-from copilot.db.repo_phase4 import (
+from copilot.common.settings import PROJECT_ROOT
+from copilot.common.timeutil import IST, now_utc
+from copilot.config.engagement import load_offers_config
+from copilot.db.repo_engagement import (
     list_adjustment_proposals,
     list_experiment_checkins,
     list_experiment_reviews,
     list_experiments,
     list_offers,
 )
+from copilot.engagement.experiments import get_experiment_progress
+from copilot.engagement.labels import Unit, metric_label, metric_unit
+from copilot.engagement.review_wording import describe_review
+from copilot.engagement.rewards import get_user_progress
+from copilot.learning.offers import is_in_dismissal_quiet_period, is_user_in_rest_weeks
 
 Difficulty = Literal["easy", "medium", "hard"]
 

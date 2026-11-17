@@ -11,8 +11,8 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from copilot.config.phase2 import PlanTemplatesConfig, load_plan_templates
-from copilot.core.timeutil import IST, month_bounds, previous_months
+from copilot.common.timeutil import IST, month_bounds, previous_months
+from copilot.config.planning import PlanTemplatesConfig, load_plan_templates
 from copilot.models.agentic import Intent, Plan, PlanStep
 
 

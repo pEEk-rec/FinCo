@@ -114,7 +114,7 @@ The real trade is **production realism vs. what a student can legally access**. 
 4. [ ] Consent UI per decision 4 (feeds PLAN_UI §8.4).
 5. [ ] Reconciliation and coverage health shared with ADR-0001.
 6. [ ] Retention: honour `dataLife`; deletion job; tests that expired data is gone.
-7. [ ] `docs/production_path_aa.md`: regulated-partner model, certification steps, DPDP obligations.
+7. [ ] Write down the regulated-partner model, certification steps and DPDP obligations for a production launch.
 
 ---
 

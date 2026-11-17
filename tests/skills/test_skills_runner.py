@@ -14,7 +14,7 @@ from copilot.db.repo import (
     insert_transaction,
     insert_user,
 )
-from copilot.db.repo_phase3 import get_skill_run, list_skill_runs
+from copilot.db.repo_agent_runtime import get_skill_run, list_skill_runs
 from copilot.governance.policy import load_policy
 from copilot.models.domain import Account, Category, Transaction, User
 from copilot.skills.runner import run_skill
@@ -74,7 +74,7 @@ def _setup_user_with_data(
 def _get_ctx(
     conn: sqlite3.Connection, user_id: str = "u_runner", actor: str = "agent"
 ) -> ExecutionContext:
-    from copilot.core.config import PROJECT_ROOT
+    from copilot.common.settings import PROJECT_ROOT
 
     policy = load_policy(PROJECT_ROOT / "config" / "policy.yaml")
     return ExecutionContext(

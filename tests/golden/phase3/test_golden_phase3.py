@@ -36,28 +36,10 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from copilot.config.phase2 import load_alerts_config
-from copilot.core.buckets import (
-    bucket_balance,
-    get_allocation_summary,
-    rollover_buckets,
-)
-from copilot.core.calendar import build_calendar
-from copilot.core.commitments import expand_occurrences
-from copilot.core.config import PROJECT_ROOT
-from copilot.core.contributions import compare_tradeoffs, plan_contributions
-from copilot.core.intent import check_input_gate
-from copilot.core.learning import (
-    apply_learning_to_alert,
-)
-from copilot.core.memory import (
-    check_advice_suppression,
-    forget_memory,
-    record_contextual_exception,
-    refresh_memories,
-)
-from copilot.core.readiness import assess_readiness
-from copilot.core.timeutil import now_utc, to_utc_iso
+from copilot.common.settings import PROJECT_ROOT
+from copilot.common.timeutil import now_utc, to_utc_iso
+from copilot.config.money import load_alerts_config
+from copilot.conversation.intent import check_input_gate
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     insert_account,
@@ -66,32 +48,45 @@ from copilot.db.repo import (
     insert_user,
     update_transaction_category,
 )
-from copilot.db.repo_phase3 import (
-    acquire_job_lease,
+from copilot.db.repo_agent_runtime import acquire_job_lease
+from copilot.db.repo_memory import (
     get_memory_item,
+    insert_memory_item,
+    list_memory_items,
+    set_user_preference,
+)
+from copilot.db.repo_money import (
     insert_bucket,
     insert_bucket_allocation,
     insert_commitment,
-    insert_memory_item,
     insert_reallocation_draft,
     list_bucket_allocations,
-    list_memory_items,
     map_bucket_category,
-    set_user_preference,
     update_reallocation_draft_status,
 )
-from copilot.governance.policy import load_policy
-from copilot.mcp.server import create_mcp_server
-from copilot.models.domain import Account, Category, Transaction, User
-from copilot.models.phase3 import (
-    Bucket,
-    BucketAllocation,
-    Commitment,
-    MemoryItem,
-    ReallocationDraft,
-    SpecialistReport,
-    SubQuestion,
+from copilot.domain.buckets import (
+    bucket_balance,
+    get_allocation_summary,
+    rollover_buckets,
 )
+from copilot.domain.calendar import build_calendar
+from copilot.domain.commitments import expand_occurrences
+from copilot.domain.contributions import compare_tradeoffs, plan_contributions
+from copilot.domain.readiness import assess_readiness
+from copilot.governance.policy import load_policy
+from copilot.learning.feedback import (
+    apply_learning_to_alert,
+)
+from copilot.mcp.server import create_mcp_server
+from copilot.memory.store import (
+    check_advice_suppression,
+    forget_memory,
+    record_contextual_exception,
+    refresh_memories,
+)
+from copilot.models.agent_runtime import MemoryItem, SpecialistReport, SubQuestion
+from copilot.models.domain import Account, Category, Transaction, User
+from copilot.models.money import Bucket, BucketAllocation, Commitment, ReallocationDraft
 from copilot.runtime.scheduler import init_scheduled_jobs
 from copilot.tools.executor import ExecutionContext, execute_tool
 from copilot.workflow.multi_agent import merge_specialist_reports
@@ -706,7 +701,7 @@ def test_job_lease_prevents_double_rollover():
     now_dt = datetime(2024, 4, 1, 0, 0, tzinfo=UTC)
     init_scheduled_jobs(conn, uid)
 
-    from copilot.db.repo_phase3 import list_scheduled_jobs
+    from copilot.db.repo_agent_runtime import list_scheduled_jobs
 
     jobs = list_scheduled_jobs(conn, uid, enabled_only=False)
     target = next(j for j in jobs if j.job_kind == "rollover_buckets")
@@ -802,7 +797,7 @@ def test_multi_tenant_isolation_phase3():
     insert_bucket(conn, b1)
 
     # User 2 must see zero buckets
-    from copilot.db.repo_phase3 import list_buckets
+    from copilot.db.repo_money import list_buckets
 
     u2_buckets = list_buckets(conn, u2)
     assert len(u2_buckets) == 0

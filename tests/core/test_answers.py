@@ -1,6 +1,6 @@
 """The answer writer may reword, but never introduce a number the data did not produce."""
 
-from copilot.core.answers import AnswerFact, check_text, ungrounded_numbers
+from copilot.conversation.answers import AnswerFact, check_text, ungrounded_numbers
 
 FACTS = [AnswerFact(label="spent", text="₹7,172")]
 

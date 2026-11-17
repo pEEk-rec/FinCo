@@ -30,7 +30,7 @@ from typing import Any, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-from copilot.core.errors import ErrorCode, ToolFailure
+from copilot.common.errors import ErrorCode, ToolFailure
 from copilot.llm.client import extract_json
 from copilot.llm.routing.config import (
     DEFAULT_CONFIG,

@@ -14,6 +14,7 @@ sms:                                  # the parser (Stage C2)
   max_text_chars: 600                 # longer messages are not bank alerts: dropped unread
   drift_window_days: 14               # parse-failure rate is watched over this window, per sender
   drift_min_messages: 10              # no alarm until a sender has this many messages
+  accept_any_sender: true             # read any bank's alert from a bank-style sender ID, not only listed banks
   drift_alert_bp: 200                 # more than 2% unparsed means the bank changed its wording
 
 classify:                             # business or person? (the bank rarely says)

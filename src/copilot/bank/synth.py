@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Literal
 
-from copilot.core.timeutil import IST, to_utc_iso
+from copilot.common.timeutil import IST, to_utc_iso
 from copilot.models.domain import Transaction
 
 AnomalyKind = Literal["large_transaction", "duplicate_charge", "new_merchant", "unusual_frequency"]

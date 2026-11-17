@@ -3,7 +3,7 @@
 from fastapi import HTTPException
 from pydantic import BaseModel
 
-from copilot.core.errors import ErrorCode, ToolError
+from copilot.common.errors import ErrorCode, ToolError
 from copilot.tools.contracts import ToolResult
 
 HTTP_STATUS: dict[ErrorCode, int] = {

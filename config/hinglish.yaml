@@ -1,0 +1,91 @@
+# Hinglish to English, for the question reader (PLAN_AGENTIC_V2, A10). Phrases first, then words.
+# Only what is needed to land on the existing intents, categories and periods.
+phrases:
+  "mera goal kitna aage badha": "how far along is my goal"
+  "mera kharcha kitna hai": "how much is my spending"
+  "kitna kharcha hoga": "how much will I spend"
+  "kharcha kitna hoga": "how much will I spend"
+  "kharcha kitna hai": "how much is the spending"
+  "kitna aage badha": "how far along is it"
+  "goal kitna aage badha": "how far along is the goal"
+  "mahine ke end tak": "by the end of this month"
+  "month ke end tak": "by the end of this month"
+  "kitna aage badha": "how far along"
+  "kyun badha": "why did it go up"
+  "kyun badhi": "why did it go up"
+  "is mahine": "this month"
+  "iss mahine": "this month"
+  "is hafte": "this week"
+  "pichle mahine": "last month"
+  "pichhle mahine": "last month"
+  "agle mahine": "next month"
+  "pichle hafte": "last week"
+  "kitna kharcha hua": "how much did I spend"
+  "kitna kharch hua": "how much did I spend"
+  "kitna gaya": "how much did I spend"
+  "kitne paise gaye": "how much did I spend"
+  "kitne paise bache": "how much is left"
+  "kitna bacha": "how much is left"
+  "budget ke andar": "within budget"
+  "budget se zyada": "over budget"
+  "kya main": "can I"
+  "mere goal": "my goal"
+  "mera goal": "my goal"
+  "kab tak": "by when"
+  "kaisa chal raha hai": "how is it going"
+  "kaisa chal raha": "how is it going"
+  "kahan gaye paise": "where did my money go"
+  "paise kahan gaye": "where did my money go"
+  "sab kuch dikhao": "show everything"
+  "mujhe dikhao": "show me"
+words:
+  hai: is
+  hoon: am
+  hoga: will be
+  hogi: will be
+  kyun: why
+  badha: went up
+  badhi: went up
+  ka: ''
+  ki: ''
+  ke: ''
+  kya: ''
+  mein: in
+  pe: "on"
+  par: "on"
+  kitna: how much
+  kitne: how many
+  kharcha: spending
+  kharch: spending
+  kharche: spending
+  hua: was
+  hui: was
+  mahina: month
+  mahine: month
+  hafta: week
+  hafte: week
+  khane: food
+  khana: food
+  khaane: food
+  travel: travel
+  safar: travel
+  kapde: clothes
+  shopping: shopping
+  bijli: electricity
+  kiraya: rent
+  dikhao: show
+  batao: tell
+  bata: tell
+  mera: my
+  meri: my
+  mere: my
+  paise: money
+  bachat: savings
+  bacha: left
+  bache: left
+  zyada: more
+  kam: less
+  aur: and
+  abhi: now
+  tak: until
+  subscription: subscription

@@ -15,9 +15,9 @@ from typing import Any
 import yaml
 from pydantic import ValidationError
 
-from copilot.config.phase2 import load_planner_capabilities
-from copilot.core.config import PROJECT_ROOT
-from copilot.models.phase3 import SkillManifest
+from copilot.common.settings import PROJECT_ROOT
+from copilot.config.planning import load_planner_capabilities
+from copilot.models.agent_runtime import SkillManifest
 from copilot.planner.capabilities import is_planner_selectable
 from copilot.tools.registry import get as get_tool
 

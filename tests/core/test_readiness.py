@@ -20,9 +20,8 @@ import sqlite3
 
 import pytest
 
-from copilot.core.advice import _FORBIDDEN
-from copilot.core.intent import check_input_gate
-from copilot.core.readiness import assess_readiness
+from copilot.conversation.advice import _FORBIDDEN
+from copilot.conversation.intent import check_input_gate
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     insert_account,
@@ -31,14 +30,12 @@ from copilot.db.repo import (
     insert_transaction,
     insert_user,
 )
-from copilot.db.repo_phase3 import (
-    insert_bucket,
-    insert_commitment,
-    set_user_preference,
-)
+from copilot.db.repo_memory import set_user_preference
+from copilot.db.repo_money import insert_bucket, insert_commitment
+from copilot.domain.readiness import assess_readiness
 from copilot.models.agentic import Goal
 from copilot.models.domain import Account, Category, Transaction, User
-from copilot.models.phase3 import Bucket, Commitment
+from copilot.models.money import Bucket, Commitment
 
 
 @pytest.fixture

@@ -20,11 +20,11 @@ import uuid
 from typing import Any
 
 from copilot.audit.events import record_event
+from copilot.common.timeutil import now_utc, to_utc_iso
 from copilot.context.builder import ContextBuilder
-from copilot.core.timeutil import now_utc, to_utc_iso
-from copilot.db.repo_phase3 import insert_reflection
+from copilot.db.repo_agent_runtime import insert_reflection
 from copilot.llm.client import LLMClient, extract_json
-from copilot.models.phase3 import Reflection, SpecialistReport, SubQuestion
+from copilot.models.agent_runtime import Reflection, SpecialistReport, SubQuestion
 from copilot.tools.executor import ExecutionContext
 from copilot.workflow.multi_agent import merge_specialist_reports
 from copilot.workflow.specialists import DOMAIN_TO_ROLE, run_specialist

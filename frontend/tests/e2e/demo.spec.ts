@@ -75,6 +75,25 @@ test('connect, approve and import: the constellation shows real counts', async (
   await expectNoSeriousA11yIssues(page, 'connect');
 });
 
+test('after connecting, a live payment pops a card with the shop named in plain case', async ({
+  page,
+}) => {
+  await page.goto('/settings?tab=connections');
+  const feed = page.getByRole('region', { name: 'Live payments' });
+  await expect(feed).toBeVisible();
+  await feed.getByRole('button', { name: 'Send next live payment' }).click();
+  await expect(feed.getByRole('list', { name: 'Payments played' })).toContainText(
+    'Gupta Juice Centre',
+  );
+  const card = page.getByRole('listitem').filter({ hasText: 'Simulated payment' }).first();
+  await expect(card).toContainText('Gupta Juice Centre');
+  await expect(card).not.toContainText('GUPTA JUICE CENTRE');
+  await expectNoSeriousA11yIssues(page, 'live payments');
+  // Answer it: a card left waiting takes the number keys on the Review screen.
+  await card.getByRole('button').first().click();
+  await expect(card).toBeHidden();
+});
+
 test('dashboard shows the real month', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByText('Left to spend')).toBeVisible();
@@ -139,61 +158,74 @@ test('monthly review: generate, explain, approve', async ({ page }) => {
   await expectNoSeriousA11yIssues(page, 'monthly');
 });
 
-test('agent process: understand, plan, act, with the investigation and what-if inline', async ({
+test('ask: the reasoning row opens to show the plan, the tools and what they found', async ({
   page,
 }) => {
-  await page.goto('/agent');
+  await page.goto('/ask');
   await page.getByRole('button', { name: 'Why did my food spend change in February?' }).click();
-  await expect(page.getByTestId('ask-answer')).toBeVisible();
-  await expect(page.getByTestId('ask-process')).not.toHaveAttribute('open', '');
-  await page.getByText('Show how the agent worked').click();
+  const first = page.getByTestId('ask-answer').last();
+  await expect(first).toBeVisible();
+  // While working the row is open; once the answer is in it folds to one line.
+  const process = page.getByTestId('ask-process').last();
+  await expect(process).toHaveAttribute('data-open', 'false');
+  await expect(process.getByRole('button')).toContainText('Worked it out');
+  await process.getByRole('button').click();
   await expect(page.getByText('How the agent worked', { exact: true })).toBeVisible();
-  await expect(page.getByText('2 steps, proposed by deterministic planner')).toBeVisible();
-  await expect(page.getByText('Ran 2 tools through the executor')).toBeVisible();
+  await expect(page.getByText('Planned 2 steps')).toBeVisible();
+  await expect(page.getByText('Ran aggregate spend by category')).toBeVisible();
+  await expect(page.getByText('Ran explain change')).toBeVisible();
+  await expect(page.getByText(/Checked \d+ figures?/).first()).toBeVisible();
   await expect(page.getByText('Hypotheses tested')).toBeVisible();
-  await page.screenshot({ path: '.shots/agent/ask-explain-1440x900.png', fullPage: true });
+  await page.screenshot({ path: '.shots/ask/explain-1440x900.png', fullPage: true });
 
   await page
     .getByRole('textbox', { name: 'Ask', exact: true })
     .fill('what if I spend ₹2,000 more on food each month for 3 months');
   await page.getByRole('button', { name: 'Ask', exact: true }).click();
-  await expect(page.getByTestId('ask-answer')).toBeVisible();
-  await page.getByText('Show how the agent worked').click();
+  await expect(page.getByTestId('ask-answer')).toHaveCount(2);
+  await page.getByTestId('ask-process').last().getByRole('button').click();
   await expect(
     page.getByText('Compare the scenario with your current trajectory, month by month'),
   ).toBeVisible();
-  await expect(page.getByText('Drafted a recommendation and waits for you')).toBeVisible();
-  await page.screenshot({ path: '.shots/agent/ask-whatif-1440x900.png', fullPage: true });
+  await expect(page.getByText('Drafted a recommendation for you')).toBeVisible();
+  await page.screenshot({ path: '.shots/ask/whatif-1440x900.png', fullPage: true });
 
-  await page.getByRole('button', { name: 'Should I invest in mutual funds?' }).click();
+  await page
+    .getByRole('textbox', { name: 'Ask', exact: true })
+    .fill('Should I invest in mutual funds?');
+  await page.getByRole('button', { name: 'Ask', exact: true }).click();
   await expect(page.getByText('The agent cannot do that.')).toBeVisible();
-  await expect(page.getByText('Stopped at the gate')).toBeVisible();
-  await page.screenshot({ path: '.shots/agent/ask-refusal-1440x900.png', fullPage: true });
+  await expect(page.getByText('Checked the request against its rules').first()).toBeVisible();
+  await page.screenshot({ path: '.shots/ask/refusal-1440x900.png', fullPage: true });
 });
 
-test('agent: refusal is plain, investigation shows evidence, what-if compares', async ({
+test('ask: a refusal is plain, every figure in an answer is marked as computed, activity lists runs', async ({
   page,
 }) => {
-  await page.goto('/agent');
+  await page.goto('/ask');
   await page.getByRole('textbox', { name: 'Ask', exact: true }).fill('transfer 5000 to rahul');
   await page.getByRole('button', { name: 'Ask', exact: true }).click();
   await expect(page.getByText('The agent cannot do that.')).toBeVisible();
 
-  await page.getByRole('tab', { name: 'Investigate' }).click();
-  await page.getByRole('button', { name: 'Investigate' }).first().click();
-  await expect(page.getByText('Hypotheses tested')).toBeVisible();
+  await page
+    .getByRole('textbox', { name: 'Ask', exact: true })
+    .fill('why did my food spend change in February');
+  await page.getByRole('button', { name: 'Ask', exact: true }).click();
+  const answer = page.getByTestId('ask-answer').last();
+  await expect(answer).toBeVisible();
+  // The conversation keeps both turns.
+  await expect(page.getByText('transfer 5000 to rahul')).toBeVisible();
+  // Figures in the answer are the computed facts, marked, and listed with what each one is.
+  await expect(answer.locator('mark').first()).toBeVisible();
+  await answer.getByText('Numbers in this answer').click();
+  await expect(answer.locator('dl dt').first()).toBeVisible();
 
-  await page.getByRole('tab', { name: 'What if' }).click();
-  await page.getByRole('button', { name: 'Compare with now' }).click();
-  await expect(page.getByText('Monthly surplus: now and with this change')).toBeVisible();
-
-  await page.getByRole('tab', { name: 'Goals and alerts' }).click();
-  await expect(page.getByText('Laptop fund')).toBeVisible();
-
-  await page.getByRole('tab', { name: 'Activity' }).click();
-  await expect(page.getByText('Activity').first()).toBeVisible();
-  await page.screenshot({ path: '.shots/agent/activity-1440x900.png' });
-  await expectNoSeriousA11yIssues(page, 'agent');
+  await page.getByRole('button', { name: 'Activity' }).click();
+  await expect(page.getByRole('complementary', { name: 'Activity' })).toBeVisible();
+  await page.screenshot({ path: '.shots/ask/activity-1440x900.png' });
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('complementary', { name: 'Activity' })).toBeHidden();
+  await expectNoSeriousA11yIssues(page, 'ask');
 });
 
 test('backend down is a designed state, not a blank page', async ({ page }) => {
@@ -217,8 +249,10 @@ test('goals: create, add money, edit, pause, finish; every figure comes from the
   page,
   request,
 }) => {
-  await page.goto('/goals');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('saving for');
+  await page.goto('/goals'); // old address: lands on Plan, Goals tab
+  await expect(page).toHaveURL(/\/plan\?tab=goals/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Plan');
+  await expect(page.getByRole('tab', { name: 'Goals' })).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('button', { name: 'New goal' }).first().click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('What are you saving for').fill('Camera lens');
@@ -256,8 +290,11 @@ test('challenges: find one, start it, pause, resume; progress shows the level', 
   page,
   request,
 }) => {
-  await page.goto('/challenges');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('honestly measured');
+  await page.goto('/plan?tab=challenges');
+  await expect(page.getByRole('tab', { name: 'Challenges' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
   await page.getByRole('button', { name: 'Look for a challenge' }).click();
   const start = page.getByRole('button', { name: 'Start this challenge' });
   await expect(start.first()).toBeVisible();
@@ -278,8 +315,7 @@ test('challenges: find one, start it, pause, resume; progress shows the level', 
   await card.getByRole('button', { name: 'Resume' }).click();
   await expect(card.getByRole('button', { name: 'Pause' })).toBeVisible();
 
-  await page.goto('/progress');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('kept honest');
+  // progress lives on the same tab, under the challenges
   await expect(page.getByText('Level', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Badges' })).toBeVisible();
   await expectNoSeriousA11yIssues(page, 'progress');
@@ -289,23 +325,24 @@ test('capture: simulate a payment, tag it with a key, undo, then tag through Oth
   page,
   request,
 }) => {
-  await page.goto('/capture');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('as they happen');
-  await expect(page.getByText('All caught up')).toBeVisible();
+  // the simulator is a demo tool, under Settings in demo mode
+  await page.goto('/settings?tab=demo&demo=1');
+  await page.getByLabel('Amount (rupees)').fill('250');
+  await page.getByLabel('To', { exact: true }).fill('Corner Juice Shop');
+  await page.getByRole('button', { name: 'Send the alert' }).click();
+  await expect(page.getByText('What the phone would have sent')).toBeVisible();
+  // it interrupts wherever you are; Escape leaves it for Review
+  await expect(page.getByRole('article', { name: /Corner Juice Shop/i })).toBeVisible({
+    timeout: 10_000,
+  });
+  await page.keyboard.press('Escape');
 
-  const simulate = async (utr: string, who: string) => {
-    await page.getByLabel('Amount (rupees)').fill('250');
-    await page.getByLabel('To', { exact: true }).fill(who);
-    await page.getByRole('button', { name: 'Send the alert' }).click();
-    await expect(page.getByRole('article', { name: new RegExp(who, 'i') })).toBeVisible();
-    return utr;
-  };
-
-  await simulate('a', 'Corner Juice Shop');
+  // Review holds everything waiting, phone payments first
+  await page.goto('/review');
+  await expect(page.getByRole('heading', { name: 'Just now, from your phone' })).toBeVisible();
   const card = page.getByRole('article', { name: /Corner Juice Shop/i });
   await expect(card.getByText('Simulated payment')).toBeVisible();
-  await expect(page.getByText('What the phone would have sent')).toBeVisible();
-  await expectNoSeriousA11yIssues(page, 'capture');
+  await expectNoSeriousA11yIssues(page, 'review with a phone payment');
 
   // tag with the keyboard: the first guess
   await page.keyboard.press('1');
@@ -341,8 +378,8 @@ test('capture overlay: a payment interrupts on any page, Later sends it to the i
     return (await res.json()) as { event: { id: string } };
   };
 
-  await page.goto('/goals');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('saving for');
+  await page.goto('/plan?tab=goals');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Plan');
   await simulate('Lakeside Tea Traders');
   const overlay = page.getByRole('article', { name: /Lakeside Tea Traders/i });
   await expect(overlay).toBeVisible({ timeout: 10_000 });
@@ -363,18 +400,18 @@ test('capture overlay: a payment interrupts on any page, Later sends it to the i
   await expect(second).toHaveCount(0);
   await expect(page.getByText(/^Tagged /).first()).toBeVisible();
 
-  // the one sent to later is waiting on the Tag payments page, and the overlay stays out of the way
-  await page.goto('/capture');
-  await expect(page.getByRole('article', { name: /Lakeside Tea Traders/i })).toBeVisible();
+  // the one sent to later is waiting in Review, and the overlay stays out of the way there
+  await page.goto('/review');
+  await expect(page.getByRole('article', { name: /Lakeside Tea Traders/i })).toHaveCount(1);
   await page
     .getByRole('article', { name: /Lakeside Tea Traders/i })
     .getByRole('button')
     .first()
     .click();
-  await expect(page.getByText('All caught up')).toBeVisible();
+  await expect(page.getByRole('article', { name: /Lakeside Tea Traders/i })).toHaveCount(0);
 });
 
-test('today: money in and out, tag what is left, change what was tagged for you', async ({
+test('review: money in and money out from the phone are both asked about, in one place', async ({
   page,
   request,
 }) => {
@@ -397,22 +434,19 @@ test('today: money in and out, tag what is left, change what was tagged for you'
     vpa: 'priya.s@okaxis',
   });
 
-  await page.goto('/today');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('what is left to tag');
-  await expect(page.getByRole('heading', { name: 'Needs you' })).toBeVisible();
-  await expect(page.getByText('Money in')).toBeVisible();
-  await expect(page.getByText('Money out')).toBeVisible();
+  await page.goto('/today'); // old address: lands on Review
+  await expect(page).toHaveURL(/\/review/);
   await expect(page.getByRole('article', { name: /Morning Bakery Traders/i })).toBeVisible();
   await expect(page.getByRole('article', { name: /Priya S/i })).toBeVisible();
-  await expectNoSeriousA11yIssues(page, 'today');
+  await expectNoSeriousA11yIssues(page, 'review');
 
-  // tag the payment out with its first guess, and the credit through Other
+  // tag the payment out with its first guess, and the money in through Other
   await page
     .getByRole('article', { name: /Morning Bakery Traders/i })
     .getByRole('button')
     .first()
     .click();
-  await expect(page.getByRole('heading', { name: 'Tagged by you' })).toBeVisible();
+  await expect(page.getByRole('article', { name: /Morning Bakery Traders/i })).toHaveCount(0);
   const credit = page.getByRole('article', { name: /Priya S/i });
   await credit.getByRole('button', { name: 'Other…' }).click();
   await page
@@ -425,16 +459,11 @@ test('today: money in and out, tag what is left, change what was tagged for you'
 
   const today = await getJson<{
     totals: { in_paise: number; out_paise: number };
-    counts: { needs_you: number; by_you: number };
+    counts: { needs_you: number };
   }>(request, '/capture/today');
   expect(today.totals.in_paise).toBeGreaterThanOrEqual(250000);
   expect(today.totals.out_paise).toBeGreaterThanOrEqual(41000);
   expect(today.counts.needs_you).toBe(0);
-
-  // a tagged row can be changed
-  await page.getByRole('button', { name: 'Change' }).first().click();
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await page.keyboard.press('Escape');
 });
 
 test('a tapped notification link opens that payment, and the app is installable', async ({
@@ -473,11 +502,11 @@ test('a tapped notification link opens that payment, and the app is installable'
   expect((await page.request.get('/icons/icon-192.png')).ok()).toBeTruthy();
 
   await page.goto('/');
-  await expect(page.getByRole('link', { name: /Review today/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Needs your review/ })).toBeVisible();
 });
 
 test('bank link: set up, approve, fetch, then revoke stops it', async ({ page }) => {
-  await page.goto('/connect');
+  await page.goto('/settings?tab=demo&demo=1');
   const card = page.getByRole('region', { name: 'Bank link' });
   await expect(card).toBeVisible();
   await card.getByRole('button', { name: 'Set up the link' }).click();
@@ -492,4 +521,21 @@ test('bank link: set up, approve, fetch, then revoke stops it', async ({ page })
   await expect(card.getByText('Revoked', { exact: true })).toBeVisible();
   await expect(card.getByRole('button', { name: 'Fetch now' })).toHaveCount(0);
   await expectNoSeriousA11yIssues(page, 'bank link');
+});
+
+test('about you, a plan from it, and a check-in on Overview', async ({ page }) => {
+  await page.goto('/settings');
+  await page.getByLabel('Money in each month').fill('60000');
+  await page.getByLabel('Set aside each month').fill('5000');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Saved.')).toBeVisible();
+  await expect(page.getByText('a month').first()).toBeVisible();
+  await expectNoSeriousA11yIssues(page, 'settings');
+
+  await page.goto('/for-you'); // old address: lands on Plan, Budget tab
+  await expect(page.getByRole('region', { name: 'A plan for this month' })).toBeVisible();
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Check now' }).click();
+  await expect(page.getByText(/something for you|Nothing worth saying/)).toBeVisible();
 });

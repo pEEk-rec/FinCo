@@ -7,25 +7,27 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from copilot.config.phase3 import (
-    CalendarConfig,
+from copilot.config.agent_runtime import (
     LearningConfig,
     MemoryThresholds,
-    ReadinessConfig,
-    load_buckets_config,
-    load_calendar_config,
-    load_commitments_config,
     load_context_config,
-    load_contributions_config,
     load_decomposition_config,
     load_learning_config,
     load_mcp_config,
     load_memory_config,
     load_ops_config,
-    load_phase3_goals_config,
-    load_readiness_config,
     load_runtime_config,
     load_skill_manifest,
+)
+from copilot.config.money import (
+    CalendarConfig,
+    ReadinessConfig,
+    load_buckets_config,
+    load_calendar_config,
+    load_commitments_config,
+    load_contributions_config,
+    load_phase3_goals_config,
+    load_readiness_config,
 )
 
 CONFIG_DIR = Path(__file__).resolve().parents[2] / "config"

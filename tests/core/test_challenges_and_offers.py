@@ -9,8 +9,12 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from copilot.core.baseline import generate_candidate_windows
-from copilot.core.challenges import (
+from copilot.common.timeutil import IST
+from copilot.db.connection import get_connection, init_db
+from copilot.db.repo import insert_account, insert_category, insert_goal, insert_user
+from copilot.db.repo_engagement import insert_experiment
+from copilot.engagement.baseline import generate_candidate_windows
+from copilot.engagement.challenges import (
     CandidateOffer,
     LLMChallengeProposalBatch,
     LLMChallengeSpec,
@@ -21,14 +25,10 @@ from copilot.core.challenges import (
     generate_challenge_offers,
     validate_llm_spec,
 )
-from copilot.core.timeutil import IST
-from copilot.db.connection import get_connection, init_db
-from copilot.db.repo import insert_account, insert_category, insert_goal, insert_user
-from copilot.db.repo_phase4 import insert_experiment
 from copilot.llm.client import FakeLLMClient
 from copilot.models.agentic import Goal
 from copilot.models.domain import Account, Category, User
-from copilot.models.phase4 import Experiment
+from copilot.models.engagement import Experiment
 
 T0 = "2026-01-01T00:00:00Z"
 DT0 = datetime(2026, 9, 1, 10, 0, tzinfo=IST)

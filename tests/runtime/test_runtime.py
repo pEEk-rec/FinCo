@@ -10,19 +10,15 @@ from unittest.mock import patch
 
 import pytest
 
-from copilot.config.phase3 import JobConfig, RuntimeConfig
-from copilot.core.config import PROJECT_ROOT
-from copilot.core.timeutil import to_utc_iso
+from copilot.common.settings import PROJECT_ROOT
+from copilot.common.timeutil import to_utc_iso
+from copilot.config.agent_runtime import JobConfig, RuntimeConfig
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_user
-from copilot.db.repo_phase3 import (
-    get_scheduled_job,
-    list_due_jobs,
-    upsert_scheduled_job,
-)
+from copilot.db.repo_agent_runtime import get_scheduled_job, list_due_jobs, upsert_scheduled_job
 from copilot.governance.policy import load_policy
+from copilot.models.agent_runtime import ScheduledJob
 from copilot.models.domain import Account, User
-from copilot.models.phase3 import ScheduledJob
 from copilot.runtime.daemon import run_agentd
 from copilot.runtime.runner import retry_dead_letter_job, run_job
 from copilot.runtime.scheduler import init_scheduled_jobs

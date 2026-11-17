@@ -8,16 +8,16 @@ from datetime import datetime, timedelta
 
 import pytest
 
+from copilot.capture import events as cap
+from copilot.capture import learning as cl
+from copilot.capture.policy import HistoryRow
+from copilot.common.timeutil import IST, to_utc_iso
+from copilot.config.agent_runtime import load_learning_config
 from copilot.config.capture import load_capture_config
-from copilot.config.phase3 import load_learning_config
-from copilot.core import capture as cap
-from copilot.core import capture_learning as cl
-from copilot.core.capture_logic import HistoryRow
-from copilot.core.learning import list_tenant_learning_stats, reset_learning
-from copilot.core.memory import observe_merchant_habits
-from copilot.core.timeutil import IST, to_utc_iso
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_category, insert_user
+from copilot.learning.feedback import list_tenant_learning_stats, reset_learning
+from copilot.memory.store import observe_merchant_habits
 from copilot.models.domain import Account, Category, User
 
 USER = "u1"

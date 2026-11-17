@@ -3,8 +3,8 @@ Tests for commitments core engine (PLAN_PHASE3 Stage 3.2).
 Tests occurrence expansion edge cases, leap years, calendar clamping, and matching invariants.
 """
 
-from copilot.core.commitments import expand_occurrences, match_occurrences
-from copilot.models.phase3 import Commitment, Occurrence
+from copilot.domain.commitments import expand_occurrences, match_occurrences
+from copilot.models.money import Commitment, Occurrence
 
 
 def test_expand_monthly_31st_shorter_months():

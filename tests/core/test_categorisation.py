@@ -1,4 +1,4 @@
-from copilot.core.categorisation import CategorizationRule, evaluate_rules, normalize_merchant
+from copilot.understand.rules import CategorizationRule, evaluate_rules, normalize_merchant
 
 
 def test_normalize_merchant():

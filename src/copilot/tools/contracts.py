@@ -12,7 +12,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from copilot.core.errors import ToolError
+from copilot.common.errors import ToolError
 
 _TOOL_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 

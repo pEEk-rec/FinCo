@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from copilot.audit.events import get_event, record_event
-from copilot.core.errors import ErrorCode, ToolFailure
+from copilot.common.errors import ErrorCode, ToolFailure
 from copilot.db.repo import get_transaction, update_transaction_category
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
 
@@ -31,6 +31,8 @@ def undo_handler(ctx: "ExecutionContext", audit_event_id: str) -> UndoOutput:
         "transaction_recategorized",
         "override_applied",
         "payment_labeled",
+        "entity_answered",
+        "payment_answered",
     ):
         raise ToolFailure(ErrorCode.INVALID_INPUT, f"Cannot undo event type {event.event_type}")
 
@@ -46,8 +48,15 @@ def undo_handler(ctx: "ExecutionContext", audit_event_id: str) -> UndoOutput:
             ErrorCode.INVALID_INPUT, f"Event {audit_event_id} has already been undone"
         )
 
-    if event.entity_type == "payment_event":
-        from copilot.core.capture import undo_label
+    if event.entity_type == "entity_answer":
+        from copilot.understand.learn import undo_answer
+
+        if event.before is None or event.after is None or event.entity_id is None:
+            raise ToolFailure(ErrorCode.INVALID_INPUT, "Missing state data for event")
+        undo_answer(ctx.conn, ctx.user_id, event.entity_id, event.before, event.after)
+
+    elif event.entity_type == "payment_event":
+        from copilot.capture.events import undo_label
 
         if event.before is None or event.after is None or event.entity_id is None:
             raise ToolFailure(ErrorCode.INVALID_INPUT, "Missing state data for event")

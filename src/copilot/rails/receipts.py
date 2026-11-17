@@ -13,7 +13,7 @@ from pathlib import Path
 
 import yaml
 
-from copilot.core.money import rupees_to_paise
+from copilot.common.money import rupees_to_paise
 
 _CONFIG = Path(__file__).resolve().parents[3] / "config" / "rails.yaml"
 _LINE = re.compile(

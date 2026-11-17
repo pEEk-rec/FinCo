@@ -16,22 +16,22 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from copilot.audit.events import record_event
-from copilot.config.phase2 import load_alerts_config
-from copilot.core.alerts import (
-    build_why_text,
-    evaluate_category_alert_signals,
-)
-from copilot.core.anomalies import detect_anomalies
-from copilot.core.errors import ErrorCode, ToolFailure
-from copilot.core.memory import get_active_contextual_exception
-from copilot.core.timeutil import (
+from copilot.common.errors import ErrorCode, ToolFailure
+from copilot.common.timeutil import (
     IST,
     from_utc_iso,
     month_bounds,
     now_utc,
     to_utc_iso,
 )
+from copilot.config.money import load_alerts_config
 from copilot.db import repo
+from copilot.domain.alerts import (
+    build_why_text,
+    evaluate_category_alert_signals,
+)
+from copilot.domain.anomalies import detect_anomalies
+from copilot.memory.store import get_active_contextual_exception
 from copilot.models.agentic import Alert, AlertPreference, AlertSeverity, AlertStatus
 from copilot.tools.contracts import (
     SideEffect,
@@ -263,9 +263,10 @@ def evaluate_alerts_handler(
             days_in_month=days_in_month,
             active_exception=active_exc_dict,
         )
+        breakdown.components["category_name"] = cat.name
 
         # Apply Bounded Feedback Learning (PLAN_PHASE3 Section 5.16)
-        from copilot.core.learning import (
+        from copilot.learning.feedback import (
             apply_learning_to_alert,
             get_learned_multiplier,
             is_hard_floor_alert,
@@ -528,7 +529,7 @@ def decide_alert_handler(
     if action == "acknowledge":
         new_status = "acknowledged"
         try:
-            from copilot.core.learning import record_feedback
+            from copilot.learning.feedback import record_feedback
 
             record_feedback(
                 ctx.conn,
@@ -560,7 +561,7 @@ def decide_alert_handler(
         if is_contextual:
             # Contextual dismissal goes to memory as an exception, NOT to learning!
             try:
-                from copilot.core.memory import record_contextual_exception
+                from copilot.memory.store import record_contextual_exception
 
                 clean_r = reason.strip()
                 label = clean_r.split(":")[0].strip().lower() if ":" in clean_r else clean_r.lower()
@@ -588,7 +589,7 @@ def decide_alert_handler(
         else:
             # Generic dismissal without reason is negative feedback
             try:
-                from copilot.core.learning import record_feedback
+                from copilot.learning.feedback import record_feedback
 
                 record_feedback(
                     ctx.conn,
@@ -671,7 +672,7 @@ def set_alert_preference_handler(
 
     if muted and category_id:
         try:
-            from copilot.core.learning import record_feedback
+            from copilot.learning.feedback import record_feedback
 
             record_feedback(
                 ctx.conn,

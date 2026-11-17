@@ -7,8 +7,8 @@ import json
 
 import pytest
 
-from copilot.core import intent as intent_module
-from copilot.core.intent import create_agent_task
+from copilot.conversation import intent as intent_module
+from copilot.conversation.intent import create_agent_task
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_category, insert_user
 from copilot.llm.client import FakeLLMClient
@@ -125,7 +125,7 @@ def test_the_context_builders_purposes_map_to_router_tasks():
 
 
 def test_a_model_outage_falls_back_to_the_rules_instead_of_failing(conn):
-    from copilot.core.errors import ErrorCode, ToolFailure
+    from copilot.common.errors import ErrorCode, ToolFailure
 
     class Down:
         def complete(self, prompt, **options):
@@ -138,7 +138,7 @@ def test_a_model_outage_falls_back_to_the_rules_instead_of_failing(conn):
 def test_the_glossary_describes_every_intent_the_model_may_choose():
     from typing import get_args
 
-    from copilot.core.intent import _intent_glossary_text
+    from copilot.conversation.intent import _intent_glossary_text
     from copilot.models.agentic import IntentType
 
     text = _intent_glossary_text()

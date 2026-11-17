@@ -17,10 +17,7 @@ export function HeroSection() {
       <HeroVideo />
 
       {/* Shade the left for the words and the very bottom for the points; the figure stays clear. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_60%,rgba(10,8,14,0)_35%,rgba(10,8,14,0.3)_100%)]"
-      />
+      <div aria-hidden className="hero-vignette pointer-events-none absolute inset-0" />
 
       <Link
         to="/welcome"

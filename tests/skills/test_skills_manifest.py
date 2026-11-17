@@ -4,7 +4,7 @@ Tests for Skill Manifest Schema and Safety Validation (Stage 3.10 & Section 5.12
 
 import pytest
 
-from copilot.models.phase3 import SkillManifest
+from copilot.models.agent_runtime import SkillManifest
 from copilot.skills.manifest import load_all_skills, validate_skill_manifest
 from copilot.workflow.nodes import ensure_tools_registered
 

@@ -25,13 +25,6 @@ from datetime import datetime
 
 import pytest
 
-from copilot.core.buckets import (
-    bucket_balance,
-    bucket_spent_paise,
-    get_allocation_summary,
-    rollover_buckets,
-    would_exceed,
-)
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     insert_account,
@@ -41,13 +34,16 @@ from copilot.db.repo import (
     list_transactions,
     update_transaction_category,
 )
-from copilot.db.repo_phase3 import (
-    insert_bucket,
-    insert_bucket_allocation,
-    map_bucket_category,
+from copilot.db.repo_money import insert_bucket, insert_bucket_allocation, map_bucket_category
+from copilot.domain.buckets import (
+    bucket_balance,
+    bucket_spent_paise,
+    get_allocation_summary,
+    rollover_buckets,
+    would_exceed,
 )
 from copilot.models.domain import Account, Category, Transaction, User
-from copilot.models.phase3 import Bucket, BucketAllocation
+from copilot.models.money import Bucket, BucketAllocation
 
 T0 = "2026-09-01T00:00:00Z"
 DT0 = datetime.fromisoformat("2026-09-01T00:00:00+00:00")

@@ -19,7 +19,12 @@ from datetime import date, datetime, timedelta
 
 import pytest
 
-from copilot.core.learning_loop import (
+from copilot.common.timeutil import IST
+from copilot.db.connection import get_connection, init_db
+from copilot.db.repo import insert_account, insert_category, insert_transaction, insert_user
+from copilot.db.repo_engagement import insert_experiment, insert_experiment_review
+from copilot.db.repo_memory import forget_memory_item
+from copilot.learning.experiment_loop import (
     assert_no_causal_claims,
     export_phase4_failure_candidates,
     format_outcome_memory_advice_evidence,
@@ -31,13 +36,8 @@ from copilot.core.learning_loop import (
     record_experiment_outcome_memory,
     update_template_posterior,
 )
-from copilot.core.timeutil import IST
-from copilot.db.connection import get_connection, init_db
-from copilot.db.repo import insert_account, insert_category, insert_transaction, insert_user
-from copilot.db.repo_phase3 import forget_memory_item
-from copilot.db.repo_phase4 import insert_experiment, insert_experiment_review
 from copilot.models.domain import Account, Category, Transaction, User
-from copilot.models.phase4 import Experiment, ExperimentReview
+from copilot.models.engagement import Experiment, ExperimentReview
 
 T0 = "2026-08-01T00:00:00Z"
 DT0 = datetime(2026, 8, 15, 12, 0, tzinfo=IST)

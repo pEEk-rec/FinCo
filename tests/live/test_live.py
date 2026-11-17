@@ -6,7 +6,7 @@ from datetime import datetime
 import pytest
 from fastapi.testclient import TestClient
 
-from copilot.core.timeutil import IST
+from copilot.common.timeutil import IST
 from copilot.live.aa import AAClient, AAConfig, AAError, parse_fi_data
 from copilot.live.api import WEBHOOK_PATH
 from copilot.live.server import build_live
@@ -360,26 +360,45 @@ def _with_model(live, reply):
     return client, state, state.llm
 
 
-def test_model_labels_unknown_merchants_and_unsure_ones_stay_for_review(live):
+def test_the_model_suggests_but_never_labels_alone_so_both_wait_for_you(live):
     client, state, fake = _with_model(
-        live, _reply(("zxq ventures zq", "shopping", 0.95), ("mystery lab ml", "education", 0.4))
+        live, _reply(("zxq ventures", "shopping", 0.95), ("mystery lab", "education", 0.4))
+    )
+    out = client.post("/api/live/import/statement", headers=AUTH, json={"text": UNKNOWN_CSV}).json()
+    assert out["ai_used"] is True and out["ai_applied"] == 0
+    assert out["needs_review"] == 2
+    queue = client.get("/api/review-queue", headers=AUTH).json()["items"]
+    assert all(i["suggestions"][0]["reason"] == "ai_suggestion" for i in queue)
+    assert len(fake.prompts) == 1  # one call for both merchants
+
+
+def test_legacy_engine_model_labels_unknown_merchants_and_unsure_ones_stay_for_review(
+    live, monkeypatch
+):
+    from copilot.understand import ledger
+    from copilot.understand.config import load_understand_config
+
+    legacy = load_understand_config().model_copy(update={"engine": "legacy"})
+    monkeypatch.setattr(ledger, "load_understand_config", lambda: legacy)
+    client, state, fake = _with_model(
+        live, _reply(("zxq ventures", "shopping", 0.95), ("mystery lab", "education", 0.4))
     )
     out = client.post("/api/live/import/statement", headers=AUTH, json={"text": UNKNOWN_CSV}).json()
     assert out["ai_used"] is True and out["ai_applied"] == 1
     assert out["needs_review"] == 1  # only the unsure one is left
     queue = client.get("/api/review-queue", headers=AUTH).json()["items"]
     assert queue[0]["suggestions"][0]["reason"] == "ai_suggestion"
-    assert len(fake.prompts) == 1  # one call for both merchants
+    assert len(fake.prompts) == 1
 
 
 def test_model_only_sees_redacted_merchant_text(live):
-    client, state, fake = _with_model(live, _reply(("zxq ventures zq", "shopping", 0.95)))
+    client, state, fake = _with_model(live, _reply(("zxq ventures", "shopping", 0.95)))
     client.post("/api/live/import/statement", headers=AUTH, json={"text": UNKNOWN_CSV})
     assert "1234" not in fake.prompts[0] and "99.00" not in fake.prompts[0]
 
 
 def test_an_unknown_category_from_the_model_is_ignored(live):
-    client, _, _ = _with_model(live, _reply(("zxq ventures zq", "not_a_category", 0.99)))
+    client, _, _ = _with_model(live, _reply(("zxq ventures", "not_a_category", 0.99)))
     out = client.post("/api/live/import/statement", headers=AUTH, json={"text": UNKNOWN_CSV}).json()
     assert out["ai_applied"] == 0 and out["needs_review"] == 2
 

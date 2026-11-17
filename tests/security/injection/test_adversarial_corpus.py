@@ -14,14 +14,14 @@ import json
 
 import pytest
 
+from copilot.common.settings import PROJECT_ROOT
 from copilot.context.builder import ContextBuilder
 from copilot.context.hardening import (
     DATA_FIELD_NOTICE,
     delimit_data_field,
     detect_injection_attempt,
 )
-from copilot.core.config import PROJECT_ROOT
-from copilot.core.intent import llm_classify_intent
+from copilot.conversation.intent import llm_classify_intent
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_category, insert_user
 from copilot.governance.policy import load_policy

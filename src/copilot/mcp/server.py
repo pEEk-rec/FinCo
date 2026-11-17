@@ -33,10 +33,10 @@ from langgraph.checkpoint.memory import MemorySaver
 from mcp.server import MCPServer
 from pydantic import BaseModel
 
-from copilot.config.phase2 import load_planner_capabilities
-from copilot.config.phase3 import MCPConfig, load_mcp_config
-from copilot.core.config import PROJECT_ROOT
-from copilot.core.timeutil import now_utc, to_utc_iso
+from copilot.common.settings import PROJECT_ROOT
+from copilot.common.timeutil import now_utc, to_utc_iso
+from copilot.config.agent_runtime import MCPConfig, load_mcp_config
+from copilot.config.planning import load_planner_capabilities
 from copilot.db.connection import get_connection
 from copilot.governance.policy import PolicySettings, load_policy
 from copilot.ops.tracing import span

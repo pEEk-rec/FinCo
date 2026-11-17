@@ -302,3 +302,52 @@
     background: white;
   }
 }
+
+/* The landing hero: a soft vignette over the loop, and the feathered window the loop is seen through. */
+@utility hero-vignette {
+  background: radial-gradient(
+    ellipse at 50% 60%,
+    rgba(10, 8, 14, 0) 35%,
+    rgba(10, 8, 14, 0.3) 100%
+  );
+}
+@utility hero-feather {
+  -webkit-mask-image: radial-gradient(
+    ellipse 55% 62% at 50% 60%,
+    #000 30%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+  mask-image: radial-gradient(ellipse 55% 62% at 50% 60%, #000 30%, rgba(0, 0, 0, 0.3) 100%);
+}
+
+/* The agent is working: a slow sheen across the status line (Ask's reasoning row). */
+@keyframes shimmer-sweep {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -20% 0;
+  }
+}
+@utility shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--color-ink-3) 0%,
+    var(--color-ink-3) 38%,
+    var(--color-agent) 50%,
+    var(--color-ink-3) 62%,
+    var(--color-ink-3) 100%
+  );
+  background-size: 250% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: shimmer-sweep 1.8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-text {
+    animation: none;
+    color: var(--color-ink-2);
+    background: none;
+  }
+}

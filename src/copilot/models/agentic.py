@@ -6,7 +6,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StrictInt
 
-from copilot.core.timeutil import normalize_utc_iso
+from copilot.common.timeutil import normalize_utc_iso
 
 Id = Annotated[str, Field(min_length=1)]
 UtcTimestamp = Annotated[str, AfterValidator(normalize_utc_iso)]

@@ -17,7 +17,7 @@ Verifies:
 
 import random
 
-from copilot.core.simulation import (
+from copilot.domain.whatif import (
     FinancialSnapshot,
     compare_scenarios,
     simulate,

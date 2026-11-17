@@ -4,7 +4,7 @@ from datetime import datetime
 import pytest
 
 from copilot.audit.events import list_events, record_event
-from copilot.core.timeutil import IST
+from copilot.common.timeutil import IST
 from copilot.db.connection import get_connection, init_db
 
 

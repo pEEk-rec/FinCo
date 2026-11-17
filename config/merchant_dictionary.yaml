@@ -1,0 +1,58 @@
+# Well-known Indian brands (public knowledge only; no user data). PLAN_AGENTIC_V2, stage S3.
+# `names` are matched against the cleaned and the squashed name; `handles` against the UPI handle's brand part.
+# `category` is a generic category id; it is used only if the user has that category.
+brands:
+  - {name: Swiggy,        category: food,          names: [swiggy, swiggy instamart],           handles: [swiggy]}
+  - {name: Zomato,        category: food,          names: [zomato, zomato online],              handles: [zomato]}
+  - {name: Domino's,      category: food,          names: [dominos, domino s pizza, jubilant foodworks], handles: [dominos]}
+  - {name: McDonald's,    category: food,          names: [mcdonalds, mcdonald s],              handles: [mcdonalds]}
+  - {name: Starbucks,     category: food,          names: [starbucks, tata starbucks],          handles: [starbucks]}
+  - {name: Cafe Coffee Day, category: food,        names: [cafe coffee day, ccd],               handles: [ccd]}
+  - {name: Blinkit,       category: groceries,     names: [blinkit, grofers],                   handles: [blinkit]}
+  - {name: Zepto,         category: groceries,     names: [zepto, kiranakart],                  handles: [zepto]}
+  - {name: BigBasket,     category: groceries,     names: [bigbasket, supermarket grocery supplies], handles: [bigbasket]}
+  - {name: DMart,         category: groceries,     names: [dmart, avenue supermarts],           handles: [dmart]}
+  - {name: Reliance Fresh, category: groceries,    names: [reliance fresh, reliance retail],    handles: [reliancefresh]}
+  - {name: Uber,          category: travel,        names: [uber, uber india],                   handles: [uber]}
+  - {name: Ola,           category: travel,        names: [ola, ola cabs, ani technologies],   handles: [olacabs, ola]}
+  - {name: Rapido,        category: travel,        names: [rapido, roppen transportation],     handles: [rapido]}
+  - {name: IRCTC,         category: travel,        names: [irctc, indian railway catering],     handles: [irctc]}
+  - {name: RedBus,        category: travel,        names: [redbus, red bus],                    handles: [redbus]}
+  - {name: MakeMyTrip,    category: travel,        names: [makemytrip, make my trip],           handles: [makemytrip]}
+  - {name: IndiGo,        category: travel,        names: [indigo, interglobe aviation],        handles: [indigo]}
+  - {name: Delhi Metro,   category: travel,        names: [delhi metro, dmrc, bmrc, bmtc],      handles: [dmrc]}
+  - {name: Amazon,        category: shopping,      names: [amazon, amazon pay, amazon seller services, amazon india], handles: [amazon, amazonpay]}
+  - {name: Flipkart,      category: shopping,      names: [flipkart, flipkart internet],        handles: [flipkart]}
+  - {name: Myntra,        category: shopping,      names: [myntra, myntra designs],             handles: [myntra]}
+  - {name: Ajio,          category: shopping,      names: [ajio, reliance retail ajio],         handles: [ajio]}
+  - {name: Nykaa,         category: shopping,      names: [nykaa, fsn ecommerce],               handles: [nykaa]}
+  - {name: Meesho,        category: shopping,      names: [meesho, fashnear],                   handles: [meesho]}
+  - {name: Decathlon,     category: shopping,      names: [decathlon, decathlon sports],        handles: [decathlon]}
+  - {name: Croma,         category: shopping,      names: [croma, infiniti retail],             handles: [croma]}
+  - {name: Netflix,       category: subscriptions, names: [netflix, netflix entertainment],     handles: [netflix]}
+  - {name: Spotify,       category: subscriptions, names: [spotify, spotify india],             handles: [spotify]}
+  - {name: Hotstar,       category: subscriptions, names: [hotstar, disney hotstar, jiostar],   handles: [hotstar]}
+  - {name: Prime Video,   category: subscriptions, names: [prime video, amazon prime],          handles: [primevideo]}
+  - {name: YouTube,       category: subscriptions, names: [youtube, youtube premium, google youtube], handles: [youtube]}
+  - {name: Google One,    category: subscriptions, names: [google one, google storage, google play], handles: [googleplay]}
+  - {name: Apple,         category: subscriptions, names: [apple, apple services, itunes],      handles: [apple]}
+  - {name: Jio,           category: bills,         names: [jio, reliance jio, jio prepaid],     handles: [jio, jiopay]}
+  - {name: Airtel,        category: bills,         names: [airtel, bharti airtel],              handles: [airtel]}
+  - {name: Vi,            category: bills,         names: [vodafone idea, vi prepaid],          handles: [vodafoneidea]}
+  - {name: BSNL,          category: bills,         names: [bsnl],                               handles: [bsnl]}
+  - {name: BESCOM,        category: bills,         names: [bescom, bangalore electricity],      handles: [bescom]}
+  - {name: Tata Power,    category: bills,         names: [tata power, tata power delhi],        handles: [tatapower]}
+  - {name: Act Fibernet,  category: bills,         names: [act fibernet, atria convergence],    handles: [actfibernet]}
+  - {name: BookMyShow,    category: entertainment, names: [bookmyshow, book my show, big tree],  handles: [bookmyshow]}
+  - {name: PVR INOX,      category: entertainment, names: [pvr, inox, pvr inox],                handles: [pvr, inox]}
+  - {name: Steam,         category: entertainment, names: [steam, steam games, valve],          handles: [steam]}
+  - {name: Unacademy,     category: education,     names: [unacademy, sorting hat],             handles: [unacademy]}
+  - {name: Coursera,      category: education,     names: [coursera],                           handles: [coursera]}
+  - {name: Udemy,         category: education,     names: [udemy],                              handles: [udemy]}
+  - {name: Byju's,        category: education,     names: [byjus, think and learn],             handles: [byjus]}
+  - {name: Apollo Pharmacy, category: health,      names: [apollo pharmacy, apollo], handles: [apollopharmacy]}
+  - {name: MedPlus,       category: health,        names: [medplus, medplus health],            handles: [medplus]}
+  - {name: Tata 1mg,      category: health,        names: [1mg, tata 1mg],                      handles: [1mg, tata1mg]}
+  - {name: Cult.fit,      category: health,        names: [cult fit, cultfit, curefit],         handles: [cultfit, curefit]}
+  - {name: Urban Company, category: personal,      names: [urban company, urbanclap],           handles: [urbancompany]}
+  - {name: Naturals Salon, category: personal,     names: [naturals salon, naturals],           handles: [naturals]}

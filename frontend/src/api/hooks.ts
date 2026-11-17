@@ -100,6 +100,47 @@ export const useToday = (day?: string) =>
     retry,
   });
 
+/** The "For you" screen: check-ins, the profile, the budget plan and subscriptions. */
+export const useCheckins = () => useQuery({ queryKey: ['checkins'], queryFn: api.checkins, retry });
+export const useProfile = () => useQuery({ queryKey: ['profile'], queryFn: api.profile, retry });
+export const useBudgetProposal = () =>
+  useQuery({ queryKey: ['budget-proposal'], queryFn: api.budgetProposal, retry });
+export const useReplan = () =>
+  useQuery({ queryKey: ['budget-replan'], queryFn: api.replan, retry });
+export const useSubscriptions = () =>
+  useQuery({ queryKey: ['subscriptions'], queryFn: api.subscriptions, retry });
+
+export function useForYouWrites() {
+  const client = useQueryClient();
+  const refresh = () =>
+    Promise.all(
+      ['checkins', 'profile', 'budget-proposal', 'budget-replan', 'subscriptions', 'dashboard'].map(
+        (k) => client.invalidateQueries({ queryKey: [k] }),
+      ),
+    );
+  return {
+    runCheckin: useMutation({ mutationFn: api.runCheckin, onSuccess: refresh }),
+    respond: useMutation({
+      mutationFn: (v: { id: string; response: 'acted' | 'dismissed' | 'not_useful' }) =>
+        api.respondCheckin(v.id, v.response),
+      onSuccess: refresh,
+    }),
+    setProfile: useMutation({
+      mutationFn: (v: { field: string; value: unknown }) => api.setProfile(v.field, v.value),
+      onSuccess: refresh,
+    }),
+    confirmProfile: useMutation({ mutationFn: api.confirmProfile, onSuccess: refresh }),
+    suggestProfile: useMutation({ mutationFn: api.suggestProfile, onSuccess: refresh }),
+    applyBudget: useMutation({ mutationFn: api.applyBudget, onSuccess: refresh }),
+    moveBudget: useMutation({ mutationFn: api.moveBudget, onSuccess: refresh }),
+    markSubscription: useMutation({
+      mutationFn: (v: { id: string; note: 'unused' | 'keep' }) =>
+        api.markSubscription(v.id, v.note),
+      onSuccess: refresh,
+    }),
+  };
+}
+
 /** The bank link: its consent as the user would read it, and its state. */
 export const useBankLink = () =>
   useQuery({ queryKey: ['bank-link'], queryFn: api.bankLink, retry });

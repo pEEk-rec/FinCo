@@ -16,22 +16,22 @@ from datetime import datetime
 
 import pytest
 
-from copilot.core.adaptive import detect_exception_overlap
-from copilot.core.baseline import calculate_baseline, generate_candidate_windows
-from copilot.core.category_resolution import resolve_categories, resolve_merchants
-from copilot.core.challenges import (
+from copilot.db.connection import get_connection, init_db
+from copilot.db.repo import insert_account, insert_budget, insert_category, insert_user
+from copilot.domain.essentials import essential_category_ids, is_essential
+from copilot.engagement.adaptive import detect_exception_overlap
+from copilot.engagement.baseline import calculate_baseline, generate_candidate_windows
+from copilot.engagement.challenges import (
     LLMChallengeSpec,
     evaluate_triggers,
     generate_challenge_offers,
     validate_llm_spec,
 )
-from copilot.core.essentials import essential_category_ids, is_essential
-from copilot.core.exception_windows import active_exceptions, exception_range
-from copilot.core.experiments import design_experiment, start_experiment
-from copilot.core.self_competition import get_streak_freeze_dates
-from copilot.db.connection import get_connection, init_db
-from copilot.db.repo import insert_account, insert_budget, insert_category, insert_user
+from copilot.engagement.experiments import design_experiment, start_experiment
+from copilot.engagement.self_competition import get_streak_freeze_dates
+from copilot.memory.exception_windows import active_exceptions, exception_range
 from copilot.models.domain import Account, Budget, Category, User
+from copilot.understand.category_resolution import resolve_categories, resolve_merchants
 
 T0 = "2026-01-01T00:00:00Z"
 CLOCK = datetime.fromisoformat("2026-09-01T00:00:00+05:30")

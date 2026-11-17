@@ -16,21 +16,10 @@ from typing import TYPE_CHECKING, Any, Literal
 from pydantic import Field, StrictInt
 
 from copilot.audit.events import record_event
-from copilot.core.buckets import (
-    bucket_balance,
-    current_period_str,
-    load_buckets_config,
-)
-from copilot.core.buckets import (
-    get_allocation_summary as core_get_allocation_summary,
-)
-from copilot.core.buckets import (
-    rollover_buckets as core_rollover_buckets,
-)
-from copilot.core.errors import ErrorCode, ToolFailure
-from copilot.core.timeutil import IST, from_utc_iso, now_utc, to_utc_iso
+from copilot.common.errors import ErrorCode, ToolFailure
+from copilot.common.timeutil import IST, from_utc_iso, now_utc, to_utc_iso
 from copilot.db.repo import get_category
-from copilot.db.repo_phase3 import (
+from copilot.db.repo_money import (
     get_bucket,
     get_reallocation_draft,
     insert_bucket,
@@ -39,13 +28,20 @@ from copilot.db.repo_phase3 import (
     map_bucket_category,
     update_reallocation_draft_status,
 )
-from copilot.db.repo_phase3 import (
-    list_buckets as repo_list_buckets,
+from copilot.db.repo_money import list_buckets as repo_list_buckets
+from copilot.db.repo_money import update_bucket as repo_update_bucket
+from copilot.domain.buckets import (
+    bucket_balance,
+    current_period_str,
+    load_buckets_config,
 )
-from copilot.db.repo_phase3 import (
-    update_bucket as repo_update_bucket,
+from copilot.domain.buckets import (
+    get_allocation_summary as core_get_allocation_summary,
 )
-from copilot.models.phase3 import (
+from copilot.domain.buckets import (
+    rollover_buckets as core_rollover_buckets,
+)
+from copilot.models.money import (
     AllocationSummary,
     Bucket,
     BucketAllocation,
@@ -783,7 +779,7 @@ def apply_reallocation_handler(ctx: "ExecutionContext", **kwargs) -> ApplyReallo
 
     # Record useful feedback for acted-on alert (PLAN_PHASE3 Section 5.16)
     try:
-        from copilot.core.learning import record_feedback
+        from copilot.learning.feedback import record_feedback
 
         b_target = get_bucket(ctx.conn, ctx.user_id, draft.to_bucket_id)
         target_name = b_target.name if b_target and b_target.name else draft.to_bucket_id

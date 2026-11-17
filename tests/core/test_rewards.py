@@ -18,7 +18,8 @@ from datetime import datetime
 
 import pytest
 
-from copilot.config.phase4 import (
+from copilot.common.timeutil import IST
+from copilot.config.engagement import (
     ForbiddenRulesConfig,
     LevelsConfig,
     RewardsConfig,
@@ -26,7 +27,17 @@ from copilot.config.phase4 import (
     XpRuleConfig,
     load_rewards_config,
 )
-from copilot.core.rewards import (
+from copilot.db.connection import get_connection, init_db
+from copilot.db.repo import insert_account, insert_category, insert_user
+from copilot.db.repo_engagement import (
+    get_user_xp_for_day,
+    get_user_xp_total,
+    insert_experiment,
+    insert_experiment_review,
+    list_badge_awards,
+    list_xp_events,
+)
+from copilot.engagement.rewards import (
     award_experiment_outcome_xp,
     award_xp,
     calculate_user_level,
@@ -36,22 +47,8 @@ from copilot.core.rewards import (
     scan_copy_safety,
     validate_reward_rules,
 )
-from copilot.core.timeutil import IST
-from copilot.db.connection import get_connection, init_db
-from copilot.db.repo import insert_account, insert_category, insert_user
-from copilot.db.repo_phase4 import (
-    get_user_xp_for_day,
-    get_user_xp_total,
-    insert_experiment,
-    insert_experiment_review,
-    list_badge_awards,
-    list_xp_events,
-)
 from copilot.models.domain import Account, Category, User
-from copilot.models.phase4 import (
-    Experiment,
-    ExperimentReview,
-)
+from copilot.models.engagement import Experiment, ExperimentReview
 
 T0 = "2026-01-01T00:00:00Z"
 DT0 = datetime(2026, 9, 1, 10, 0, tzinfo=IST)

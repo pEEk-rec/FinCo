@@ -8,7 +8,7 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from copilot.core.timeutil import from_utc_iso, to_utc_iso
+from copilot.common.timeutil import from_utc_iso, to_utc_iso
 from copilot.rails.engine import ReconcileOut, categorize, ensure_schema, reconcile
 
 ALERTS = [

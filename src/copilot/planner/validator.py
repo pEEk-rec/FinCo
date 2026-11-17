@@ -19,7 +19,7 @@ import sqlite3
 from pydantic import ValidationError
 
 from copilot.audit.events import record_event
-from copilot.config.phase2 import PlanTemplatesConfig, load_plan_templates
+from copilot.config.planning import PlanTemplatesConfig, load_plan_templates
 from copilot.db.repo import get_account, get_category, get_goal
 from copilot.models.agentic import Intent, Plan, PlanStep
 from copilot.planner.capabilities import is_planner_selectable

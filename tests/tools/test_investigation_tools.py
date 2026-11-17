@@ -14,7 +14,7 @@ from datetime import datetime
 
 import pytest
 
-from copilot.core.errors import ErrorCode
+from copilot.common.errors import ErrorCode
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import (
     get_investigation,

@@ -6,3 +6,4 @@ test-results/
 *.tsbuildinfo
 .demo/
 .e2e/
+.shots-run/

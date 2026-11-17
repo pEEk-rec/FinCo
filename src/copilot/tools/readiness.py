@@ -12,10 +12,10 @@ from typing import TYPE_CHECKING
 
 from pydantic import Field
 
-from copilot.core.readiness import assess_readiness
-from copilot.core.timeutil import IST, now_utc
-from copilot.db.repo_phase3 import insert_readiness_assessment
-from copilot.models.phase3 import Readiness
+from copilot.common.timeutil import IST, now_utc
+from copilot.db.repo_money import insert_readiness_assessment
+from copilot.domain.readiness import assess_readiness
+from copilot.models.money import Readiness
 from copilot.tools.contracts import SideEffect, ToolInput, ToolOutput, ToolSpec
 from copilot.tools.registry import register
 

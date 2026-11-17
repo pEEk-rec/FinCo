@@ -10,15 +10,15 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from copilot.core import capture as cap
-from copilot.core.capture_reconcile import (
+from copilot.capture import events as cap
+from copilot.capture.reconcile import (
     combined_spend,
     coverage_health,
     reconcile_events,
     set_account_last4,
 )
-from copilot.core.errors import ToolFailure
-from copilot.core.timeutil import IST, to_utc_iso
+from copilot.common.errors import ToolFailure
+from copilot.common.timeutil import IST, to_utc_iso
 from copilot.db.connection import get_connection, init_db
 from copilot.db.repo import insert_account, insert_category, insert_transaction, insert_user
 from copilot.models.domain import Account, Category, Transaction, User
