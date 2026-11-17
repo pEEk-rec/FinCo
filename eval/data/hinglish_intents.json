@@ -1,0 +1,65 @@
+{
+  "note": "Hinglish questions for the rule reader (PLAN_AGENTIC_V2, A10). `dev` was used to build config/hinglish.yaml. `held_out` was written before the glossary was tuned and is never tuned on. Pre-declared target on held_out: 70% correct, and no more than 10% confidently wrong (an answer that is not 'unknown').",
+  "target_accuracy": 0.7,
+  "target_max_wrong": 0.1,
+  "dev": {
+    "summarize_period": [
+      "pichle mahine khane pe kitna kharcha hua",
+      "is mahine mera kharcha kitna hai",
+      "shopping pe is mahine kitna gaya"
+    ],
+    "check_budget": [
+      "kya main budget ke andar hoon",
+      "food budget kitna bacha hai"
+    ],
+    "forecast": [
+      "mahine ke end tak kitna kharcha hoga"
+    ],
+    "goal_check": [
+      "kya mera laptop goal on track hai"
+    ],
+    "goal_progress": [
+      "mera goal kitna aage badha"
+    ],
+    "list_recurring": [
+      "mere subscriptions dikhao"
+    ],
+    "explain_change": [
+      "khane ka kharcha is mahine kyun badha"
+    ]
+  },
+  "held_out": {
+    "summarize_period": [
+      "travel pe pichle mahine kitna kharcha hua",
+      "is mahine ka total kharcha batao",
+      "entertainment pe kitne paise gaye is mahine",
+      "pichle mahine mera kharcha kitna hua"
+    ],
+    "check_budget": [
+      "kya shopping budget se zyada ho gaya",
+      "mera budget kaisa chal raha hai",
+      "travel budget kitna bacha hai",
+      "kya main budget ke andar hoon is mahine"
+    ],
+    "forecast": [
+      "is mahine ke end tak mera kharcha kitna hoga",
+      "mahine ke end tak kitna kharcha hoga mera"
+    ],
+    "goal_check": [
+      "kya mera vacation goal on track hai",
+      "mera laptop goal on track hai kya"
+    ],
+    "goal_progress": [
+      "mera vacation goal kitna aage badha hai",
+      "mere goal ka progress batao"
+    ],
+    "list_recurring": [
+      "mere subscriptions batao",
+      "meri subscription list dikhao"
+    ],
+    "explain_change": [
+      "travel ka kharcha is mahine kyun badha",
+      "shopping ka kharcha kyun zyada hua is mahine"
+    ]
+  }
+}
